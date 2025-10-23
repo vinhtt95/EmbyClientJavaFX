@@ -1,9 +1,11 @@
-package com.example.embyapp.embyjavafxclient;
+package com.example.embyapp;
 
-import javafx.application.Application;
-
+/**
+ * Launcher class to avoid JavaFX runtime components are missing error.
+ * This is needed when creating a fat JAR.
+ */
 public class Launcher {
     public static void main(String[] args) {
-        Application.launch(HelloApplication.class, args);
+        MainApp.main(args);
     }
 }

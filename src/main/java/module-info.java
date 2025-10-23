@@ -1,29 +1,31 @@
 module com.example.embyapp {
-    // JavaFX modules
     requires javafx.controls;
     requires javafx.fxml;
-    requires javafx.graphics; // Added for completeness, often needed indirectly
-    requires javafx.base;     // Added because you open viewmodel to it
+    requires javafx.graphics;
+    requires javafx.base; // Added for Properties
 
-    // Core Java modules needed by dependencies or SDK
-    requires java.sql; // <<<=== ADDED THIS LINE
+    //requires emby.sdk.java; // Keep this commented out for now, let Maven handle module path
+    // OkHttp 2.x is likely not a module, so remove requires for okhttp3
 
-    // Dependencies explicitly required
-    requires okhttp3;
-    requires okhttp3.logging; // If using logging interceptor
     requires com.google.gson;
-    requires org.threeten.bp;
-    requires emby.sdk.java; // Assuming this is correct now
+    requires org.threeten.bp; // Keep requires for threetenbp if needed by SDK
+    // requires io.gsonfire; // Keep removed unless proven necessary
 
-    // NOTE: Requires for SDK and gsonfire removed to avoid "module not found" build errors,
-    // relying on them being on the module path.
+    requires java.prefs; // Added for Preferences API
+    requires java.sql;
+    requires emby.sdk.java;
+    requires okhttp; // Added for java.sql.Date possibly used by SDK/Gson
 
-    // Open packages for JavaFX FXML and reflection (e.g., by Gson)
-    opens com.example.embyapp to javafx.fxml;
+    opens com.example.embyapp to javafx.fxml, javafx.graphics;
     opens com.example.embyapp.controller to javafx.fxml;
-    opens com.example.embyapp.viewmodel to javafx.base; // Open to javafx.base for property binding
+    opens com.example.embyapp.viewmodel to javafx.base; // Open viewmodel to javafx.base for properties
 
-    // Export the main package if needed (optional, depends on how you run)
+    // If using Gson to reflectively access SDK models, open them
+    // opens com.example.emby.modelEmby to com.google.gson;
+    // opens com.example.emby.EmbyClient to com.google.gson;
     exports com.example.embyapp;
-}
+    exports com.example.embyapp.controller;
+    exports com.example.embyapp.service;
+    exports com.example.embyapp.viewmodel;
 
+}

@@ -72,11 +72,7 @@ public class MainController {
             embyService.logout();
         }
         if (mainApp != null) {
-            try {
-                mainApp.showLoginView(); // Go back to login screen
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            mainApp.showLoginView(); // Go back to login screen
         }
     }
 }

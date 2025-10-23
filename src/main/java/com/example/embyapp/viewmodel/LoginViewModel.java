@@ -7,6 +7,11 @@ import com.example.emby.modelEmby.AuthenticationAuthenticationResult;
 import com.example.embyapp.service.EmbyService;
 import javafx.application.Platform;
 import javafx.beans.property.*;
+import javafx.concurrent.Task;
+
+import java.io.IOException;
+import java.util.UUID;
+
 
 public class LoginViewModel {
 
@@ -15,140 +20,137 @@ public class LoginViewModel {
     private final StringProperty password = new SimpleStringProperty("");
     private final StringProperty statusMessage = new SimpleStringProperty("");
     private final BooleanProperty loginInProgress = new SimpleBooleanProperty(false);
-    private final BooleanProperty loginSuccess = new SimpleBooleanProperty(false); // Track login success
+    private final BooleanProperty loginSuccess = new SimpleBooleanProperty(false); // Added for signalling success
 
-    private final EmbyService embyService; // Store the EmbyService instance
 
-    // Constructor to receive EmbyService
+    private final EmbyService embyService;
+
+    // Constructor accepting EmbyService
     public LoginViewModel(EmbyService embyService) {
-        this.embyService = embyService; // Receive and store EmbyService
-        // Optional: Pre-fill server URL if you want a default from EmbyService or config
-        this.serverUrl.set("http://localhost:8096"); // Example default
+        this.embyService = embyService;
     }
 
 
-    public StringProperty serverUrlProperty() {
-        return serverUrl;
-    }
-
-    public StringProperty usernameProperty() {
-        return username;
-    }
-
-    public StringProperty passwordProperty() {
-        return password;
-    }
-
-    public StringProperty statusMessageProperty() {
-        return statusMessage;
-    }
-
-    public BooleanProperty loginInProgressProperty() {
-        return loginInProgress;
-    }
-
-    public BooleanProperty loginSuccessProperty() { return loginSuccess; }
-
-    // Optional setter if needed, e.g., for pre-filling
-    public void setServerUrl(String url) {
-        this.serverUrl.set(url);
-    }
-
-    // Optional setter if needed
-    public void setStatusMessage(String message) {
-        Platform.runLater(() -> statusMessage.set(message));
-    }
+    // --- Property Getters ---
+    public StringProperty serverUrlProperty() { return serverUrl; }
+    public StringProperty usernameProperty() { return username; }
+    public StringProperty passwordProperty() { return password; }
+    public StringProperty statusMessageProperty() { return statusMessage; }
+    public BooleanProperty loginInProgressProperty() { return loginInProgress; }
+    public BooleanProperty loginSuccessProperty() { return loginSuccess; } // Getter for success signal
 
 
+    // --- Login Action ---
     public void login() {
-        if (serverUrl.get() == null || serverUrl.get().trim().isEmpty() ||
-                username.get() == null || username.get().trim().isEmpty() ||
-                password.get() == null || password.get().isEmpty()) { // Password can be empty but not null
-            setStatusMessage("Please enter Server URL, Username, and Password.");
+        if (loginInProgress.get()) {
+            return; // Prevent multiple login attempts
+        }
+
+        String url = serverUrl.get().trim();
+        String user = username.get().trim();
+        String pass = password.get(); // Password typically doesn't need trimming
+
+
+        // Basic validation
+        if (url.isEmpty() || user.isEmpty() || pass.isEmpty()) {
+            statusMessage.set("Please enter Server URL, Username, and Password.");
             return;
         }
 
+        // --- Prepare for background task ---
         loginInProgress.set(true);
-        loginSuccess.set(false); // Reset success status
-        setStatusMessage("Logging in...");
+        statusMessage.set("Logging in...");
+        loginSuccess.set(false); // Reset success flag
 
-        // Run network operation in background thread
-        new Thread(() -> {
-            try {
-                // Configure ApiClient base path
-                embyService.getApiClient().setBasePath(serverUrl.get().trim()); // Trim whitespace
+
+        // --- Create and run background task ---
+        Task<AuthenticationAuthenticationResult> loginTask = new Task<>() {
+            @Override
+            protected AuthenticationAuthenticationResult call() throws Exception {
+                // Configure EmbyService base path (only if different)
+                if (!url.equals(embyService.getApiClient().getBasePath())) {
+                    embyService.getApiClient().setBasePath(url);
+                }
 
                 // Prepare authentication request
                 AuthenticateUserByName authRequest = new AuthenticateUserByName();
-                authRequest.setUsername(username.get().trim()); // Trim whitespace
-                authRequest.setPw(password.get()); // Password usually doesn't need trimming
+                authRequest.setUsername(user);
+                authRequest.setPw(pass);
 
-                // Get UserServiceApi from EmbyService
-                UserServiceApi userService = embyService.getUserServiceApi(); // Use the stored EmbyService
 
-                // --- MODIFIED HEADER CONSTRUCTION ---
-                // Construct the X-Emby-Authorization header string with the "Emby " prefix.
-                // Format: Emby Client="AppName", Device="DeviceName", DeviceId="UniqueDeviceID", Version="AppVersion"
-                // You should replace these placeholder values.
-                String appName = "EmbyClientJavaFX"; // Your App Name
-                String deviceName = "MyMacDesktop";     // Device Name
-                String deviceId = java.util.UUID.randomUUID().toString(); // Generate a unique ID
-                String appVersion = "1.0.0";             // Your App Version
+                // Prepare authentication header (X-Emby-Authorization)
+                // Use more specific/dynamic values if possible
+                String clientName = "EmbyClientJavaFX";
+                String deviceName = "MyMacDesktop"; // Or get dynamically System.getProperty("os.name")
+                String deviceId = UUID.randomUUID().toString(); // Generate unique ID
+                String appVersion = "1.0.0"; // Your app version
 
-                // Note the "Emby " prefix added here
-                String clientAuthHeader = String.format("Emby Client=\"%s\", Device=\"%s\", DeviceId=\"%s\", Version=\"%s\"",
-                        appName,
-                        deviceName,
-                        deviceId,
-                        appVersion
+                String clientAuthHeader = String.format(
+                        "Emby Client=\"%s\", Device=\"%s\", DeviceId=\"%s\", Version=\"%s\"",
+                        clientName, deviceName, deviceId, appVersion
                 );
-                // --- END MODIFIED HEADER CONSTRUCTION ---
+
+                // Get UserServiceApi instance from EmbyService
+                UserServiceApi userService = embyService.getUserServiceApi();
 
 
-                // Call authentication API, passing the constructed header string
-                AuthenticationAuthenticationResult authResult = userService.postUsersAuthenticatebyname(authRequest, clientAuthHeader);
-
-
-                // Update EmbyService with the result
-                embyService.setCurrentAuthResult(authResult);
-
-                // Update UI on JavaFX Application Thread
-                Platform.runLater(() -> {
-                    setStatusMessage("Login successful!");
-                    loginSuccess.set(true); // Signal success
-                    loginInProgress.set(false);
-                });
-
-            } catch (ApiException e) {
-                // Handle API exceptions (e.g., incorrect credentials, server not found)
-                System.err.println("API Exception during login: " + e.getCode());
-                System.err.println("Response body: " + e.getResponseBody());
-                e.printStackTrace(); // Log the full stack trace for debugging
-                Platform.runLater(() -> {
-                    String errorMessage = "Login failed: ";
-                    if (e.getCode() == 401 || e.getCode() == 403) {
-                        errorMessage += "Invalid username or password.";
-                    } else if (e.getCode() == 400) {
-                        // More specific message for Bad Request potentially due to header
-                        errorMessage += "Bad Request. Check client identification header or parameters. (Details: " + e.getResponseBody() + ")";
-                    } else if (e.getCode() == 0) {
-                        errorMessage += "Could not connect to server or server address is incorrect.";
-                    }
-                    else {
-                        errorMessage += e.getMessage() + " (Code: " + e.getCode() + ")";
-                    }
-                    setStatusMessage(errorMessage);
-                    loginInProgress.set(false);
-                });
-            } catch (Exception e) {
-                // Handle other potential exceptions (network issues, etc.)
-                e.printStackTrace(); // Log the full stack trace for debugging
-                Platform.runLater(() -> {
-                    setStatusMessage("Login failed: An unexpected error occurred. " + e.getMessage());
-                    loginInProgress.set(false);
-                });
+                // Call the API
+                return userService.postUsersAuthenticatebyname(authRequest, clientAuthHeader);
             }
-        }).start();
+        };
+
+        // --- Handle Task Completion (on JavaFX Application Thread) ---
+        loginTask.setOnSucceeded(event -> {
+            AuthenticationAuthenticationResult authResult = loginTask.getValue();
+            if (authResult != null && authResult.getAccessToken() != null) {
+                statusMessage.set("Login Successful!");
+                // *** FIX: Pass serverUrl as the second argument ***
+                embyService.setCurrentAuthResult(authResult, url); // Store result and URL in service
+                loginSuccess.set(true); // Signal success
+            } else {
+                // Should not happen if API call succeeded without exception but handle defensively
+                statusMessage.set("Login failed: Invalid response from server.");
+                embyService.setCurrentAuthResult(null, null); // Clear any previous auth state
+            }
+            loginInProgress.set(false);
+        });
+
+        loginTask.setOnFailed(event -> {
+            Throwable exception = loginTask.getException();
+            String errorMessage = "Login failed: ";
+            if (exception instanceof ApiException) {
+                ApiException apiEx = (ApiException) exception;
+                errorMessage += "API Error " + apiEx.getCode();
+                System.err.println("API Exception during login: " + apiEx.getCode());
+                System.err.println("Response body: " + apiEx.getResponseBody());
+                apiEx.printStackTrace();
+                // Provide more specific user feedback based on code
+                if (apiEx.getCode() == 401 || apiEx.getCode() == 403) {
+                    errorMessage = "Login failed: Invalid username or password.";
+                } else if (apiEx.getCode() == 400) {
+                    errorMessage = "Login failed: Bad request (check server URL or client header).";
+                } else if (apiEx.getCode() == 0) {
+                    errorMessage = "Login failed: Could not connect to the server (check URL and network).";
+                } else {
+                    errorMessage = "Login failed: Server returned error " + apiEx.getCode() + ".";
+                }
+
+
+            } else if (exception instanceof IOException) {
+                errorMessage += "Network error. Check server URL and connection.";
+                exception.printStackTrace();
+            }
+            else {
+                errorMessage += "An unexpected error occurred.";
+                exception.printStackTrace();
+            }
+            statusMessage.set(errorMessage);
+            embyService.setCurrentAuthResult(null, null); // Clear any previous auth state
+            loginInProgress.set(false);
+        });
+
+        // Start the background task
+        new Thread(loginTask).start();
     }
 }
 

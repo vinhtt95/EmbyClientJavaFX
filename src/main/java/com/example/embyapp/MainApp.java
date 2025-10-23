@@ -1,6 +1,8 @@
 package com.example.embyapp;
 
 import com.example.embyapp.controller.LoginController;
+import com.example.embyapp.controller.MainController;
+import com.example.embyapp.service.EmbyService; // Import EmbyService
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -11,69 +13,91 @@ import java.io.IOException;
 import java.net.URL; // Import URL
 
 public class MainApp extends Application {
+
     private Stage primaryStage;
+    private EmbyService embyService; // Hold EmbyService instance
+
 
     @Override
-    public void start(Stage primaryStage) throws IOException {
+    public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
-        primaryStage.setTitle("Emby Client");
+        this.embyService = EmbyService.getInstance(); // Get EmbyService instance
 
-        showLoginView(); // Line 19
-    }
 
-    public void showLoginView() throws IOException {
-        FXMLLoader loader = new FXMLLoader();
-
-        // === Ensure this path is correct ===
-        // It looks for LoginView.fxml in src/main/resources/com/example/embyapp/
-        URL location = MainApp.class.getResource("LoginView.fxml"); // Line 23 (modified slightly for clarity)
-
-        if (location == null) {
-            System.err.println("Error: Cannot find LoginView.fxml in src/main/resources/com/example/embyapp/");
-            // Optionally, throw an exception or show an error dialog
-            throw new IOException("Cannot find LoginView.fxml resource");
+        // Try to restore session
+        if (embyService.tryRestoreSession()) {
+            System.out.println("Session restored, showing main view.");
+            showMainView(); // Show main view if session restored
+        } else {
+            System.out.println("No valid session found, showing login view.");
+            showLoginView(); // Show login view otherwise
         }
-        loader.setLocation(location);
-
-        Parent root = loader.load();
-
-        LoginController controller = loader.getController();
-        controller.setMainApp(this); // Pass reference to MainApp
-
-        Scene scene = new Scene(root);
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Login to Emby");
-        primaryStage.show();
     }
 
 
-    public void showMainView() throws IOException {
-        FXMLLoader loader = new FXMLLoader();
-        URL location = MainApp.class.getResource("MainView.fxml"); // Assuming MainView.fxml is in the same location
+    public void showLoginView() {
+        try {
+            // Use getResource() which is more reliable with modules
+            URL fxmlUrl = getClass().getResource("LoginView.fxml");
+            if (fxmlUrl == null) {
+                System.err.println("Cannot find LoginView.fxml!");
+                // Handle error appropriately, e.g., show an alert or exit
+                return;
+            }
+            FXMLLoader loader = new FXMLLoader(fxmlUrl);
+            Parent root = loader.load();
 
-        if (location == null) {
-            System.err.println("Error: Cannot find MainView.fxml in src/main/resources/com/example/embyapp/");
-            throw new IOException("Cannot find MainView.fxml resource");
+
+            LoginController controller = loader.getController();
+            controller.setMainApp(this); // Pass MainApp instance
+
+
+            Scene scene = new Scene(root);
+            primaryStage.setTitle("Emby Login");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        } catch (IOException e) {
+            System.err.println("Error loading LoginView.fxml:");
+            e.printStackTrace();
+            // Handle error (e.g., show error dialog)
+        } catch (IllegalStateException e) {
+            System.err.println("Error during FXML loading (check controller/FXML):");
+            e.printStackTrace();
         }
-        loader.setLocation(location);
-        Parent root = loader.load();
-
-        // Optional: Get controller and pass data if needed
-        // MainController controller = loader.getController();
-        // controller.setSomeData(...);
-
-        Scene scene = new Scene(root);
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Emby Browser"); // Update title for main view
-        primaryStage.show();
     }
 
-    public Stage getPrimaryStage() {
-        return primaryStage;
+
+    public void showMainView() {
+        try {
+            URL fxmlUrl = getClass().getResource("MainView.fxml");
+            if (fxmlUrl == null) {
+                System.err.println("Cannot find MainView.fxml!");
+                return;
+            }
+            FXMLLoader loader = new FXMLLoader(fxmlUrl);
+            Parent root = loader.load();
+
+
+            MainController controller = loader.getController();
+            controller.setMainApp(this); // Pass MainApp instance for logout
+
+
+            Scene scene = new Scene(root);
+            primaryStage.setTitle("Emby Client");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        } catch (IOException e) {
+            System.err.println("Error loading MainView.fxml:");
+            e.printStackTrace();
+            // Handle error
+        } catch (IllegalStateException e) {
+            System.err.println("Error during FXML loading (check controller/FXML):");
+            e.printStackTrace();
+        }
     }
+
 
     public static void main(String[] args) {
-        // Use Launcher.main(args) if you have issues with modules in some environments
         launch(args);
     }
 }

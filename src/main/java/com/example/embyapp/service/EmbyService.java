@@ -7,6 +7,7 @@ import com.example.emby.EmbyClient.Java.SystemServiceApi;
 import com.example.emby.EmbyClient.Java.UserServiceApi;
 import com.example.emby.modelEmby.AuthenticationAuthenticationResult;
 import com.example.emby.modelEmby.SystemInfo;
+import com.example.emby.modelEmby.UserDto;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -35,7 +36,8 @@ public class EmbyService {
     private static final String PREF_NODE_PATH = "/com/example/embyapp";
     private static final String KEY_SERVER_URL = "serverUrl";
     private static final String KEY_ACCESS_TOKEN = "accessToken";
-    private static final String KEY_CLIENT_AUTH_HEADER = "clientAuthHeader"; // Key to save the header
+    private static final String KEY_CLIENT_AUTH_HEADER = "clientAuthHeader";
+    private static final String KEY_USER_ID = "userId"; // Key to save the User ID
     private final Preferences prefs;
 
 
@@ -65,10 +67,8 @@ public class EmbyService {
             // 2. Add X-Emby-Token header IF we have an access token stored in EmbyService
             String localAccessToken = EmbyService.this.currentAccessToken; // Use local copy from outer class
             if (localAccessToken != null && !localAccessToken.isEmpty()) {
-                // Remove existing X-Emby-Token if ApiKeyAuth interceptor added it (safer)
-                builder.removeHeader("X-Emby-Token");
-                // Add our own X-Emby-Token header
-                builder.header("X-Emby-Token", localAccessToken);
+                builder.removeHeader("X-Emby-Token"); // Remove existing (safer)
+                builder.header("X-Emby-Token", localAccessToken); // Add our own
             }
 
 
@@ -80,20 +80,9 @@ public class EmbyService {
 
     // Private constructor for Singleton
     private EmbyService() {
-        // 1. Initialize ApiClient with default constructor
         apiClient = new ApiClient();
-
-        // 2. Get the default OkHttpClient from ApiClient
         OkHttpClient defaultClient = apiClient.getHttpClient();
-
-        // 3. Add our custom interceptor (which handles both headers)
         defaultClient.interceptors().add(new AuthHeaderInterceptor());
-
-
-        // Configure other ApiClient settings if needed
-        // apiClient.setConnectTimeout(30_000);
-
-
         prefs = Preferences.userRoot().node(PREF_NODE_PATH);
         System.out.println("Using Preferences node: " + prefs.absolutePath());
     }
@@ -117,7 +106,6 @@ public class EmbyService {
 
     // --- Session Management ---
 
-    // Helper to generate the client auth header string
     private String generateClientAuthHeader() {
         String appName = "EmbyClientJavaFX";
         String appVersion = "1.0.0";
@@ -132,23 +120,35 @@ public class EmbyService {
 
     public void setCurrentAuthResult(AuthenticationAuthenticationResult authResult, String serverUrl) {
         this.currentAuthResult = authResult;
+        String userIdToSave = null; // Prepare userId for saving
+
         if (authResult != null && authResult.getAccessToken() != null && serverUrl != null && !serverUrl.isEmpty()) {
-            this.clientAuthHeader = generateClientAuthHeader(); // Generate and store header
-            this.currentAccessToken = authResult.getAccessToken(); // Store token locally
+            this.clientAuthHeader = generateClientAuthHeader();
+            this.currentAccessToken = authResult.getAccessToken();
             apiClient.setBasePath(serverUrl);
-            apiClient.setAccessToken(this.currentAccessToken); // Still set it for ApiClient state (if it uses it internally)
             loggedIn.set(true);
-            saveSession(serverUrl, this.currentAccessToken, this.clientAuthHeader); // Save header too
+
+            if (authResult.getUser() != null && authResult.getUser().getId() != null) {
+                userIdToSave = authResult.getUser().getId(); // Get userId if available
+            } else {
+                System.err.println("Warning: UserDto or UserId is null in AuthenticationResult during login.");
+            }
+
+            saveSession(serverUrl, this.currentAccessToken, this.clientAuthHeader, userIdToSave); // Save userId too
+
+            // Clear cached API instances AFTER setting auth state
+            this.userServiceApi = null;
+            this.itemsServiceApi = null;
+            this.systemServiceApi = null;
         } else {
-            apiClient.setAccessToken(null); // Clear token in ApiClient state
-            this.currentAccessToken = null; // Clear local token
+            this.currentAccessToken = null;
             loggedIn.set(false);
-            this.clientAuthHeader = null; // Clear header value
+            this.clientAuthHeader = null;
+            // Clear cached API instances
+            this.userServiceApi = null;
+            this.itemsServiceApi = null;
+            this.systemServiceApi = null;
         }
-        // Clear cached API instances as authentication state changed
-        this.userServiceApi = null;
-        this.itemsServiceApi = null;
-        this.systemServiceApi = null;
     }
 
 
@@ -162,14 +162,15 @@ public class EmbyService {
     }
 
 
-    // Method to save session info (including client auth header)
-    private void saveSession(String serverUrl, String accessToken, String clientHeader) {
-        if (serverUrl != null && !serverUrl.isEmpty() && accessToken != null && !accessToken.isEmpty() && clientHeader != null && !clientHeader.isEmpty()) {
+    // Method to save session info (including client auth header and userId)
+    private void saveSession(String serverUrl, String accessToken, String clientHeader, String userId) {
+        if (serverUrl != null && !serverUrl.isEmpty() && accessToken != null && !accessToken.isEmpty() && clientHeader != null && !clientHeader.isEmpty() && userId != null && !userId.isEmpty()) {
             try {
-                System.out.println("Saving session: URL=" + serverUrl + ", Token=" + accessToken.substring(0, Math.min(accessToken.length(), 10)) + "..., Header=" + clientHeader);
+                System.out.println("Saving session: URL=" + serverUrl + ", Token=" + accessToken.substring(0, Math.min(accessToken.length(), 10)) + "..., Header=" + clientHeader + ", UserID=" + userId);
                 prefs.put(KEY_SERVER_URL, serverUrl);
                 prefs.put(KEY_ACCESS_TOKEN, accessToken);
                 prefs.put(KEY_CLIENT_AUTH_HEADER, clientHeader);
+                prefs.put(KEY_USER_ID, userId); // Save User ID
                 prefs.flush();
                 System.out.println("Session saved successfully.");
             } catch (Exception e) {
@@ -177,23 +178,24 @@ public class EmbyService {
                 e.printStackTrace();
             }
         } else {
-            System.err.println("Attempted to save session with null or empty URL/Token/Header.");
+            System.err.println("Attempted to save session with null or empty URL/Token/Header/UserID.");
         }
     }
 
 
-    // Method to load session info (returns array [url, token, clientHeader] or null)
+    // Method to load session info (returns array [url, token, clientHeader, userId] or null)
     private String[] loadSession() {
         String serverUrl = prefs.get(KEY_SERVER_URL, null);
         String accessToken = prefs.get(KEY_ACCESS_TOKEN, null);
         String clientHeader = prefs.get(KEY_CLIENT_AUTH_HEADER, null);
+        String userId = prefs.get(KEY_USER_ID, null); // Load User ID
 
 
-        if (serverUrl != null && !serverUrl.isEmpty() && accessToken != null && !accessToken.isEmpty() && clientHeader != null && !clientHeader.isEmpty()) {
-            System.out.println("Loaded session: URL=" + serverUrl + ", Token=" + accessToken.substring(0, Math.min(accessToken.length(), 10)) + "..., Header=" + clientHeader);
-            return new String[]{serverUrl, accessToken, clientHeader};
+        if (serverUrl != null && !serverUrl.isEmpty() && accessToken != null && !accessToken.isEmpty() && clientHeader != null && !clientHeader.isEmpty() && userId != null && !userId.isEmpty()) {
+            System.out.println("Loaded session: URL=" + serverUrl + ", Token=" + accessToken.substring(0, Math.min(accessToken.length(), 10)) + "..., Header=" + clientHeader + ", UserID=" + userId);
+            return new String[]{serverUrl, accessToken, clientHeader, userId};
         } else {
-            System.out.println("No saved session found or header missing.");
+            System.out.println("No saved session found or essential info missing (URL/Token/Header/UserID).");
             return null;
         }
     }
@@ -205,6 +207,7 @@ public class EmbyService {
             prefs.remove(KEY_SERVER_URL);
             prefs.remove(KEY_ACCESS_TOKEN);
             prefs.remove(KEY_CLIENT_AUTH_HEADER);
+            prefs.remove(KEY_USER_ID); // Clear User ID
             prefs.flush();
             System.out.println("Session cleared.");
         } catch (Exception e) {
@@ -221,34 +224,47 @@ public class EmbyService {
             String serverUrl = sessionData[0];
             String accessToken = sessionData[1];
             String loadedClientHeader = sessionData[2];
+            String loadedUserId = sessionData[3]; // Get the loaded User ID
+
+            // --- Start optimistic setup ---
+            apiClient.setBasePath(serverUrl);
+            this.currentAccessToken = accessToken;
+            this.clientAuthHeader = loadedClientHeader;
+            // --- End optimistic setup ---
 
             try {
-                System.out.println("Attempting to restore session...");
-                // Configure ApiClient state for the check AND for the interceptor
-                apiClient.setBasePath(serverUrl);
-                apiClient.setAccessToken(accessToken); // Set token state in ApiClient (in case it's used internally)
-                this.currentAccessToken = accessToken; // Set local token state for interceptor
-                this.clientAuthHeader = loadedClientHeader; // Set header state for interceptor
-
-                // Make a simple API call - interceptor will add both headers now
-                SystemInfo systemInfo = getSystemServiceApi().getSystemInfo();
-
+                System.out.println("Attempting to restore session (Step 1: System Info)...");
+                SystemInfo systemInfo = getSystemServiceApi().getSystemInfo(); // Verify token viability
 
                 if (systemInfo != null) {
-                    System.out.println("Session restored successfully. Server Version: " + systemInfo.getVersion());
-                    // Keep ApiClient state as it is (token and header already set)
-                    AuthenticationAuthenticationResult restoredAuth = new AuthenticationAuthenticationResult();
-                    restoredAuth.setAccessToken(accessToken); // Minimal auth result for internal state
-                    this.currentAuthResult = restoredAuth;
-                    loggedIn.set(true);
-                    // Clear cached service APIs
-                    this.userServiceApi = null;
-                    this.itemsServiceApi = null;
-                    this.systemServiceApi = null;
-                    return true;
+                    System.out.println("System Info check OK. (Step 2: Get User Info using ID: " + loadedUserId + ")...");
+                    // Step 2: Fetch the UserDto using the saved User ID
+                    UserDto currentUser = getUserServiceApi().getUsersById(loadedUserId); // USE getUsersById
+
+                    if (currentUser != null) {
+                        System.out.println("User Info check OK. Session restored successfully for User: " + currentUser.getName());
+
+                        // Create the FULL AuthenticationResult
+                        AuthenticationAuthenticationResult restoredAuth = new AuthenticationAuthenticationResult();
+                        restoredAuth.setAccessToken(accessToken);
+                        restoredAuth.setUser(currentUser); // Store the fetched User DTO
+
+                        this.currentAuthResult = restoredAuth;
+                        loggedIn.set(true);
+
+                        // Clear cached service APIs AFTER successful restore
+                        this.userServiceApi = null;
+                        this.itemsServiceApi = null;
+                        this.systemServiceApi = null;
+                        return true; // SUCCESS!
+
+                    } else {
+                        System.err.println("Session restore failed: Could not retrieve User Info (getUsersById returned null for ID: " + loadedUserId + ").");
+                        clearSession(); // Clear session if user info fails
+                    }
                 } else {
-                    System.err.println("Session restore check returned null SystemInfo.");
-                    clearSession();
+                    System.err.println("Session restore failed: Could not retrieve System Info (getSystemInfo returned null).");
+                    clearSession(); // Clear session if system info fails
                 }
 
             } catch (ApiException e) {
@@ -261,9 +277,8 @@ public class EmbyService {
                 e.printStackTrace();
             } finally {
                 if (!loggedIn.get()) {
-                    // Clear ApiClient state if restore failed
-                    apiClient.setAccessToken(null);
-                    this.currentAccessToken = null; // Clear local token
+                    // Clear client state ONLY IF restore ultimately failed
+                    this.currentAccessToken = null;
                     this.currentAuthResult = null;
                     this.clientAuthHeader = null;
                     System.out.println("Cleared client state after failed restore attempt.");
@@ -273,20 +288,22 @@ public class EmbyService {
 
         System.out.println("Session restore failed or no session found.");
         loggedIn.set(false);
+        this.currentAccessToken = null;
+        this.currentAuthResult = null;
+        this.clientAuthHeader = null;
         return false;
     }
 
 
     public void logout() {
         System.out.println("Logging out...");
-        setCurrentAuthResult(null, null); // Clears current auth, tokens, and clientAuthHeader in ApiClient and service
-        clearSession(); // Clears saved session data
+        setCurrentAuthResult(null, null);
+        clearSession();
     }
 
 
     // --- Getters for specific API services (cached) ---
 
-    // Getters remain the same
     public synchronized UserServiceApi getUserServiceApi() {
         if (userServiceApi == null) {
             System.out.println("Creating UserServiceApi");

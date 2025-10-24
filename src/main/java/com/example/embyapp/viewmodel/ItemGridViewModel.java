@@ -6,6 +6,8 @@ import com.example.emby.modelEmby.QueryResultBaseItemDto;
 import com.example.embyapp.service.ItemRepository;
 import javafx.application.Platform;
 import javafx.beans.property.*;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -13,24 +15,25 @@ import java.util.List;
 
 /**
  * (SỬA ĐỔI) ViewModel cho ItemGridView (Cột giữa).
- * Sửa lỗi: Sử dụng ReadOnly...Wrapper để expose ReadOnlyProperty.
- * (CẬP NHẬT MỚI) Thêm logic phân trang (Infinite Scrolling).
+ * (CẬP NHẬT MỚI) Chuyển sang logic PHÂN TRANG THAY THẾ (Page Replacement) khi cuộn.
  */
 public class ItemGridViewModel {
 
-    // Hằng số cho phân trang (MỚI)
+    // Hằng số cho phân trang
     private static final int ITEMS_PER_LOAD = 50;
 
     private final ItemRepository itemRepository;
 
-    // --- Pagination State --- (MỚI)
+    // --- Pagination State --- (SỬA ĐỔI)
     private String currentParentId;
     private int totalCount = 0;
-    private int startIndex = 0;
-    private final ReadOnlyBooleanWrapper hasMoreItems = new ReadOnlyBooleanWrapper(false);
-    private final ReadOnlyBooleanWrapper isLoadingMore = new ReadOnlyBooleanWrapper(false); // Dùng để khóa load
+    private int currentPageIndex = 0; // Trang hiện tại (bắt đầu từ 0)
+    private int totalPages = 0; // Tổng số trang
 
-    // --- Properties (SỬA LỖI: Dùng Wrappers) ---
+    private final ReadOnlyBooleanWrapper hasNextPage = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyBooleanWrapper hasPreviousPage = new ReadOnlyBooleanWrapper(false);
+
+    // Dùng để khóa load và báo hiệu trạng thái
     private final ReadOnlyBooleanWrapper loading = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyStringWrapper statusMessage = new ReadOnlyStringWrapper("Vui lòng chọn một thư viện...");
     private final ReadOnlyBooleanWrapper showStatusMessage = new ReadOnlyBooleanWrapper(true);
@@ -39,12 +42,100 @@ public class ItemGridViewModel {
     private final ObservableList<BaseItemDto> items = FXCollections.observableArrayList();
     private final ObjectProperty<BaseItemDto> selectedItem = new SimpleObjectProperty<>();
 
+    // (MỚI) Dùng để báo hiệu cho Controller biết cần phải cuộn
+    private final ObjectProperty<ScrollAction> scrollAction = new SimpleObjectProperty<>(ScrollAction.NONE);
+
     public ItemGridViewModel(ItemRepository itemRepository) {
         this.itemRepository = itemRepository;
     }
 
+    /** Enum báo hiệu hành động cuộn cần thực hiện sau khi tải trang mới. */
+    public enum ScrollAction {
+        NONE, SCROLL_TO_TOP, SCROLL_TO_BOTTOM
+    }
+
+    // --- Core Loading Logic ---
+
+    private void loadPage(int pageIndex, String parentId) {
+        if (loading.get() || pageIndex < 0 || (totalPages > 0 && pageIndex >= totalPages)) {
+            return;
+        }
+
+        loading.set(true);
+        showStatusMessage.set(false);
+        scrollAction.set(ScrollAction.NONE); // Reset scroll action
+
+        int startIndex = pageIndex * ITEMS_PER_LOAD;
+
+        // Cập nhật trạng thái tải
+        Platform.runLater(() -> {
+            statusMessage.set("Đang tải trang " + (pageIndex + 1) + "/" + (totalPages > 0 ? totalPages : "...") + "...");
+        });
+
+
+        new Thread(() -> {
+            try {
+                QueryResultBaseItemDto result = itemRepository.getFullByParentIdPaginated(parentId, startIndex, ITEMS_PER_LOAD);
+
+                // Tính toán tổng số trang/item
+                int calculatedTotalCount = result.getTotalRecordCount() != null ? result.getTotalRecordCount() : 0;
+                // Tính toán tổng số trang
+                int calculatedTotalPages = (int) Math.ceil((double) calculatedTotalCount / ITEMS_PER_LOAD);
+
+                // Ghi nhận item hiện tại (vì đây là thay thế trang)
+                List<BaseItemDto> pageItems = result.getItems();
+
+                Platform.runLater(() -> {
+                    // 1. Cập nhật Pagination State
+                    currentParentId = parentId;
+                    totalCount = calculatedTotalCount;
+                    totalPages = calculatedTotalPages;
+                    currentPageIndex = pageIndex;
+
+                    hasNextPage.set(currentPageIndex < totalPages - 1);
+                    hasPreviousPage.set(currentPageIndex > 0);
+
+                    // 2. Cập nhật Items (Thay thế nội dung)
+                    items.setAll(pageItems);
+
+                    if (items.isEmpty() && totalCount > 0) {
+                        // Trường hợp hiếm: API trả về trang rỗng giữa chừng, nên giữ trạng thái loading
+                        statusMessage.set("Trang này rỗng.");
+                        showStatusMessage.set(true);
+                    } else if (items.isEmpty()) {
+                        statusMessage.set("Thư viện này không có items.");
+                        showStatusMessage.set(true);
+                    } else {
+                        // Cập nhật status
+                        statusMessage.set("Đang hiển thị: " + (pageIndex + 1) + "/" + totalPages + " (" + totalCount + " items)");
+                    }
+
+                    // 3. Hoàn thành loading
+                    loading.set(false);
+                });
+
+            } catch (ApiException e) {
+                System.err.println("API Error loading page: " + e.getMessage());
+                Platform.runLater(() -> {
+                    statusMessage.set("Lỗi khi tải trang: " + e.getMessage());
+                    showStatusMessage.set(true);
+                    loading.set(false);
+                });
+            } catch (Exception e) {
+                System.err.println("Generic Error loading page: " + e.getMessage());
+                Platform.runLater(() -> {
+                    statusMessage.set("Lỗi không xác định khi tải trang.");
+                    showStatusMessage.set(true);
+                    loading.set(false);
+                });
+            }
+        }).start();
+    }
+
+    // --- Public Page Control ---
+
     /**
-     * Tải items ban đầu (chạy nền).
+     * Tải items ban đầu (trang 1).
      * @param parentId ID của thư mục cha (hoặc null để xóa).
      */
     public void loadItemsByParentId(String parentId) {
@@ -55,128 +146,88 @@ public class ItemGridViewModel {
                 showStatusMessage.set(true);
                 loading.set(false);
                 selectedItem.set(null);
-                // (MỚI) Reset pagination state
+
+                // Reset pagination state
                 currentParentId = null;
                 totalCount = 0;
-                startIndex = 0;
-                hasMoreItems.set(false);
-                isLoadingMore.set(false);
+                currentPageIndex = 0;
+                totalPages = 0;
+                hasNextPage.set(false);
+                hasPreviousPage.set(false);
             });
             return;
         }
 
-        if (parentId.equals(currentParentId) && !items.isEmpty() && !loading.get()) {
-            return; // Đã load rồi và không cần load lại
+        if (parentId.equals(currentParentId) && !items.isEmpty() && currentPageIndex == 0 && !loading.get()) {
+            return; // Đã load trang đầu tiên
         }
 
-        loading.set(true);
-        showStatusMessage.set(false); // Ẩn status khi bắt đầu load
-        items.clear(); // Xóa items cũ
-        selectedItem.set(null); // Xóa lựa chọn cũ
-
-        // (MỚI) Khởi tạo lại trạng thái phân trang
-        currentParentId = parentId;
-        startIndex = 0;
-        totalCount = 0;
-
-        new Thread(() -> {
-            try {
-                // SỬA ĐỔI: Gọi API với pagination
-                QueryResultBaseItemDto result = itemRepository.getFullByParentIdPaginated(currentParentId, startIndex, ITEMS_PER_LOAD);
-
-                Platform.runLater(() -> {
-                    // Cập nhật trạng thái
-                    totalCount = result.getTotalRecordCount() != null ? result.getTotalRecordCount() : 0;
-                    startIndex += result.getItems().size();
-                    hasMoreItems.set(startIndex < totalCount);
-
-                    items.setAll(result.getItems()); // Thay thế toàn bộ items
-
-                    if (items.isEmpty()) {
-                        statusMessage.set("Thư viện này không có items.");
-                        showStatusMessage.set(true);
-                    }
-                    // else: showStatusMessage vẫn là false, Grid tự hiển thị
-                    loading.set(false);
-                });
-
-            } catch (ApiException e) {
-                System.err.println("API Error loading grid items: " + e.getMessage());
-                Platform.runLater(() -> {
-                    statusMessage.set("Lỗi khi tải items: " + e.getMessage());
-                    showStatusMessage.set(true);
-                    loading.set(false);
-                });
-            } catch (Exception e) {
-                System.err.println("Generic Error loading grid items: " + e.getMessage());
-                Platform.runLater(() -> {
-                    statusMessage.set("Lỗi không xác định khi tải items.");
-                    showStatusMessage.set(true);
-                    loading.set(false);
-                });
-            }
-        }).start();
+        // Tải trang 0
+        loadPage(0, parentId);
     }
 
     /**
-     * (HÀM MỚI) Tải thêm items khi cuộn xuống cuối (chạy nền).
+     * Tải trang tiếp theo và yêu cầu cuộn lên đầu.
      */
-    public void loadMoreItems() {
-        if (isLoadingMore.get() || !hasMoreItems.get() || currentParentId == null) {
-            return; // Đã load xong hoặc đang load, hoặc chưa chọn thư viện
-        }
+    public void loadNextPage() {
+        if (!hasNextPage.get() || loading.get()) return;
 
-        isLoadingMore.set(true); // Khóa load
+        int nextPage = currentPageIndex + 1;
 
-        new Thread(() -> {
-            try {
-                // SỬA ĐỔI: Gọi API với startIndex hiện tại và limit cố định
-                QueryResultBaseItemDto result = itemRepository.getFullByParentIdPaginated(currentParentId, startIndex, ITEMS_PER_LOAD);
-
-                Platform.runLater(() -> {
-                    // Cập nhật trạng thái
-                    int loadedCount = result.getItems().size();
-                    startIndex += loadedCount;
-                    hasMoreItems.set(startIndex < totalCount);
-
-                    items.addAll(result.getItems()); // THÊM items vào danh sách hiện tại
-
-                    // Cập nhật status message nhỏ
-                    statusMessage.set("Đã tải " + startIndex + "/" + totalCount + " items.");
-
-                    isLoadingMore.set(false); // Mở khóa
-                });
-
-            } catch (ApiException e) {
-                System.err.println("API Error loading more grid items: " + e.getMessage());
-                Platform.runLater(() -> {
-                    statusMessage.set("Lỗi khi tải thêm items: " + e.getMessage());
-                    isLoadingMore.set(false);
-                });
-            } catch (Exception e) {
-                System.err.println("Generic Error loading more grid items: " + e.getMessage());
-                Platform.runLater(() -> {
-                    statusMessage.set("Lỗi không xác định khi tải thêm items.");
-                    isLoadingMore.set(false);
-                });
+        // SỬA LỖI: Khai báo listener là biến cục bộ để có thể remove
+        ChangeListener<Boolean> cleanupListener = new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> obs, Boolean oldVal, Boolean newVal) {
+                if (!newVal) { // Nếu load xong
+                    Platform.runLater(() -> scrollAction.set(ScrollAction.SCROLL_TO_TOP));
+                    loading.removeListener(this); // Cleanup
+                }
             }
-        }).start();
+        };
+
+        // Tải trang
+        loadPage(nextPage, currentParentId);
+
+        // Yêu cầu Controller cuộn lên đầu sau khi tải
+        loading.addListener(cleanupListener);
     }
 
+    /**
+     * Tải trang trước đó và yêu cầu cuộn xuống cuối.
+     */
+    public void loadPreviousPage() {
+        if (!hasPreviousPage.get() || loading.get()) return;
 
-    // --- Getters cho Properties (Dùng bởi Controller) ---
+        int previousPage = currentPageIndex - 1;
 
-    // SỬA LỖI: Giờ hàm này đã hợp lệ
+        // SỬA LỖI: Khai báo listener là biến cục bộ để có thể remove
+        ChangeListener<Boolean> cleanupListener = new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> obs, Boolean oldVal, Boolean newVal) {
+                if (!newVal) { // Nếu load xong
+                    Platform.runLater(() -> scrollAction.set(ScrollAction.SCROLL_TO_BOTTOM));
+                    loading.removeListener(this); // Cleanup
+                }
+            }
+        };
+
+        // Tải trang
+        loadPage(previousPage, currentParentId);
+
+        // Yêu cầu Controller cuộn xuống cuối sau khi tải
+        loading.addListener(cleanupListener);
+    }
+
+    // --- Getters cho Properties ---
+
     public ReadOnlyBooleanProperty loadingProperty() {
         return loading.getReadOnlyProperty();
     }
 
-    // SỬA LỖI: Giờ hàm này đã hợp lệ
     public ReadOnlyStringProperty statusMessageProperty() {
         return statusMessage.getReadOnlyProperty();
     }
 
-    // SỬA LỖI: Giờ hàm này đã hợp lệ
     public ReadOnlyBooleanProperty showStatusMessageProperty() {
         return showStatusMessage.getReadOnlyProperty();
     }
@@ -186,18 +237,30 @@ public class ItemGridViewModel {
     }
 
     public ObjectProperty<BaseItemDto> selectedItemProperty() {
-        // Expose ra ngoài dạng ObjectProperty (cho phép Controller set giá trị)
-        // Hoặc có thể dùng ReadOnlyObjectWrapper nếu chỉ muốn VM này set
         return selectedItem;
     }
 
-    /** (MỚI) Có item cần load thêm không? */
-    public ReadOnlyBooleanProperty hasMoreItemsProperty() {
-        return hasMoreItems.getReadOnlyProperty();
+    // (MỚI) Getters cho trạng thái trang
+    public ReadOnlyBooleanProperty hasNextPageProperty() {
+        return hasNextPage.getReadOnlyProperty();
     }
 
-    /** (MỚI) Đang trong quá trình tải thêm items? */
-    public ReadOnlyBooleanProperty isLoadingMoreProperty() {
-        return isLoadingMore.getReadOnlyProperty();
+    public ReadOnlyBooleanProperty hasPreviousPageProperty() {
+        return hasPreviousPage.getReadOnlyProperty();
+    }
+
+    // (MỚI) Getter cho hành động cuộn
+    public ObjectProperty<ScrollAction> scrollActionProperty() {
+        return scrollAction;
+    }
+
+    /** (MỚI) Lấy chỉ số trang hiện tại (0-based) */
+    public int getCurrentPageIndex() {
+        return currentPageIndex;
+    }
+
+    /** (MỚI) Lấy tổng số trang */
+    public int getTotalPages() {
+        return totalPages;
     }
 }

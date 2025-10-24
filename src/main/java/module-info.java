@@ -16,6 +16,8 @@ module com.example.embyapp {
     requires emby.sdk.java;
     requires okhttp; // Added for java.sql.Date possibly used by SDK/Gson
 
+    requires java.desktop; // (MỚI) Thêm module này để dùng java.awt.Desktop
+
     opens com.example.embyapp to javafx.fxml, javafx.graphics;
     opens com.example.embyapp.controller to javafx.fxml;
     opens com.example.embyapp.viewmodel to javafx.base; // Open viewmodel to javafx.base for properties

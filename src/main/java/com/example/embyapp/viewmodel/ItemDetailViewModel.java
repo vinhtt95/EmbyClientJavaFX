@@ -11,7 +11,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.image.Image;
 
-import java.util.ArrayList; // SỬA ĐỔI: Thêm import
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 // SỬA ĐỔI: Xóa import stream
@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
  * ViewModel này giờ đây "chủ động" gọi API để tải thông tin chi tiết
  * khi một item được chọn.
  * (CẬP NHẬT 2) Expose danh sách URL thay vì ImageInfo DTO.
+ * (CẬP NHẬT 3) Thêm logic đường dẫn (Path) và trạng thái (isFolder).
  */
 public class ItemDetailViewModel {
 
@@ -45,6 +46,13 @@ public class ItemDetailViewModel {
 
     // (CẬP NHẬT 2) Thay đổi từ ImageInfo -> String (URL)
     private final ObservableList<String> backdropImageUrls = FXCollections.observableArrayList();
+
+    // (CẬP NHẬT 3) Properties cho đường dẫn và nút bấm
+    private final ReadOnlyStringWrapper itemPath = new ReadOnlyStringWrapper("");
+    private final ReadOnlyBooleanWrapper isFolder = new ReadOnlyBooleanWrapper(false);
+    // Property để giao tiếp lỗi/status của hành động (như nhấn nút Mở)
+    private final ReadOnlyStringWrapper actionStatusMessage = new ReadOnlyStringWrapper("");
+
 
     /**
      * Constructor mới, yêu cầu inject Dependencies.
@@ -105,6 +113,10 @@ public class ItemDetailViewModel {
                 String genresText = (fullDetails.getGenres() != null) ? String.join(", ", fullDetails.getGenres()) : "";
                 String runtimeText = formatRuntime(fullDetails.getRunTimeTicks());
 
+                // (MỚI) Lấy thông tin đường dẫn và loại item
+                final String path = fullDetails.getPath();
+                final boolean folder = fullDetails.isIsFolder() != null && fullDetails.isIsFolder();
+
                 // SỬA ĐỔI: Gọi các hàm helper (đã được viết lại)
                 String primaryImageUrl = findImageUrl(images, "Primary", serverUrl, itemId);
                 List<String> backdropUrls = buildBackdropUrls(images, serverUrl, itemId);
@@ -118,6 +130,11 @@ public class ItemDetailViewModel {
                     tagline.set(taglineText);
                     genres.set(genresText);
                     runtime.set(runtimeText);
+
+                    // (MỚI) Cập nhật UI properties cho đường dẫn
+                    itemPath.set(path != null ? path : "Không có đường dẫn");
+                    isFolder.set(folder);
+                    actionStatusMessage.set(""); // Xóa lỗi cũ (nếu có)
 
                     if (primaryImageUrl != null) {
                         // Giữ nguyên logic debug và listener lỗi
@@ -167,6 +184,11 @@ public class ItemDetailViewModel {
         runtime.set("");
         primaryImage.set(null);
         backdropImageUrls.clear();
+
+        // (MỚI)
+        itemPath.set("");
+        isFolder.set(false);
+        actionStatusMessage.set("");
     }
 
     /**
@@ -283,5 +305,57 @@ public class ItemDetailViewModel {
     public ObservableList<String> getBackdropImageUrls() {
         return backdropImageUrls;
     }
-}
 
+    // (MỚI) Getters cho Path và Action
+    public ReadOnlyStringProperty itemPathProperty() { return itemPath.getReadOnlyProperty(); }
+    public ReadOnlyBooleanProperty isFolderProperty() { return isFolder.getReadOnlyProperty(); }
+    public ReadOnlyStringProperty actionStatusMessageProperty() { return actionStatusMessage.getReadOnlyProperty(); }
+
+    // (MỚI) Setter cho Action Status (để Controller có thể set lỗi)
+    // Cần làm cho nó có thể ghi được từ bên ngoài, nên đổi ReadOnlyStringWrapper -> StringProperty
+    // Hoặc cung cấp một hàm public để set. Hãy dùng cách 2:
+    public void setActionStatusMessage(String message) {
+        // Đảm bảo chạy trên UI thread nếu cần, nhưng Controller gọi
+        // từ Platform.runLater nên có thể an toàn
+        this.actionStatusMessage.set(message);
+    }
+
+    // Tuy nhiên, vì Controller cũng cần bind vào nó,
+    // chúng ta nên dùng StringProperty thay vì ReadOnlyStringWrapper
+    // Hãy quay lại sửa ở trên...
+
+    // Sửa lại:
+    // private final StringProperty actionStatusMessage = new SimpleStringProperty("");
+    // public StringProperty actionStatusMessageProperty() { return actionStatusMessage; }
+
+    // ... Nhưng kế hoạch ban đầu là dùng ReadOnlyStringWrapper.
+    // Hãy giữ nguyên kế hoạch gốc. Controller sẽ bind vào ReadOnlyProperty,
+    // và ViewModel sẽ cung cấp 1 hàm public để set nó.
+
+    /* (Đã sửa lại ở trên, giữ nguyên ReadOnlyStringWrapper và dùng getter
+     * actionStatusMessageProperty() cho cả bind và set)
+     * ...
+     * private final ReadOnlyStringWrapper actionStatusMessage = new ReadOnlyStringWrapper("");
+     * public ReadOnlyStringProperty actionStatusMessageProperty() { return actionStatusMessage.getReadOnlyProperty(); }
+     *
+     * Hàm setItemToDisplay đã set nó.
+     * Hàm clearDetails đã set nó.
+     * Controller sẽ cần gọi hàm public để set lỗi.
+     * -> Thêm hàm này:
+     */
+    public void reportActionError(String errorMessage) {
+        Platform.runLater(() -> {
+            this.actionStatusMessage.set(errorMessage);
+        });
+    }
+    public void clearActionError() {
+        Platform.runLater(() -> {
+            this.actionStatusMessage.set("");
+        });
+    }
+    // ...
+    // Quyết định cuối: Để đơn giản cho Controller,
+    // ta sẽ expose ReadOnlyProperty,
+    // và Controller sẽ gọi hàm `reportActionError` hoặc `clearActionError`
+    // (Đã thêm 2 hàm trên)
+}

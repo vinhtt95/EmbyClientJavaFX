@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
@@ -12,26 +14,17 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<!--
-  (CẬP NHẬT LỚN)
-  Thiết kế lại hoàn toàn giao diện cột chi tiết để hỗ trợ
-  việc tải API chi tiết, bao gồm vòng xoay, poster,
-  thông tin chi tiết và gallery ảnh backdrop.
--->
 <StackPane fx:id="rootPane" style="-fx-background-color: #1a1a1a;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.embyapp.controller.ItemDetailController">
     <children>
 
-        <!-- Lớp 1: Vòng xoay (Hiển thị khi loading=true) -->
         <ProgressIndicator fx:id="loadingIndicator" maxHeight="60.0" maxWidth="60.0" visible="false" />
 
-        <!-- Lớp 2: Label trạng thái (Hiển thị khi showStatusMessage=true) -->
         <Label fx:id="statusLabel" text="Vui lòng chọn một item..." textFill="GREY" StackPane.alignment="CENTER" wrapText="true">
             <font>
                 <Font name="System Italic" size="14.0" />
             </font>
         </Label>
 
-        <!-- Lớp 3: Nội dung chính (Hiển thị khi loading=false VÀ showStatusMessage=false) -->
         <ScrollPane fx:id="mainScrollPane" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-background: transparent;" visible="false" StackPane.alignment="TOP_LEFT">
             <content>
                 <VBox fx:id="detailContentPane" spacing="10.0">
@@ -40,28 +33,24 @@
                     </padding>
                     <children>
 
-                        <!-- Ảnh Poster/Primary -->
                         <ImageView fx:id="primaryImageView" fitHeight="450.0" pickOnBounds="true" preserveRatio="true">
                             <VBox.margin>
                                 <Insets bottom="10.0" />
                             </VBox.margin>
                         </ImageView>
 
-                        <!-- Tiêu đề -->
                         <Label fx:id="titleLabel" text="Item Title" textFill="WHITE" wrapText="true">
                             <font>
                                 <Font name="System Bold" size="24.0" />
                             </font>
                         </Label>
 
-                        <!-- Tagline (Dòng giới thiệu) -->
                         <Label fx:id="taglineLabel" text="Tagline goes here..." textFill="#b3b3b3" wrapText="true">
                             <font>
                                 <Font name="System Italic" size="16.0" />
                             </font>
                         </Label>
 
-                        <!-- HBox cho Năm và Thời lượng -->
                         <HBox alignment="CENTER_LEFT" spacing="20.0">
                             <children>
                                 <Label fx:id="yearLabel" text="Year" textFill="WHITE">
@@ -77,10 +66,24 @@
                             </children>
                         </HBox>
 
-                        <!-- Thể loại -->
+                        <VBox fx:id="pathContainer" spacing="5.0" visible="false">
+                            <VBox.margin>
+                                <Insets top="10.0" />
+                            </VBox.margin>
+                            <children>
+                                <Label text="Đường dẫn trên máy" textFill="WHITE">
+                                    <font>
+                                        <Font name="System Bold" size="14.0" />
+                                    </font>
+                                </Label>
+                                <TextField fx:id="pathTextField" editable="false" style="-fx-text-fill: #b3b3b3;" />
+                                <Button fx:id="openButton" maxWidth="Infinity" onAction="#handleOpenButtonAction" text="Mở" />
+                                <Label fx:id="actionStatusLabel" textFill="RED" wrapText="true" />
+                            </children>
+                        </VBox>
+
                         <Label fx:id="genresLabel" text="Genres: Action, Sci-Fi, Thriller" textFill="#b3b3b3" wrapText="true" />
 
-                        <!-- Mô tả (trong ScrollPane riêng để tránh chiếm quá nhiều không gian) -->
                         <Label text="Mô tả" textFill="WHITE">
                             <font>
                                 <Font name="System Bold" size="16.0" />
@@ -99,14 +102,12 @@
                             </content>
                         </ScrollPane>
 
-                        <!-- Phân cách -->
                         <Separator prefWidth="200.0">
                             <VBox.margin>
                                 <Insets top="10.0" />
                             </VBox.margin>
                         </Separator>
 
-                        <!-- Gallery ảnh Backdrop -->
                         <Label text="Gallery Ảnh Nền (Backdrops)" textFill="WHITE">
                             <font>
                                 <Font name="System Bold" size="16.0" />

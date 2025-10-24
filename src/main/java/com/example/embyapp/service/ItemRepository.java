@@ -124,6 +124,29 @@ public class ItemRepository {
         return Collections.emptyList();
     }
 
+    public List<BaseItemDto> getFullByParentId(String parentId) throws ApiException {
+        if (!embyService.isLoggedIn()) {
+            throw new IllegalStateException("Không thể lấy items khi chưa đăng nhập.");
+        }
+        String userId = embyService.getCurrentUserId();
+        if (userId == null) {
+            throw new IllegalStateException("Không thể lấy UserID từ EmbyService.");
+        }
+
+        ItemsServiceApi service = getItemsService();
+        if (service == null) {
+            throw new IllegalStateException("ItemsServiceApi is null.");
+        }
+
+        QueryResultBaseItemDto result = new RequestEmby().getQueryResultFullBaseItemDto(parentId, service);
+
+        if (result != null && result.getItems() != null) {
+            // (CẬP NHẬT) Lọc chỉ-folder đã chuyển sang LibraryTreeViewModel
+            return result.getItems();
+        }
+        return Collections.emptyList();
+    }
+
     /**
      * (CẬP NHẬT) HÀM MỚI
      * Lấy thông tin chi tiết đầy đủ của một item.

@@ -54,7 +54,7 @@ public class ItemGridViewModel {
 
         new Thread(() -> {
             try {
-                List<BaseItemDto> resultItems = itemRepository.getItemsByParentId(parentId);
+                List<BaseItemDto> resultItems = itemRepository.getFullByParentId(parentId);
 
                 Platform.runLater(() -> {
                     items.setAll(resultItems);

@@ -122,6 +122,121 @@ public class RequestEmby {
         return result;
     }
 
+    /**
+     * Lấy danh sách các Item con theo parentID
+     * @param parentID
+     * @param itemsServiceApi
+     * @return
+     * @throws ApiException
+     */
+    public QueryResultBaseItemDto getQueryResultFullBaseItemDto(String parentID, ItemsServiceApi itemsServiceApi){
+        QueryResultBaseItemDto result = null;
+        try {
+            result = itemsServiceApi.getItems(
+                    null,   // artistType
+                    null,   // maxOfficialRating
+                    null,   // hasThemeSong
+                    null,   // hasThemeVideo
+                    null,   // hasSubtitles
+                    null,   // hasSpecialFeature
+                    null,   // hasTrailer
+                    null,   // adjacentTo
+                    null,   // minIndexNumber
+                    null,   // minStartDate
+                    null,   // maxStartDate
+                    null,   // minEndDate
+                    null,   // maxEndDate
+                    null,   // minPlayers
+                    null,   // maxPlayers
+                    null,   // parentIndexNumber
+                    null,   // hasParentalRating
+                    null,   // isHD
+                    null,   // isUnaired
+                    null,   // minCommunityRating
+                    null,   // minCriticRating
+                    null,   // airedDuringSeason
+                    null,   // minPremiereDate
+                    null,   // minDateLastSaved
+                    null,   // minDateLastSavedForUser
+                    null,   // maxPremiereDate
+                    null,   // hasOverview
+                    null,   // hasImdbId
+                    null,   // hasTmdbId
+                    null,   // hasTvdbId
+                    null,   // excludeItemIds
+                    null,   // startIndex
+                    null,   // limit
+                    true,   // recursive
+                    null,   // searchTerm
+                    "Ascending",   // sortOrder
+                    parentID,   // parentId
+                    null,   // fields
+                    null,   // excludeItemTypes
+                    "Movie",   // includeItemTypes
+                    null,   // anyProviderIdEquals
+                    null,   // filters
+                    null,   // isFavorite
+                    null,   // isMovie
+                    null,   // isSeries
+                    null,   // isFolder
+                    null,   // isNews
+                    null,   // isKids
+                    null,   // isSports
+                    null,   // isNew
+                    null,   // isPremiere
+                    null,   // isNewOrPremiere
+                    null,   // isRepeat
+                    null,   // projectToMedia
+                    null,   // mediaTypes
+                    null,   // imageTypes
+                    "ProductionYear,PremiereDate,SortName",   // sortBy
+                    null,   // isPlayed
+                    null,   // genres
+                    null,   // officialRatings
+                    null,   // tags
+                    null,   // excludeTags
+                    null,   // years
+                    null,   // enableImages
+                    null,   // enableUserData
+                    null,   // imageTypeLimit
+                    null,   // enableImageTypes
+                    null,   // person
+                    null,   // personIds
+                    null,   // personTypes
+                    null,   // studios
+                    null,   // studioIds
+                    null,   // artists
+                    null,   // artistIds
+                    null,   // albums
+                    null,   // ids
+                    null,   // videoTypes
+                    null,   // containers
+                    null,   // audioCodecs
+                    null,   // audioLayouts
+                    null,   // videoCodecs
+                    null,   // extendedVideoTypes
+                    null,   // subtitleCodecs
+                    null,   // path
+                    null,   // userId
+                    null,   // minOfficialRating
+                    null,   // isLocked
+                    null,   // isPlaceHolder
+                    null,   // hasOfficialRating
+                    null,   // groupItemsIntoCollections
+                    null,   // is3D
+                    null,   // seriesStatus
+                    null,   // nameStartsWithOrGreater
+                    null,   // artistStartsWithOrGreater
+                    null,   // albumArtistStartsWithOrGreater
+                    null,   // nameStartsWith
+                    null
+            );
+        } catch (ApiException e) {
+            System.out.println(e.getMessage());
+        }
+        return result;
+    }
+
 
     /**
      * Lấy danh sách library theo userID

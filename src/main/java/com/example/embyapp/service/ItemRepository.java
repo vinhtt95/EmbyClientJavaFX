@@ -55,71 +55,9 @@ public class ItemRepository {
         }
 
         // Gọi API để lấy các mục gốc (User Views)
-        QueryResultBaseItemDto result = service.getUsersByUseridItems(
-                userId, // userId
-                null, // sortBy
-                null, // sortOrder
-                null, // includeItemTypes
-                false, // recursive (Chỉ lấy thư mục gốc, không lấy con)
-                null, // fields
-                null, // startIndex
-                null, // limit
-                null, // excludeItemTypes
-                null, // enableImages
-                null, // imageTypeLimit
-                null, // enableImageTypes
-                null, // locationTypes
-                null, // parentId (null để lấy gốc)
-                null, // searchTerm
-                null, // enableTotalRecordCount
-                null, // enableUserData
-                null, // imageTypes
-                null, // mediaTypes
-                null, // years
-                null, // officialRatings
-                null, // tags
-                null, // genres
-                null, // studios
-                null, // artists
-                null, // albums
-                null, // ids
-                null, // videoTypes
-                null, // adjacentTo
-                null, // minIndexNumber
-                null, // minStartDate
-                null, // maxStartDate
-                null, // minEndDate
-                null, // maxEndDate
-                null, // minPlayers
-                null, // maxPlayers
-                null, // parentIndexNumber
-                null, // hasThemeSong
-                null, // hasThemeVideo
-                null, // hasSubtitles
-                null, // hasSpecialFeature
-                null, // hasTrailer
-                null, // isHD
-                null, // is4K
-                null, // isUnaired
-                null, // isMissed
-                null, // isNew
-                null, // isPremiere
-                null, // isRepeat
-                null, // nameStartsWithOrGreater
-                null, // nameStartsWith
-                null, // nameLessThan
-                null, // albumArtistStartsWithOrGreater
-                null, // albumArtistStartsWith
-                null, // artistStartsWithOrGreater
-                null, // artistStartsWith
-                null, // seriesStatus
-                null, // seriesStatus
-                // seriesStatus
-                null,null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null
-        );
+        QueryResultBaseItemDto result;
+
+        result = new RequestEmby().getUsersByUseridItems(userId, service);
 
         if (result != null && result.getItems() != null) {
             return result.getItems();

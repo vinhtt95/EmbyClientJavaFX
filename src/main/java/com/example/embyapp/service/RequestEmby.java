@@ -126,10 +126,13 @@ public class RequestEmby {
      * Lấy danh sách các Item con theo parentID
      * @param parentID
      * @param itemsServiceApi
+     * @param startIndex
+     * @param limit
      * @return
      * @throws ApiException
      */
-    public QueryResultBaseItemDto getQueryResultFullBaseItemDto(String parentID, ItemsServiceApi itemsServiceApi){
+    // SỬA ĐỔI: Thêm startIndex và limit
+    public QueryResultBaseItemDto getQueryResultFullBaseItemDto(String parentID, ItemsServiceApi itemsServiceApi, Integer startIndex, Integer limit){
         QueryResultBaseItemDto result = null;
         try {
             result = itemsServiceApi.getItems(
@@ -164,8 +167,8 @@ public class RequestEmby {
                     null,   // hasTmdbId
                     null,   // hasTvdbId
                     null,   // excludeItemIds
-                    null,   // startIndex
-                    null,   // limit
+                    startIndex,   // startIndex <-- ĐÃ SỬA
+                    limit,   // limit <-- ĐÃ SỬA
                     true,   // recursive
                     null,   // searchTerm
                     "Ascending",   // sortOrder

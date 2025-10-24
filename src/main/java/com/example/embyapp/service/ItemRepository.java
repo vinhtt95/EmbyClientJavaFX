@@ -15,6 +15,7 @@ import java.util.stream.Collectors; // (CẬP NHẬT) Thêm import (từ lần s
 /**
  * (SỬA ĐỔI) Repository để quản lý việc truy xuất BaseItemDto (Thư viện, Phim, Series...).
  * (CẬP NHẬT) Thêm logic để lấy Chi tiết Item đầy đủ và Danh sách Ảnh.
+ * (CẬP NHẬT MỚI) Thêm phương thức phân trang getFullByParentIdPaginated.
  */
 public class ItemRepository {
 
@@ -124,13 +125,20 @@ public class ItemRepository {
         return Collections.emptyList();
     }
 
-    public List<BaseItemDto> getFullByParentId(String parentId) throws ApiException {
+    // XÓA HÀM CŨ: public List<BaseItemDto> getFullByParentId(String parentId) throws ApiException { ... }
+
+    /**
+     * (MỚI) Lấy các items con đầy đủ dựa trên parentId VỚI PHÂN TRANG.
+     *
+     * @param parentId ID của thư mục cha.
+     * @param startIndex Vị trí bắt đầu.
+     * @param limit Số lượng item muốn lấy.
+     * @return QueryResultBaseItemDto chứa danh sách items và tổng số.
+     * @throws ApiException Nếu API call thất bại.
+     */
+    public QueryResultBaseItemDto getFullByParentIdPaginated(String parentId, int startIndex, int limit) throws ApiException {
         if (!embyService.isLoggedIn()) {
             throw new IllegalStateException("Không thể lấy items khi chưa đăng nhập.");
-        }
-        String userId = embyService.getCurrentUserId();
-        if (userId == null) {
-            throw new IllegalStateException("Không thể lấy UserID từ EmbyService.");
         }
 
         ItemsServiceApi service = getItemsService();
@@ -138,14 +146,20 @@ public class ItemRepository {
             throw new IllegalStateException("ItemsServiceApi is null.");
         }
 
-        QueryResultBaseItemDto result = new RequestEmby().getQueryResultFullBaseItemDto(parentId, service);
+        // Gọi hàm RequestEmby đã sửa đổi
+        QueryResultBaseItemDto result = new RequestEmby().getQueryResultFullBaseItemDto(parentId, service, startIndex, limit);
 
-        if (result != null && result.getItems() != null) {
-            // (CẬP NHẬT) Lọc chỉ-folder đã chuyển sang LibraryTreeViewModel
-            return result.getItems();
+        if (result != null) {
+            return result;
         }
-        return Collections.emptyList();
+
+        // Trả về kết quả rỗng an toàn
+        QueryResultBaseItemDto emptyResult = new QueryResultBaseItemDto();
+        emptyResult.setItems(Collections.emptyList());
+        emptyResult.setTotalRecordCount(0);
+        return emptyResult;
     }
+
 
     /**
      * (CẬP NHẬT) HÀM MỚI
@@ -193,4 +207,3 @@ public class ItemRepository {
         return Collections.emptyList();
     }
 }
-

@@ -29,6 +29,7 @@ import java.io.File;
 /**
  * (SỬA ĐỔI) Controller cho ItemGridView (Cột giữa).
  * (CẬP NHẬT 5) FIX LỖI: Double-Click chỉ Phát file, không Mở Finder cho Folder.
+ * (CẬP NHẬT MỚI) Thêm chức năng Infinite Scrolling.
  */
 public class ItemGridController {
 
@@ -61,6 +62,17 @@ public class ItemGridController {
 
         // Đảm bảo ScrollPane fit chiều rộng (chỉ scroll dọc)
         gridScrollPane.setFitToWidth(true);
+
+        // (MỚI) Thêm listener cho ScrollPane để thực hiện Lazy Loading
+        gridScrollPane.vvalueProperty().addListener((obs, oldVal, newVal) -> {
+            if (viewModel == null) return;
+            // Nếu cuộn gần tới cuối (ví dụ: > 95% cuộn)
+            // và có item cần load, và không đang load
+            if (newVal.doubleValue() > 0.95 && viewModel.hasMoreItemsProperty().get() && !viewModel.isLoadingMoreProperty().get()) {
+                // Gọi VM để tải thêm
+                viewModel.loadMoreItems();
+            }
+        });
     }
 
     public void setViewModel(ItemGridViewModel viewModel) {
@@ -69,8 +81,9 @@ public class ItemGridController {
         // --- Binding UI với ViewModel ---
 
         // 1. Binding trạng thái Loading
-        loadingIndicator.visibleProperty().bind(viewModel.loadingProperty());
-        loadingIndicator.managedProperty().bind(viewModel.loadingProperty());
+        // SỬA ĐỔI: Binding loadingIndicator với loading CHUNG và loading MORE
+        loadingIndicator.visibleProperty().bind(viewModel.loadingProperty().or(viewModel.isLoadingMoreProperty()));
+        loadingIndicator.managedProperty().bind(viewModel.loadingProperty().or(viewModel.isLoadingMoreProperty()));
 
         // 2. Binding trạng thái Status Message
         statusLabel.visibleProperty().bind(viewModel.showStatusMessageProperty());
@@ -86,10 +99,25 @@ public class ItemGridController {
 
         // 4. Lắng nghe thay đổi danh sách items trong ViewModel
         viewModel.getItems().addListener((ListChangeListener<BaseItemDto>) c -> {
-            Platform.runLater(this::updateGrid);
+            Platform.runLater(() -> {
+                while (c.next()) {
+                    if (c.wasPermutated() || c.wasReplaced() || c.wasAdded() && c.getFrom() == 0) {
+                        // Trường hợp setAll/load mới hoàn toàn (loadItemsByParentId)
+                        itemFlowPane.getChildren().clear();
+                        for (BaseItemDto item : viewModel.getItems()) {
+                            itemFlowPane.getChildren().add(createItemCell(item));
+                        }
+                    } else if (c.wasAdded()) {
+                        // Trường hợp addAll/loadMoreItems (tải thêm)
+                        // Chỉ thêm các item mới vào cuối FlowPane
+                        for (BaseItemDto item : c.getAddedSubList()) {
+                            itemFlowPane.getChildren().add(createItemCell(item));
+                        }
+                    }
+                    // Bỏ qua trường hợp xóa (c.wasRemoved())
+                }
+            });
         });
-
-        updateGrid();
     }
 
     /**
@@ -105,15 +133,16 @@ public class ItemGridController {
         }
     }
 
-    private void updateGrid() {
-        if (viewModel == null) return;
-
-        itemFlowPane.getChildren().clear();
-        for (BaseItemDto item : viewModel.getItems()) {
-            StackPane cell = createItemCell(item);
-            itemFlowPane.getChildren().add(cell);
-        }
-    }
+    // XÓA HÀM updateGrid() CŨ
+    // private void updateGrid() {
+    //     if (viewModel == null) return;
+    //
+    //     itemFlowPane.getChildren().clear();
+    //     for (BaseItemDto item : viewModel.getItems()) {
+    //         StackPane cell = createItemCell(item);
+    //         itemFlowPane.getChildren().add(cell);
+    //     }
+    // }
 
     private StackPane createItemCell(BaseItemDto item) {
         StackPane cellContainer = new StackPane();

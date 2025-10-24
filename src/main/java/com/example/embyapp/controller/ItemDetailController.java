@@ -41,8 +41,6 @@ public class ItemDetailController {
     @FXML private TextArea overviewTextArea;
 
     @FXML private Label taglineLabel;
-    @FXML private Label yearLabel;
-    @FXML private Label runtimeLabel;
     @FXML private Label genresLabel;
     @FXML private FlowPane imageGalleryPane;
 
@@ -79,8 +77,6 @@ public class ItemDetailController {
         // 1. Binding các Label chi tiết (CHỈ CÁC LABEL CÒN LẠI)
         taglineLabel.textProperty().bind(viewModel.taglineProperty());
         genresLabel.textProperty().bind(viewModel.genresProperty());
-        runtimeLabel.textProperty().bind(viewModel.runtimeProperty());
-        yearLabel.textProperty().bind(viewModel.yearProperty());
         statusLabel.textProperty().bind(viewModel.statusMessageProperty());
 
         // 2. (MỚI) Binding các trường CÓ THỂ CHỈNH SỬA (2 chiều)

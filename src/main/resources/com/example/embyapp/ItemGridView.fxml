@@ -1,27 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressIndicator?>
-<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.layout.VBox?>
 
-<!--
-  SỬA LỖI (Bản vá NPE):
-  - Sửa fx:id="progressIndicator" thành fx:id="loadingIndicator"
-  - (Giữ nguyên fx:id="gridScrollPane" từ lần sửa trước)
-  - (Giữ nguyên fx:id="itemFlowPane" từ lần sửa trước)
--->
-<StackPane fx:id="rootPane" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+<StackPane fx:id="rootPane"
+           style="-fx-background-color: #1a1a1a;"
+           xmlns="http://javafx.com/javafx/21"
+           xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="com.example.embyapp.controller.ItemGridController">
     <children>
-        <ScrollPane fx:id="gridScrollPane" fitToWidth="true" hbarPolicy="NEVER">
+
+        <ScrollPane fx:id="gridScrollPane" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;" visible="false">
             <content>
-                <FlowPane fx:id="itemFlowPane" hgap="10.0" vgap="10.0">
+                <FlowPane fx:id="itemFlowPane" hgap="20.0" vgap="20.0">
                     <padding>
-                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
                     </padding>
                 </FlowPane>
             </content>
@@ -29,12 +28,10 @@
 
         <VBox fx:id="statusContainer" alignment="CENTER" mouseTransparent="true" spacing="10.0" visible="false">
             <children>
-                <!-- SỬA LỖI: fx:id="progressIndicator" -> "loadingIndicator" -->
                 <ProgressIndicator fx:id="loadingIndicator" maxHeight="50.0" maxWidth="50.0"/>
-                <Label fx:id="statusLabel" text="Loading..."/>
+                <Label fx:id="statusLabel" text="Chọn một thư viện từ cột trái..." textFill="#e0e0e0"/>
             </children>
         </VBox>
 
     </children>
 </StackPane>
-

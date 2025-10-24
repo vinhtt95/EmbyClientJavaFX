@@ -1,63 +1,154 @@
 /* * CSS cho Ứng dụng EmbyClientJavaFX
- * (CẬP NHẬT 2): Thêm bo góc, hiệu ứng hover sáng lên và transition.
+ * (CẬP NHẬT 5): Fix nền TextArea trắng, ẩn thanh cuộn (Scrollbar Policy).
  */
 
-/* (NÂNG CẤP 3) Style cho cell (container) */
-.item-cell {
-    /* (CẬP NHẬT 2) Bo góc cho toàn bộ cell (StackPane) */
-    -fx-background-radius: 10px;
-    -fx-border-radius: 10px; /* Đảm bảo bo góc */
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 10, 0.2, 0, 3);
+/* --- DARK MODE GLOBAL STYLES --- */
+.root, .vbox, .hbox, .anchor-pane, .stack-pane {
+    -fx-background-color: #121212;
+    -fx-text-fill: #e0e0e0;
+}
 
-    /* (CẬP NHẬT 2) Thêm transition cho hiệu ứng mượt mà */
+/* Tăng kích thước font mặc định cho toàn bộ ứng dụng */
+* {
+    -fx-font-size: 16px;
+    -fx-font-family: "System";
+}
+
+/* Label mặc định */
+.label {
+    -fx-text-fill: #e0e0e0;
+}
+
+/* Button mặc định */
+.button {
+    -fx-background-color: #383838;
+    -fx-text-fill: #ffffff;
+    -fx-background-radius: 5px;
+    -fx-border-color: #555555;
+    -fx-border-radius: 5px;
+    -fx-padding: 8px 15px;
+}
+.button:hover {
+    -fx-background-color: #4a4a4a;
+}
+.button:default {
+    -fx-background-color: #007acc;
+}
+
+/* TextField và TextArea (FIX CŨNG ÁP DỤNG Ở ĐÂY) */
+.text-field, .text-area {
+    -fx-background-color: #1e1e1e; /* Nền field tối */
+    -fx-text-fill: #e0e0e0;
+    -fx-prompt-text-fill: #888888;
+    -fx-background-radius: 5px;
+    -fx-border-color: #3a3a3a;
+    -fx-border-radius: 5px;
+    -fx-padding: 8px;
+}
+/* Đảm bảo TextArea không bị ghi đè */
+.text-area .content {
+    -fx-background-color: #1e1e1e;
+}
+
+
+/* SplitPane (Ẩn đường phân cách) */
+.split-pane {
+    -fx-background-color: #121212;
+}
+.split-pane-divider {
+    -fx-background-color: #2e2e2e;
+    -fx-padding: 0 0.5px 0 0.5px;
+}
+
+
+/* TreeView (Cột trái: Library) */
+.tree-view {
+    -fx-background-color: #1e1e1e;
+    -fx-border-width: 0;
+    -fx-padding: 0;
+}
+.tree-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #e0e0e0;
+    -fx-padding: 8px 0 8px 0;
+}
+.tree-cell:filled:selected, .tree-cell:filled:selected:focused {
+    -fx-background-color: #004d80;
+    -fx-text-fill: #ffffff;
+}
+.tree-cell:filled:hover {
+    -fx-background-color: #2e2e2e;
+    -fx-text-fill: #ffffff;
+}
+
+
+/* --- SCROLLPANE STYLES (Ẩn thanh cuộn khi không cuộn) --- */
+
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+/* Ẩn các nút tăng/giảm */
+.scroll-bar .increment-button, .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+.scroll-bar .increment-arrow, .scroll-bar .decrement-arrow {
+    -fx-shape: " "; /* Loại bỏ hình mũi tên */
+}
+/* Làm cho thanh cuộn (thumb) mờ đi, chỉ hiện khi hover */
+.scroll-bar:vertical .thumb, .scroll-bar:horizontal .thumb {
+    -fx-background-color: #444444;
+    -fx-background-radius: 5;
+    -fx-opacity: 0.0; /* Mặc định ẩn */
+    -fx-transition: opacity 0.3s ease; /* Hiệu ứng chuyển tiếp mượt mà */
+}
+.scroll-bar:vertical:hover .thumb,
+.scroll-bar:vertical:pressed .thumb,
+.scroll-bar:horizontal:hover .thumb,
+.scroll-bar:horizontal:pressed .thumb {
+    -fx-opacity: 0.8; /* Hiện rõ khi hover hoặc cuộn */
+}
+.scroll-bar:vertical, .scroll-bar:horizontal {
+    -fx-background-color: transparent; /* Đảm bảo background thanh cuộn không phải màu trắng */
+}
+
+
+/* --- STATUS BAR (Footer) --- */
+#statusBar {
+    -fx-background-color: #1e1e1e;
+    -fx-border-color: #2e2e2e;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* --- ITEM GRID CELL STYLES (Giữ nguyên) --- */
+/* ... (Giữ nguyên các style cell item ở đây) */
+.item-cell {
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 10, 0.2, 0, 3);
     -fx-transition: all 0.2s ease-in-out;
 }
-
-/* (NÂNG CẤP 3) Style cho ảnh nền (ImageView) */
 .item-image {
-    /* (CẬP NHẬT 2) Đảm bảo ảnh cũng được bo góc */
     -fx-background-radius: 10px;
 }
-
-/* (NÂNG CẤP 2) Style cho lớp phủ gradient */
 .item-title-overlay {
-    -fx-background-color: linear-gradient(to top,
-    rgba(0,0,0,0.8) 0%,
-    rgba(0,0,0,0.6) 30%,
-    rgba(0,0,0,0) 100%
-    );
-
-    /* (CẬP NHẬT 2) Đảm bảo lớp phủ cũng bo góc (chỉ bo góc dưới) */
+    -fx-background-color: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 30%, rgba(0,0,0,0) 100%);
     -fx-background-radius: 0 0 10px 10px;
-
-    /* (CẬP NHẬT 2) Thêm transition cho hiệu ứng mượt mà */
-    -fx-opacity: 1.0; /* Trạng thái mặc định là mờ */
+    -fx-opacity: 1.0;
     -fx-transition: opacity 0.2s ease-in-out;
 }
-
-/* (NÂNG CẤP 2) Style cho tiêu đề (Label) */
 .item-title-label {
     -fx-text-fill: white;
-    -fx-font-size: 14px; /* Tăng kích thước font một chút */
+    -fx-font-size: 16px;
     -fx-font-weight: bold;
     -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.7), 2, 0.5, 0, 1);
 }
-
-
-/* (CẬP NHẬT 2) HIỆU ỨNG HOVER */
-
 .item-cell:hover {
-    /* Phóng to cell một chút khi hover */
     -fx-scale-x: 1.03;
     -fx-scale-y: 1.03;
-    /* Tăng độ đậm của shadow */
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.6), 15, 0.3, 0, 4);
 }
-
 .item-cell:hover .item-title-overlay {
-    /* * Làm "sáng" ảnh bằng cách giảm độ mờ của lớp phủ gradient.
-     * (CẬP NHẬT 2) Giảm opacity xuống 0.5 để làm sáng lớp phủ.
-     */
     -fx-opacity: 0.5;
 }
-

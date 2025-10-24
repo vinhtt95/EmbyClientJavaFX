@@ -15,12 +15,12 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<StackPane fx:id="rootPane" style="-fx-background-color: #1a1a1a;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.embyapp.controller.ItemDetailController">
+<StackPane fx:id="rootPane" style="-fx-background-color: #121212;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.embyapp.controller.ItemDetailController">
     <children>
         <ProgressIndicator fx:id="loadingIndicator" maxHeight="60.0" maxWidth="60.0" visible="false" />
         <Label fx:id="statusLabel" text="Vui lòng chọn một item..." textFill="GREY" StackPane.alignment="CENTER" wrapText="true">
             <font>
-                <Font name="System Italic" size="14.0" />
+                <Font name="System Italic" size="16.0" />
             </font>
         </Label>
         <ScrollPane fx:id="mainScrollPane" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-background: transparent;" visible="false" StackPane.alignment="TOP_LEFT">
@@ -37,7 +37,7 @@
                             </VBox.margin>
                         </ImageView>
 
-                        <TextField fx:id="titleTextField" promptText="Tiêu đề" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-background-color: #2e2e2e; -fx-text-fill: white; -fx-prompt-text-fill: #aaa;" />
+                        <TextField fx:id="titleTextField" promptText="Tiêu đề" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
 
                         <Button fx:id="saveButton" maxWidth="Infinity" onAction="#handleSaveButtonAction" text="Lưu thay đổi">
                             <VBox.margin>
@@ -51,7 +51,7 @@
                             </VBox.margin>
                             <children>
                                 <Label text="Đường dẫn trên máy" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
-                                <TextField fx:id="pathTextField" editable="false" style="-fx-text-fill: #b3b3b3; -fx-background-color: #2e2e2e; -fx-border-color: #444;" />
+                                <TextField fx:id="pathTextField" editable="false" />
                                 <Button fx:id="openButton" maxWidth="Infinity" onAction="#handleOpenButtonAction" text="Mở" />
                                 <Label fx:id="actionStatusLabel" textFill="RED" wrapText="true" />
                             </children>
@@ -62,7 +62,7 @@
                                 <Insets top="10.0" />
                             </VBox.margin>
                         </Label>
-                        <TextField fx:id="tagsTextField" editable="false" promptText="Chưa có tags" style="-fx-background-color: #2e2e2e; -fx-text-fill: #e0e0e0; -fx-prompt-text-fill: #b3b3b3; -fx-border-color: #444;" />
+                        <TextField fx:id="tagsTextField" editable="false" promptText="Chưa có tags" />
 
                         <VBox fx:id="fileOnlyContainer" managed="false" spacing="10.0" visible="false">
                             <children>
@@ -70,45 +70,25 @@
                                     <font>
                                         <Font name="System Italic" size="16.0" />
                                     </font>
-                                    <VBox.margin>
-                                        <Insets top="10.0" />
-                                    </VBox.margin>
                                 </Label>
-                                <HBox alignment="CENTER_LEFT" spacing="20.0">
-                                    <children>
-                                        <Label fx:id="yearLabel" text="Year" textFill="WHITE">
-                                            <font>
-                                                <Font size="14.0" />
-                                            </font>
-                                        </Label>
-                                        <Label fx:id="runtimeLabel" text="1h 57m" textFill="WHITE">
-                                            <font>
-                                                <Font size="14.0" />
-                                            </font>
-                                        </Label>
-                                    </children>
-                                </HBox>
                                 <Label fx:id="genresLabel" text="Genres: Action, Sci-Fi, Thriller" textFill="#b3b3b3" wrapText="true" />
 
                                 <Label text="Ngày phát hành" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
-                                <TextField fx:id="releaseDateTextField" editable="false" style="-fx-background-color: #2e2e2e; -fx-text-fill: #e0e0e0; -fx-border-color: #444;" />
+                                <TextField fx:id="releaseDateTextField" editable="false" />
 
                                 <Label text="Studios" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
-                                <TextField fx:id="studiosTextField" editable="false" style="-fx-background-color: #2e2e2e; -fx-text-fill: #e0e0e0; -fx-border-color: #444;" />
+                                <TextField fx:id="studiosTextField" editable="false" />
 
                                 <Label text="People" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
-                                <TextField fx:id="peopleTextField" editable="false" style="-fx-background-color: #2e2e2e; -fx-text-fill: #e0e0e0; -fx-border-color: #444;" />
+                                <TextField fx:id="peopleTextField" editable="false" />
 
                                 <Label text="Mô tả" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 16px;">
                                     <VBox.margin>
                                         <Insets top="10.0" />
                                     </VBox.margin>
                                 </Label>
-                                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" maxHeight="200.0" pannable="true" style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: #333; -fx-border-radius: 5;">
-                                    <content>
-                                        <TextArea fx:id="overviewTextArea" promptText="Mô tả chi tiết..." style="-fx-background-color: #2e2e2e; -fx-text-fill: #e0e0e0; -fx-prompt-text-fill: #b3b3b3;" wrapText="true" />
-                                    </content>
-                                </ScrollPane>
+                                <TextArea fx:id="overviewTextArea" prefHeight="200.0" promptText="Mô tả chi tiết..." wrapText="true" />
+
                             </children>
                         </VBox>
 

@@ -177,7 +177,7 @@ public class ItemGridController {
             image.errorProperty().addListener((obs, wasError, isError) -> {
                 if (isError) {
                     // (SỬA LỖI 2) Dùng biến final urlToLoad
-                    System.err.println("Failed to load image: " + urlToLoad + ". Falling back to placeholder.");
+//                    System.err.println("Failed to load image: " + urlToLoad + ". Falling back to placeholder.");
                     // (SỬA LỖI 2) Dùng biến final finalPlaceholderUrl
                     imageView.setImage(new Image(finalPlaceholderUrl, true));
                 }

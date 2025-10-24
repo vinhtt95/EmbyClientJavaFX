@@ -2,12 +2,13 @@ package com.example.embyapp.controller;
 
 import com.example.emby.modelEmby.BaseItemDto;
 import com.example.embyapp.viewmodel.LibraryTreeViewModel;
+import javafx.beans.value.ChangeListener; // Thêm import
 import javafx.fxml.FXML;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
-import javafx.scene.input.MouseEvent; // Thêm import
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 
 public class LibraryTreeController {
@@ -15,8 +16,6 @@ public class LibraryTreeController {
     @FXML private StackPane rootPane;
     @FXML private TreeView<BaseItemDto> treeView;
 
-    // SỬA LỖI: Đổi tên biến "loadingIndicator" thành "progressIndicator"
-    // để khớp với fx:id="progressIndicator" trong LibraryTreeView.fxml
     @FXML private ProgressIndicator progressIndicator;
 
     private LibraryTreeViewModel viewModel;
@@ -31,7 +30,6 @@ public class LibraryTreeController {
         this.viewModel = viewModel;
 
         // BINDINGS
-        // SỬA LỖI: Dùng biến đã sửa tên
         if (progressIndicator != null) {
             progressIndicator.visibleProperty().bind(viewModel.loadingProperty());
         } else {
@@ -41,38 +39,69 @@ public class LibraryTreeController {
         treeView.rootProperty().bind(viewModel.rootItemProperty());
         treeView.setShowRoot(false); // Ẩn node gốc "Root"
 
-        // 1. Tùy chỉnh cách hiển thị Tên
+        // 1. Tùy chỉnh CellFactory (SỬA ĐỔI LỚN)
         treeView.setCellFactory(tv -> new TreeCell<>() {
+
+            // (MỚI) Listener for expansion (arrow click)
+            private final ChangeListener<Boolean> expansionListener = (obs, wasExpanded, isNowExpanded) -> {
+                if (isNowExpanded && getTreeItem() != null) {
+                    // Chỉ cần gọi VM.
+                    // VM (LibraryTreeViewModel) sẽ tự kiểm tra xem children đã được load chưa.
+                    viewModel.loadChildrenForItem(getTreeItem());
+                }
+            };
+
+            // (MỚI) Keep track of the item to remove the listener on reuse
+            private TreeItem<BaseItemDto> currentItem = null;
+
             @Override
             protected void updateItem(BaseItemDto item, boolean empty) {
                 super.updateItem(item, empty);
 
-                // (SỬA ĐỔI) Thêm listener cho Double Click để "lazy load"
-                setOnMouseClicked(event -> {
-                    // Chỉ xử lý khi double click, và TreeItem/Item có tồn tại
-                    if (event.getClickCount() == 2 && getTreeItem() != null && getTreeItem().getValue() != null) {
-                        BaseItemDto clickedItem = getTreeItem().getValue();
-                        // Chỉ load con nếu nó là một thư mục (isFolder)
-                        if (clickedItem.isIsFolder() != null && clickedItem.isIsFolder()) {
-                            viewModel.loadChildrenForItem(getTreeItem());
-                        }
-                    }
-                });
+                // --- 1. Remove old listener (QUAN TRỌNG) ---
+                // Xóa listener khỏi item cũ mà cell này đã hiển thị
+                if (currentItem != null) {
+                    currentItem.expandedProperty().removeListener(expansionListener);
+                }
 
+                // --- 2. Clear old graphics/text ---
+                setText(null);
+                setGraphic(null);
+                setOnMouseClicked(null); // Xóa listener double-click cũ
 
+                // --- 3. Set new item and add listeners ---
                 if (empty || item == null) {
-                    setText(null);
-                    setGraphic(null);
+                    currentItem = null;
                 } else {
-                    setText(item.getName()); // Hiển thị tên
+                    // Đây là item mới
+                    currentItem = getTreeItem();
+
+                    // (MỚI) Thêm listener cho "arrow click" (expansion)
+                    if (currentItem != null) {
+                        currentItem.expandedProperty().addListener(expansionListener);
+                    }
+
+                    // Set text
+                    setText(item.getName());
+
+                    // (GIỮ NGUYÊN) Thêm listener cho "double-click" (item click)
+                    setOnMouseClicked(event -> {
+                        if (event.getClickCount() == 2 && getTreeItem() != null && getTreeItem().getValue() != null) {
+                            BaseItemDto clickedItem = getTreeItem().getValue();
+
+                            // (SỬA ĐỔI) Dùng isIsFolder() như bạn đã xác nhận
+                            if (clickedItem.isIsFolder() != null && clickedItem.isIsFolder()) {
+                                viewModel.loadChildrenForItem(getTreeItem());
+                            }
+                        }
+                    });
                 }
             }
         });
 
-        // 2. Lắng nghe sự kiện click
+        // 2. Lắng nghe sự kiện click (single-click)
         treeView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newItem) -> {
-            // SỬA LỖI: Gọi .set() trên property,
-            // thay vì gọi hàm setter không tồn tại
+            // (Không thay đổi)
             viewModel.selectedTreeItemProperty().set(newItem);
         });
     }
@@ -82,4 +111,3 @@ public class LibraryTreeController {
         viewModel.loadLibraries();
     }
 }
-

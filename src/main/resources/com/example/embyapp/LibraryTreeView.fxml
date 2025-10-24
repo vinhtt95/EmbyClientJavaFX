@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TreeView?>
+<?import javafx.scene.layout.StackPane?>
+
+<!--
+  SỬA LỖI:
+  - Đảm bảo fx:controller trỏ đúng
+  - Đảm bảo fx:id="treeView" và fx:id="progressIndicator" tồn tại.
+-->
+<StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.example.embyapp.controller.LibraryTreeController">
+    <children>
+        <!-- BẮT BUỘC PHẢI CÓ fx:id="treeView" -->
+        <TreeView fx:id="treeView" prefHeight="200.0" prefWidth="200.0"/>
+
+        <!-- BẮT BUỘC PHẢI CÓ fx:id="progressIndicator" -->
+        <ProgressIndicator fx:id="progressIndicator" maxHeight="50.0" maxWidth="50.0" visible="false"/>
+    </children>
+</StackPane>

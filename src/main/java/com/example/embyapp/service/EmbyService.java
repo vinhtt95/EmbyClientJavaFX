@@ -104,6 +104,15 @@ public class EmbyService {
         return currentAuthResult;
     }
 
+    // Lấy UserID hiện tại (nếu đã đăng nhập)
+    public String getCurrentUserId() {
+        if (currentAuthResult != null && currentAuthResult.getUser() != null) {
+            return currentAuthResult.getUser().getId();
+        }
+        return null;
+    }
+
+
     // --- Session Management ---
 
     private String generateClientAuthHeader() {
@@ -141,6 +150,7 @@ public class EmbyService {
             this.itemsServiceApi = null;
             this.systemServiceApi = null;
         } else {
+            // (Khi logout hoặc login fail)
             this.currentAccessToken = null;
             loggedIn.set(false);
             this.clientAuthHeader = null;
@@ -200,16 +210,20 @@ public class EmbyService {
         }
     }
 
-    // Method to clear saved session info
+    /**
+     * SỬA LỖI (Vá lỗi của sếp):
+     * Chỉ xóa Token, Header, UserID.
+     * KHÔNG XÓA KEY_SERVER_URL, để LoginViewModel có thể load lại.
+     */
     public void clearSession() {
         try {
-            System.out.println("Clearing saved session...");
-            prefs.remove(KEY_SERVER_URL);
+            System.out.println("Clearing session (keeping server URL)...");
+            // KHÔNG XÓA SERVER URL: prefs.remove(KEY_SERVER_URL);
             prefs.remove(KEY_ACCESS_TOKEN);
             prefs.remove(KEY_CLIENT_AUTH_HEADER);
             prefs.remove(KEY_USER_ID); // Clear User ID
             prefs.flush();
-            System.out.println("Session cleared.");
+            System.out.println("Session tokens cleared.");
         } catch (Exception e) {
             System.err.println("Error clearing session preferences: " + e.getMessage());
             e.printStackTrace();
@@ -238,8 +252,10 @@ public class EmbyService {
 
                 if (systemInfo != null) {
                     System.out.println("System Info check OK. (Step 2: Get User Info using ID: " + loadedUserId + ")...");
-                    // Step 2: Fetch the UserDto using the saved User ID
-                    UserDto currentUser = getUserServiceApi().getUsersById(loadedUserId); // USE getUsersById
+
+                    // LƯU Ý: Vẫn dùng logic gốc của project (gọi thẳng UserServiceApi)
+                    // Nếu sau này muốn chuyển sang UserRepository thì sửa ở đây.
+                    UserDto currentUser = getUserServiceApi().getUsersById(loadedUserId);
 
                     if (currentUser != null) {
                         System.out.println("User Info check OK. Session restored successfully for User: " + currentUser.getName());
@@ -268,9 +284,9 @@ public class EmbyService {
                 }
 
             } catch (ApiException e) {
-                System.err.println("API Exception during session restore (Code: " + e.getCode() + "): " + e.getMessage() + " Body: " + e.getResponseBody());
-                if (e.getCode() != 0) {
-                    clearSession();
+                System.err.println("API Exception during session restore (Code: " + e.getCode() + "): " + e.getMessage()); // Bỏ e.getResponseBody()
+                if (e.getCode() != 0) { // Nếu lỗi không phải là do mất kết nối
+                    clearSession(); // Xóa token hỏng/hết hạn
                 }
             } catch (Exception e) {
                 System.err.println("Non-API Exception during session restore: " + e.getMessage());
@@ -297,14 +313,23 @@ public class EmbyService {
 
     public void logout() {
         System.out.println("Logging out...");
-        setCurrentAuthResult(null, null);
-        clearSession();
+        setCurrentAuthResult(null, null); // Xóa state
+        clearSession(); // Xóa token đã lưu (nhưng giữ lại URL)
     }
 
 
     // --- Getters for specific API services (cached) ---
 
+    /**
+     * SỬA LỖI (Vá lỗi NPE khi login):
+     * Xóa check isLoggedIn()
+     * UserServiceApi PHẢI dùng được khi chưa login.
+     */
     public synchronized UserServiceApi getUserServiceApi() {
+        // if (!isLoggedIn()) { // <<<--- DÒNG NÀY SAI
+        //     System.err.println("Attempted to get UserServiceApi while not logged in.");
+        //     return null; // <<<--- DÒNG NÀY GÂY LỖI NPE
+        // }
         if (userServiceApi == null) {
             System.out.println("Creating UserServiceApi");
             userServiceApi = new UserServiceApi(apiClient);

@@ -1,27 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ListView?>
-<?import javafx.scene.layout.VBox?>
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.example.embyapp.controller.MainController"
-      alignment="TOP_CENTER" spacing="10.0" prefHeight="400.0" prefWidth="600.0">
-    <padding>
-        <Insets top="20.0" right="20.0" bottom="20.0" left="20.0"/>
-    </padding>
-
-    <!-- Label để hiển thị lời chào, liên kết với welcomeMessageProperty trong ViewModel -->
-    <Label fx:id="welcomeLabel" text="Welcome!" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
-
-    <!-- ListView để hiển thị danh sách thư viện/mục, liên kết với libraryListView trong Controller -->
-    <!-- fx:id phải khớp với tên biến @FXML trong MainController -->
-    <ListView fx:id="libraryListView" prefHeight="300.0" VBox.vgrow="ALWAYS"/>
-
-    <!-- Nút Logout, liên kết với logoutButton trong Controller -->
-    <Button fx:id="logoutButton" text="Logout"/>
-
-</VBox>
+<!--
+  SỬA LỖI (Bản vá NPE):
+  - Đảm bảo fx:controller trỏ đúng
+  - Đảm bảo fx:id="statusLabel" và fx:id="statusProgressIndicator" tồn tại.
+  - Đảm bảo các container có fx:id (leftPaneContainer, centerPaneContainer, rightPaneContainer)
+-->
+<BorderPane fx:id="rootPane" prefHeight="600.0" prefWidth="800.0"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.embyapp.controller.MainController">
+    <top>
+        <ToolBar fx:id="mainToolBar" BorderPane.alignment="CENTER">
+            <items>
+                <!-- BẮT BUỘC PHẢI CÓ fx:id="logoutButton" -->
+                <Button fx:id="logoutButton" mnemonicParsing="false" text="Logout"/>
+            </items>
+        </ToolBar>
+    </top>
+    <bottom>
+        <!-- BẮT BUỘC PHẢI CÓ fx:id="statusBar" -->
+        <HBox fx:id="statusBar" alignment="CENTER_LEFT" spacing="10.0" style="-fx-border-color: #c0c0c0; -fx-border-width: 1 0 0 0;" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets bottom="5.0" left="10.0" right="10.0" top="5.0"/>
+            </padding>
+            <children>
+                <!-- BẮT BUỘC PHẢI CÓ fx:id="statusLabel" -->
+                <Label fx:id="statusLabel" text="Đang khởi tạo..." HBox.hgrow="ALWAYS"/>
+                <!-- BẮT BUỘC PHẢI CÓ fx:id="statusProgressIndicator" -->
+                <ProgressIndicator fx:id="statusProgressIndicator" maxHeight="20.0" maxWidth="20.0" visible="false"/>
+            </children>
+        </HBox>
+    </bottom>
+    <center>
+        <SplitPane dividerPositions="0.25, 0.75" prefHeight="160.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+            <!-- BẮT BUỘC PHẢI CÓ fx:id="leftPaneContainer" -->
+            <AnchorPane fx:id="leftPaneContainer" minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0"/>
+            <!-- BẮT BUỘC PHẢI CÓ fx:id="centerPaneContainer" -->
+            <AnchorPane fx:id="centerPaneContainer" minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0"/>
+            <!-- BẮT BUỘC PHẢI CÓ fx:id="rightPaneContainer" -->
+            <AnchorPane fx:id="rightPaneContainer" minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0"/>
+        </SplitPane>
+    </center>
+</BorderPane>
 

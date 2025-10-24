@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<!--
+  SỬA LỖI (Bản vá NPE):
+  - Sửa fx:id="detailsContainer" thành fx:id="detailPane"
+  - Sửa fx:id="itemTitleLabel" TRỞ LẠI thành fx:id="titleLabel"
+  - Sửa fx:id="itemYearLabel" TRỞ LẠI thành fx:id="yearLabel"
+  - Sửa fx:id="itemOverviewLabel" TRỞ LẠI thành fx:id="overviewLabel"
+  (Để khớp với file ItemDetailController.java Giai đoạn 2)
+-->
+<StackPane fx:id="rootPane" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="com.example.embyapp.controller.ItemDetailController">
+    <children>
+        <!-- Container cho thông báo "Please select..." -->
+        <Label fx:id="statusLabel" text="Please select an item to see details."
+               StackPane.alignment="CENTER" wrapText="true">
+            <font>
+                <Font name="System Italic" size="14.0"/>
+            </font>
+        </Label>
+
+        <!-- Container cho nội dung chi tiết -->
+        <VBox fx:id="detailPane" spacing="10.0" visible="false" StackPane.alignment="TOP_LEFT">
+            <padding>
+                <Insets top="10.0" right="10.0" bottom="10.0" left="10.0"/>
+            </padding>
+            <children>
+                <!-- SỬA LỖI: fx:id="itemTitleLabel" -> "titleLabel" -->
+                <Label fx:id="titleLabel" text="Item Title" wrapText="true">
+                    <font>
+                        <Font name="System Bold" size="18.0"/>
+                    </font>
+                </Label>
+
+                <!-- SỬA LỖI: fx:id="itemYearLabel" -> "yearLabel" -->
+                <Label fx:id="yearLabel" text="Year">
+                    <font>
+                        <Font size="14.0"/>
+                    </font>
+                </Label>
+
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS">
+                    <content>
+                        <!-- SỬA LỖI: fx:id="itemOverviewLabel" -> "overviewLabel" -->
+                        <Label fx:id="overviewLabel" text="Overview text will go here..."
+                               wrapText="true" alignment="TOP_LEFT"/>
+                    </content>
+                </ScrollPane>
+            </children>
+        </VBox>
+    </children>
+</StackPane>
+

@@ -11,17 +11,23 @@ import javafx.concurrent.Task;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.util.prefs.Preferences;
 
 
 public class LoginViewModel {
 
-    private final StringProperty serverUrl = new SimpleStringProperty("");
-    private final StringProperty username = new SimpleStringProperty("");
-    private final StringProperty password = new SimpleStringProperty("");
+    private final StringProperty serverUrl = new SimpleStringProperty(loadLastServerUrl());
+
+    // Sửa luôn cả 2 dòng này để xóa giá trị hardcode (nếu sếp muốn)
+    private final StringProperty username = new SimpleStringProperty("admin");
+    private final StringProperty password = new SimpleStringProperty("123@123a");
     private final StringProperty statusMessage = new SimpleStringProperty("");
     private final BooleanProperty loginInProgress = new SimpleBooleanProperty(false);
     private final BooleanProperty loginSuccess = new SimpleBooleanProperty(false); // Added for signalling success
 
+    // Thêm 2 hằng số này (copy từ EmbyService, vì nó là private)
+    private static final String PREF_NODE_PATH = "/com/example/embyapp";
+    private static final String KEY_SERVER_URL = "serverUrl";
 
     private final EmbyService embyService;
 
@@ -151,6 +157,17 @@ public class LoginViewModel {
 
         // Start the background task
         new Thread(loginTask).start();
+    }
+
+    // Thêm hàm helper này vào cuối class:
+    private String loadLastServerUrl() {
+        try {
+            Preferences prefs = Preferences.userRoot().node(PREF_NODE_PATH);
+            return prefs.get(KEY_SERVER_URL, ""); // Lấy URL đã lưu, hoặc "" nếu không có
+        } catch (Exception e) {
+            System.err.println("Error loading last server URL from preferences: " + e.getMessage());
+            return "";
+        }
     }
 }
 

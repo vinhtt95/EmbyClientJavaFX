@@ -7,11 +7,14 @@ import com.example.emby.modelEmby.QueryResultBaseItemDto;
 
 import java.util.Collections;
 import java.util.List;
+// (CẬP NHẬT) Xóa import stream, vì chúng ta không lọc ở đây nữa
+// import java.util.stream.Collectors;
 
 /**
  * (SỬA ĐỔI) Repository để quản lý việc truy xuất BaseItemDto (Thư viện, Phim, Series...).
  * Sửa lỗi tên hàm và logic lấy userId.
  * SỬA ĐỔI (Lần 2): Sửa lỗi bug Integer.parseInt(parentId).
+ * (CẬP NHẬT 3): ĐÃ HOÀN TÁC - Trả về tất cả item, không lọc.
  */
 public class ItemRepository {
 
@@ -60,6 +63,7 @@ public class ItemRepository {
         result = new RequestEmby().getUsersByUseridItems(userId, service);
 
         if (result != null && result.getItems() != null) {
+            // (CẬP NHẬT) Đã hoàn tác. Trả về mọi thứ.
             return result.getItems();
         }
         return Collections.emptyList();
@@ -90,6 +94,7 @@ public class ItemRepository {
         QueryResultBaseItemDto result = new RequestEmby().getQueryResultBaseItemDto(parentId, service);
 
         if (result != null && result.getItems() != null) {
+            // (CẬP NHẬT) Đã hoàn tác. Trả về mọi thứ.
             return result.getItems();
         }
         return Collections.emptyList();

@@ -15,29 +15,19 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.ToolBar;
+import javafx.scene.control.*; // (CẬP NHẬT) Thêm SplitPane
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.prefs.Preferences; // (CẬP NHẬT) Thêm import
 
 /**
  * (SỬA LỖI GĐ2)
  * Controller Điều Phối (Coordinator) cho MainView.
- *
- * Sửa lỗi:
- * - (Lỗi 1) Gọi new UserRepository(); (constructor rỗng)
- * - (Lỗi 2) Gọi new MainViewModel(embyService); (constructor 1 tham số)
- * - (Lỗi 3,4) Thêm import ReadOnlyBooleanProperty
- * - (Lỗi 5) Sửa lỗi 'private access' cho UserRepository (dùng .getInstance()).
- * - (Lỗi 6) Sửa lỗi binding cho ProgressIndicator (lỗi incompatible types).
- * - (Lỗi 7) Sửa lỗi kiểu dữ liệu cho 'treeLoading' (dòng 224)
- * - (Lỗi 8) Sửa lỗi đường dẫn FXML (thêm "../")
+ * (CẬP NHẬT) Thêm logic lưu/tải vị trí SplitPane.
  */
 public class MainController {
 
@@ -48,6 +38,7 @@ public class MainController {
     @FXML private HBox statusBar;
     @FXML private Label statusLabel;
     @FXML private ProgressIndicator statusProgressIndicator;
+    @FXML private SplitPane mainSplitPane; // (CẬP NHẬT) Thêm fx:id
 
     // FXML Container cho 3 cột
     @FXML private AnchorPane leftPaneContainer;
@@ -72,6 +63,11 @@ public class MainController {
     private LibraryTreeViewModel libraryTreeViewModel;
     private ItemGridViewModel itemGridViewModel;
     private ItemDetailViewModel itemDetailViewModel;
+
+    // (CẬP NHẬT) Thêm hằng số để lưu Preferences
+    private static final String PREFS_NODE_PATH = "/com/example/embyapp";
+    private static final String PREF_DIVIDER_1 = "mainDividerPos1";
+    private static final String PREF_DIVIDER_2 = "mainDividerPos2";
 
 
     public void setMainApp(MainApp mainApp) {
@@ -131,7 +127,10 @@ public class MainController {
         // 6. Thiết lập luồng dữ liệu giữa các components
         bindDataFlow();
 
-        // 7. Tải dữ liệu ban đầu
+        // 7. (CẬP NHẬT) Tải/Lưu vị trí SplitPane
+        setupSplitPanePersistence();
+
+        // 8. Tải dữ liệu ban đầu
         viewModel.loadUserData(); // Tải Welcome message
         libraryTreeViewModel.loadLibraries(); // Tải cây thư mục
     }
@@ -260,24 +259,40 @@ public class MainController {
         // SỬA LỖI 6: Thêm listener kép để cập nhật Status Message
         treeLoading.addListener((obs, old, isTreeLoading) -> updateStatusMessage(isTreeLoading, gridLoading.get()));
         gridLoading.addListener((obs, old, isGridLoading) -> updateStatusMessage(treeLoading.get(), isGridLoading));
-
-        // Xóa listener cũ (nó bind vào viewModel.loadingProperty() đã bị xóa)
-        /*
-        viewModel.loadingProperty().addListener((obs, oldLoading, newLoading) -> {
-            Platform.runLater(() -> {
-                if (newLoading) {
-                    if (treeLoading.get()) {
-                        viewModel.statusMessageProperty().set("Đang tải thư viện...");
-                    } else if (gridLoading.get()) {
-                        viewModel.statusMessageProperty().set("Đang tải items...");
-                    }
-                } else {
-                    viewModel.statusMessageProperty().set("Sẵn sàng.");
-                }
-            });
-        });
-        */
     }
+
+    /**
+     * (CẬP NHẬT) Hàm mới để lưu và tải vị trí của SplitPane
+     */
+    private void setupSplitPanePersistence() {
+        Preferences prefs = Preferences.userRoot().node(PREFS_NODE_PATH);
+
+        // 1. Tải và áp dụng vị trí đã lưu
+        // (Defaults là 20% và 75% nếu chưa có gì được lưu)
+        double pos1 = prefs.getDouble(PREF_DIVIDER_1, 0.20);
+        double pos2 = prefs.getDouble(PREF_DIVIDER_2, 0.75);
+
+        // Phải dùng Platform.runLater để áp dụng sau khi FXML đã được hiển thị
+        Platform.runLater(() -> {
+            if (mainSplitPane != null) {
+                mainSplitPane.setDividerPositions(pos1, pos2);
+            } else {
+                System.err.println("MainController: mainSplitPane is null! Không thể tải vị trí divider.");
+            }
+        });
+
+        // 2. Thêm listener để lưu vị trí khi người dùng thay đổi
+        // Đảm bảo rằng chúng ta có đủ 2 dividers
+        if (mainSplitPane != null && mainSplitPane.getDividers().size() >= 2) {
+            mainSplitPane.getDividers().get(0).positionProperty().addListener((obs, oldVal, newVal) -> {
+                prefs.putDouble(PREF_DIVIDER_1, newVal.doubleValue());
+            });
+            mainSplitPane.getDividers().get(1).positionProperty().addListener((obs, oldVal, newVal) -> {
+                prefs.putDouble(PREF_DIVIDER_2, newVal.doubleValue());
+            });
+        }
+    }
+
 
     /**
      * SỬA LỖI 6: Helper
@@ -307,4 +322,3 @@ public class MainController {
         }
     }
 }
-

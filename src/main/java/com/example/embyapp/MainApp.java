@@ -11,11 +11,15 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL; // Import URL
+import java.util.prefs.Preferences; // (CẬP NHẬT) Thêm import
 
 public class MainApp extends Application {
 
     private Stage primaryStage;
     private EmbyService embyService; // Hold EmbyService instance
+
+    // (CẬP NHẬT) Dùng chung một đường dẫn Preferences
+    private static final String PREFS_NODE_PATH = "/com/example/embyapp";
 
 
     @Override
@@ -23,6 +27,20 @@ public class MainApp extends Application {
         this.primaryStage = primaryStage;
         this.embyService = EmbyService.getInstance(); // Get EmbyService instance
 
+        // (CẬP NHẬT) Tải và áp dụng kích thước/vị trí cửa sổ đã lưu
+        Preferences prefs = Preferences.userRoot().node(PREFS_NODE_PATH);
+        primaryStage.setX(prefs.getDouble("windowX", 100)); // Default 100
+        primaryStage.setY(prefs.getDouble("windowY", 100)); // Default 100
+        // (Kích thước sẽ được set trong showMainView)
+
+        // (CẬP NHẬT) Thêm listener để lưu kích thước/vị trí cửa sổ khi đóng
+        primaryStage.setOnCloseRequest(e -> {
+            prefs.putDouble("windowX", primaryStage.getX());
+            prefs.putDouble("windowY", primaryStage.getY());
+            prefs.putDouble("windowWidth", primaryStage.getWidth());
+            prefs.putDouble("windowHeight", primaryStage.getHeight());
+            System.out.println("Đã lưu vị trí và kích thước cửa sổ.");
+        });
 
         // Try to restore session
         if (embyService.tryRestoreSession()) {
@@ -52,26 +70,27 @@ public class MainApp extends Application {
             controller.setMainApp(this); // Pass MainApp instance
 
 
-            Scene scene = new Scene(root);
+            Scene scene = new Scene(root); // Để kích thước login view tự động
 
-            // (NÂNG CẤP) Thêm CSS vào Scene
+            // (CẬP NHẬT) Thêm CSS cho LoginView
             try {
-                String cssPath = getClass().getResource("styles.css").toExternalForm();
-                scene.getStylesheets().add(cssPath);
+                URL cssUrl = getClass().getResource("styles.css");
+                if (cssUrl != null) {
+                    scene.getStylesheets().add(cssUrl.toExternalForm());
+                } else {
+                    System.err.println("Không tìm thấy styles.css cho LoginView.");
+                }
             } catch (NullPointerException e) {
-                System.err.println("Không tìm thấy file styles.css. Bỏ qua việc tải CSS.");
+                System.err.println("Lỗi khi tải styles.css: " + e.getMessage());
             }
 
             primaryStage.setTitle("Emby Login");
             primaryStage.setScene(scene);
             primaryStage.show();
-        } catch (IOException e) {
+        } catch (Exception e) { // Bắt Exception chung
             System.err.println("Error loading LoginView.fxml:");
             e.printStackTrace();
             // Handle error (e.g., show error dialog)
-        } catch (IllegalStateException e) {
-            System.err.println("Error during FXML loading (check controller/FXML):");
-            e.printStackTrace();
         }
     }
 
@@ -90,27 +109,33 @@ public class MainApp extends Application {
             MainController controller = loader.getController();
             controller.setMainApp(this); // Pass MainApp instance for logout
 
+            // (CẬP NHẬT) Lấy kích thước đã lưu, với default mới là 2000x1400
+            Preferences prefs = Preferences.userRoot().node(PREFS_NODE_PATH);
+            double width = prefs.getDouble("windowWidth", 2000);
+            double height = prefs.getDouble("windowHeight", 1400);
 
-            Scene scene = new Scene(root);
+            // (CẬP NHẬT) Sửa Scene constructor để set kích thước đã lưu (hoặc default)
+            Scene scene = new Scene(root, width, height);
 
-            // (NÂNG CẤP) Thêm CSS vào Scene
+            // (CẬP NHẬT) Thêm CSS cho MainView
             try {
-                String cssPath = getClass().getResource("styles.css").toExternalForm();
-                scene.getStylesheets().add(cssPath);
+                URL cssUrl = getClass().getResource("styles.css");
+                if (cssUrl != null) {
+                    scene.getStylesheets().add(cssUrl.toExternalForm());
+                } else {
+                    System.err.println("Không tìm thấy styles.css cho MainView.");
+                }
             } catch (NullPointerException e) {
-                System.err.println("Không tìm thấy file styles.css. Bỏ qua việc tải CSS.");
+                System.err.println("Lỗi khi tải styles.css: " + e.getMessage());
             }
 
             primaryStage.setTitle("Emby Client");
             primaryStage.setScene(scene);
             primaryStage.show();
-        } catch (IOException e) {
+        } catch (Exception e) { // Bắt Exception chung
             System.err.println("Error loading MainView.fxml:");
             e.printStackTrace();
             // Handle error
-        } catch (IllegalStateException e) {
-            System.err.println("Error during FXML loading (check controller/FXML):");
-            e.printStackTrace();
         }
     }
 

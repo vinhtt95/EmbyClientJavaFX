@@ -8,11 +8,13 @@ import javafx.beans.property.*;
 import javafx.scene.control.TreeItem;
 
 import java.util.List;
+import java.util.stream.Collectors; // (CẬP NHẬT) Thêm import
 
 /**
  * (SỬA ĐỔI) ViewModel cho LibraryTreeView.
  * Sửa lỗi: Sử dụng ReadOnly...Wrapper để expose ReadOnlyProperty.
  * SỬA ĐỔI (Lần 2): Thêm logic "lazy loading" cho double-click.
+ * (CẬP NHẬT 3): Lọc danh sách item, chỉ hiển thị folder trong cây.
  */
 public class LibraryTreeViewModel {
 
@@ -52,22 +54,25 @@ public class LibraryTreeViewModel {
 
         new Thread(() -> {
             try {
-                // Gọi hàm đã sửa tên trong Repository
-                List<BaseItemDto> libraries = itemRepository.getRootViews();
+                // 1. Lấy TẤT CẢ item gốc từ Repository
+                List<BaseItemDto> allRootItems = itemRepository.getRootViews();
+
+                // 2. (CẬP NHẬT) Lọc danh sách, chỉ giữ lại FOLDER
+                List<BaseItemDto> libraries = allRootItems.stream()
+                        .filter(item -> item.isIsFolder() != null && item.isIsFolder())
+                        .collect(Collectors.toList());
 
                 // Tạo root TreeItem ảo (không hiển thị)
                 TreeItem<BaseItemDto> root = new TreeItem<>();
                 root.setExpanded(true);
 
-                // Thêm các thư viện làm con của root ảo
+                // 3. Thêm các thư viện (đã lọc) làm con của root ảo
                 for (BaseItemDto lib : libraries) {
                     TreeItem<BaseItemDto> libNode = new TreeItem<>(lib);
 
                     // (SỬA ĐỔI Lần 2) Nếu item là thư mục, thêm 1 node "giả" (dummy)
-                    // để JavaFX hiển thị mũi tên expand (>)
-                    if (lib.isIsFolder() != null && lib.isIsFolder()) {
-                        libNode.getChildren().add(new TreeItem<>(null)); // Dummy node
-                    }
+                    // Chúng ta đã biết đây là folder, nên luôn thêm dummy node
+                    libNode.getChildren().add(new TreeItem<>(null)); // Dummy node
 
                     root.getChildren().add(libNode);
                 }
@@ -110,25 +115,30 @@ public class LibraryTreeViewModel {
         new Thread(() -> {
             try {
                 String parentId = item.getValue().getId();
-                // Gọi Repository để lấy các item con
-                List<BaseItemDto> children = itemRepository.getItemsByParentId(parentId);
+                // 1. (CẬP NHẬT) Gọi Repository để lấy TẤT CẢ các item con
+                List<BaseItemDto> allChildren = itemRepository.getItemsByParentId(parentId);
+
+                // 2. (CẬP NHẬT) Lọc danh sách, chỉ giữ lại FOLDER
+                List<BaseItemDto> folderChildren = allChildren.stream()
+                        .filter(child -> child.isIsFolder() != null && child.isIsFolder())
+                        .collect(Collectors.toList());
 
                 Platform.runLater(() -> {
                     // Xóa node "giả" (dummy node)
                     item.getChildren().clear();
 
-                    // Thêm các node con thật
-                    for (BaseItemDto childDto : children) {
+                    // 3. (CẬP NHẬT) Thêm các node con (chỉ folder)
+                    for (BaseItemDto childDto : folderChildren) {
                         TreeItem<BaseItemDto> childNode = new TreeItem<>(childDto);
 
                         // (QUAN TRỌNG) Thêm dummy node cho các node con này
-                        // để chúng có thể được expand sau này
-                        if (childDto.isIsFolder() != null && childDto.isIsFolder()) {
-                            childNode.getChildren().add(new TreeItem<>(null));
-                        }
+                        // vì chúng ta biết chúng là folder
+                        childNode.getChildren().add(new TreeItem<>(null));
                         item.getChildren().add(childNode);
                     }
                     // Tự động expand node cha sau khi tải xong
+                    // (Nếu folderChildren rỗng, nó sẽ clear dummy node và không expand,
+                    // điều này sẽ làm mũi tên biến mất, đúng như ý bạn)
                     item.setExpanded(true);
                 });
 

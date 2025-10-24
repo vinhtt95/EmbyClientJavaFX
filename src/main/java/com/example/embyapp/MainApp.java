@@ -53,6 +53,15 @@ public class MainApp extends Application {
 
 
             Scene scene = new Scene(root);
+
+            // (NÂNG CẤP) Thêm CSS vào Scene
+            try {
+                String cssPath = getClass().getResource("styles.css").toExternalForm();
+                scene.getStylesheets().add(cssPath);
+            } catch (NullPointerException e) {
+                System.err.println("Không tìm thấy file styles.css. Bỏ qua việc tải CSS.");
+            }
+
             primaryStage.setTitle("Emby Login");
             primaryStage.setScene(scene);
             primaryStage.show();
@@ -83,6 +92,15 @@ public class MainApp extends Application {
 
 
             Scene scene = new Scene(root);
+
+            // (NÂNG CẤP) Thêm CSS vào Scene
+            try {
+                String cssPath = getClass().getResource("styles.css").toExternalForm();
+                scene.getStylesheets().add(cssPath);
+            } catch (NullPointerException e) {
+                System.err.println("Không tìm thấy file styles.css. Bỏ qua việc tải CSS.");
+            }
+
             primaryStage.setTitle("Emby Client");
             primaryStage.setScene(scene);
             primaryStage.show();

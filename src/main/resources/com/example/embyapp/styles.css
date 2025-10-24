@@ -1,0 +1,63 @@
+/* * CSS cho Ứng dụng EmbyClientJavaFX
+ * (CẬP NHẬT 2): Thêm bo góc, hiệu ứng hover sáng lên và transition.
+ */
+
+/* (NÂNG CẤP 3) Style cho cell (container) */
+.item-cell {
+    /* (CẬP NHẬT 2) Bo góc cho toàn bộ cell (StackPane) */
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px; /* Đảm bảo bo góc */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 10, 0.2, 0, 3);
+
+    /* (CẬP NHẬT 2) Thêm transition cho hiệu ứng mượt mà */
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+/* (NÂNG CẤP 3) Style cho ảnh nền (ImageView) */
+.item-image {
+    /* (CẬP NHẬT 2) Đảm bảo ảnh cũng được bo góc */
+    -fx-background-radius: 10px;
+}
+
+/* (NÂNG CẤP 2) Style cho lớp phủ gradient */
+.item-title-overlay {
+    -fx-background-color: linear-gradient(to top,
+    rgba(0,0,0,0.8) 0%,
+    rgba(0,0,0,0.6) 30%,
+    rgba(0,0,0,0) 100%
+    );
+
+    /* (CẬP NHẬT 2) Đảm bảo lớp phủ cũng bo góc (chỉ bo góc dưới) */
+    -fx-background-radius: 0 0 10px 10px;
+
+    /* (CẬP NHẬT 2) Thêm transition cho hiệu ứng mượt mà */
+    -fx-opacity: 1.0; /* Trạng thái mặc định là mờ */
+    -fx-transition: opacity 0.2s ease-in-out;
+}
+
+/* (NÂNG CẤP 2) Style cho tiêu đề (Label) */
+.item-title-label {
+    -fx-text-fill: white;
+    -fx-font-size: 14px; /* Tăng kích thước font một chút */
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.7), 2, 0.5, 0, 1);
+}
+
+
+/* (CẬP NHẬT 2) HIỆU ỨNG HOVER */
+
+.item-cell:hover {
+    /* Phóng to cell một chút khi hover */
+    -fx-scale-x: 1.03;
+    -fx-scale-y: 1.03;
+    /* Tăng độ đậm của shadow */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.6), 15, 0.3, 0, 4);
+}
+
+.item-cell:hover .item-title-overlay {
+    /* * Làm "sáng" ảnh bằng cách giảm độ mờ của lớp phủ gradient.
+     * (CẬP NHẬT 2) Giảm opacity xuống 0.5 để làm sáng lớp phủ.
+     */
+    -fx-opacity: 0.5;
+}
+

@@ -7,6 +7,7 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import javafx.scene.input.MouseEvent; // Thêm import
 import javafx.scene.layout.StackPane;
 
 public class LibraryTreeController {
@@ -45,6 +46,20 @@ public class LibraryTreeController {
             @Override
             protected void updateItem(BaseItemDto item, boolean empty) {
                 super.updateItem(item, empty);
+
+                // (SỬA ĐỔI) Thêm listener cho Double Click để "lazy load"
+                setOnMouseClicked(event -> {
+                    // Chỉ xử lý khi double click, và TreeItem/Item có tồn tại
+                    if (event.getClickCount() == 2 && getTreeItem() != null && getTreeItem().getValue() != null) {
+                        BaseItemDto clickedItem = getTreeItem().getValue();
+                        // Chỉ load con nếu nó là một thư mục (isFolder)
+                        if (clickedItem.isIsFolder() != null && clickedItem.isIsFolder()) {
+                            viewModel.loadChildrenForItem(getTreeItem());
+                        }
+                    }
+                });
+
+
                 if (empty || item == null) {
                     setText(null);
                     setGraphic(null);

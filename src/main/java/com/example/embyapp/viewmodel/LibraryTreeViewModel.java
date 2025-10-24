@@ -12,6 +12,7 @@ import java.util.List;
 /**
  * (SỬA ĐỔI) ViewModel cho LibraryTreeView.
  * Sửa lỗi: Sử dụng ReadOnly...Wrapper để expose ReadOnlyProperty.
+ * SỬA ĐỔI (Lần 2): Thêm logic "lazy loading" cho double-click.
  */
 public class LibraryTreeViewModel {
 
@@ -35,17 +36,8 @@ public class LibraryTreeViewModel {
         // Xử lý logic khi selectedTreeItem thay đổi
         selectedTreeItem.addListener((obs, oldVal, newVal) -> {
             if (newVal != null && newVal.getValue() != null) {
-                // Chỉ cập nhật nếu nó là "thư viện" (thư mục gốc),
-                // sau này có thể mở rộng để kiểm tra sâu hơn
-                if (newVal.getParent() == rootItem.get()) {
-                    selectedLibraryItem.set(newVal.getValue());
-                } else {
-                    // Nếu user chọn 1 item con (ví dụ: đang expand tree),
-                    // chúng ta không muốn cập nhật Grid,
-                    // nên set selectedLibraryItem về null.
-                    // (Hoặc có thể tìm parent gốc của nó, tùy logic)
-                    selectedLibraryItem.set(null); // Tạm thời set null
-                }
+                // (SỬA ĐỔI Lần 2) Luôn set item được chọn
+                selectedLibraryItem.set(newVal.getValue());
             } else {
                 selectedLibraryItem.set(null);
             }
@@ -70,7 +62,13 @@ public class LibraryTreeViewModel {
                 // Thêm các thư viện làm con của root ảo
                 for (BaseItemDto lib : libraries) {
                     TreeItem<BaseItemDto> libNode = new TreeItem<>(lib);
-                    // (Sau này có thể thêm logic tải con cháu ở đây nếu cần expand)
+
+                    // (SỬA ĐỔI Lần 2) Nếu item là thư mục, thêm 1 node "giả" (dummy)
+                    // để JavaFX hiển thị mũi tên expand (>)
+                    if (lib.isIsFolder() != null && lib.isIsFolder()) {
+                        libNode.getChildren().add(new TreeItem<>(null)); // Dummy node
+                    }
+
                     root.getChildren().add(libNode);
                 }
 
@@ -90,6 +88,62 @@ public class LibraryTreeViewModel {
                 System.err.println("Generic Error loading libraries: " + e.getMessage());
                 Platform.runLater(() -> {
                     loading.set(false);
+                });
+            }
+        }).start();
+    }
+
+    // (HÀM MỚI - Lần 2) Tải các item con cho một TreeItem (dùng cho double-click)
+    public void loadChildrenForItem(TreeItem<BaseItemDto> item) {
+        // Kiểm tra điều kiện
+        if (item == null || item.getValue() == null) {
+            return;
+        }
+        // Kiểm tra xem đã load con chưa (nếu node con đầu tiên không phải là "giả")
+        if (!item.isLeaf() && (item.getChildren().isEmpty() || item.getChildren().get(0).getValue() != null)) {
+            // Đã load rồi, chỉ cần expand
+            item.setExpanded(true);
+            return;
+        }
+
+        // Bắt đầu chạy nền để tải
+        new Thread(() -> {
+            try {
+                String parentId = item.getValue().getId();
+                // Gọi Repository để lấy các item con
+                List<BaseItemDto> children = itemRepository.getItemsByParentId(parentId);
+
+                Platform.runLater(() -> {
+                    // Xóa node "giả" (dummy node)
+                    item.getChildren().clear();
+
+                    // Thêm các node con thật
+                    for (BaseItemDto childDto : children) {
+                        TreeItem<BaseItemDto> childNode = new TreeItem<>(childDto);
+
+                        // (QUAN TRỌNG) Thêm dummy node cho các node con này
+                        // để chúng có thể được expand sau này
+                        if (childDto.isIsFolder() != null && childDto.isIsFolder()) {
+                            childNode.getChildren().add(new TreeItem<>(null));
+                        }
+                        item.getChildren().add(childNode);
+                    }
+                    // Tự động expand node cha sau khi tải xong
+                    item.setExpanded(true);
+                });
+
+            } catch (ApiException e) {
+                System.err.println("API Error loading children for tree: " + e.getMessage());
+                // (Có thể thêm logic xóa dummy node và hiển thị lỗi)
+                Platform.runLater(() -> {
+                    item.getChildren().clear(); // Xóa dummy node khi lỗi
+                    item.setExpanded(false);
+                });
+            } catch (Exception e) {
+                System.err.println("Generic Error loading children for tree: " + e.getMessage());
+                Platform.runLater(() -> {
+                    item.getChildren().clear();
+                    item.setExpanded(false);
                 });
             }
         }).start();

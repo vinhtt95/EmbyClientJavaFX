@@ -11,6 +11,7 @@ import java.util.List;
 /**
  * (SỬA ĐỔI) Repository để quản lý việc truy xuất BaseItemDto (Thư viện, Phim, Series...).
  * Sửa lỗi tên hàm và logic lấy userId.
+ * SỬA ĐỔI (Lần 2): Sửa lỗi bug Integer.parseInt(parentId).
  */
 public class ItemRepository {
 
@@ -54,7 +55,7 @@ public class ItemRepository {
         }
 
         // Gọi API để lấy các mục gốc (User Views)
-        QueryResultBaseItemDto result = service.getItems(
+        QueryResultBaseItemDto result = service.getUsersByUseridItems(
                 userId, // userId
                 null, // sortBy
                 null, // sortOrder
@@ -112,6 +113,7 @@ public class ItemRepository {
                 null, // artistStartsWithOrGreater
                 null, // artistStartsWith
                 null, // seriesStatus
+                null, // seriesStatus
                 // seriesStatus
                 null,null, null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null, null, null, null,
@@ -147,76 +149,13 @@ public class ItemRepository {
             throw new IllegalStateException("ItemsServiceApi is null.");
         }
 
-        // Gọi API
-        QueryResultBaseItemDto result = service.getItems(
-                userId, // userId
-                null, // sortBy
-                null, // sortOrder
-                null, // includeItemTypes
-                false, // recursive (Chỉ lấy con trực tiếp)
-                null, // fields
-                null, // startIndex
-                null, // limit
-                null, // excludeItemTypes
-                null, // enableImages
-                null, // imageTypeLimit
-                null, // enableImageTypes
-                null, // locationTypes
-                Integer.parseInt(parentId), // parentId (Lấy con của ID này)
-                null, // searchTerm
-                null, // enableTotalRecordCount
-                null, // enableUserData
-                null, // imageTypes
-                null, // mediaTypes
-                null, // years
-                null, // officialRatings
-                null, // tags
-                null, // genres
-                null, // studios
-                null, // artists
-                null, // albums
-                null, // ids
-                null, // videoTypes
-                null, // adjacentTo
-                null, // minIndexNumber
-                null, // minStartDate
-                null, // maxStartDate
-                null, // minEndDate
-                null, // maxEndDate
-                null, // minPlayers
-                null, // maxPlayers
-                null, // parentIndexNumber
-                null, // hasThemeSong
-                null, // hasThemeVideo
-                null, // hasSubtitles
-                null, // hasSpecialFeature
-                null, // hasTrailer
-                null, // isHD
-                null, // is4K
-                null, // isUnaired
-                null, // isMissed
-                null, // isNew
-                null, // isPremiere
-                null, // isRepeat
-                null, // nameStartsWithOrGreater
-                null, // nameStartsWith
-                null, // nameLessThan
-                null, // albumArtistStartsWithOrGreater
-                null, // albumArtistStartsWith
-                null, // artistStartsWithOrGreater
-                null, // artistStartsWith
-                null, // seriesStatus
-                null, // seriesStatus
-                null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null
-        );
+        QueryResultBaseItemDto result = new RequestEmby().getQueryResultBaseItemDto(parentId, service);
 
         if (result != null && result.getItems() != null) {
             return result.getItems();
         }
         return Collections.emptyList();
     }
+
 }
 

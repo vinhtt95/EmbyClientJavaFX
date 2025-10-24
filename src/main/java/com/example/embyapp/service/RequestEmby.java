@@ -53,7 +53,7 @@ public class RequestEmby {
                     null,   // limit
                     null,   // recursive
                     null,   // searchTerm
-                    null,   // sortOrder
+                    "Ascending",   // sortOrder
                     parentID,   // parentId
                     null,   // fields
                     null,   // excludeItemTypes
@@ -74,7 +74,7 @@ public class RequestEmby {
                     null,   // projectToMedia
                     null,   // mediaTypes
                     null,   // imageTypes
-                    null,   // sortBy
+                    "ProductionYear,PremiereDate,SortName",   // sortBy
                     null,   // isPlayed
                     null,   // genres
                     null,   // officialRatings

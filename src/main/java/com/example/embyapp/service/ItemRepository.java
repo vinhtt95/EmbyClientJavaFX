@@ -1,30 +1,36 @@
 package com.example.embyapp.service;
 
 import com.example.emby.EmbyClient.ApiException;
+import com.example.emby.EmbyClient.Java.ImageServiceApi; // (CẬP NHẬT) Thêm import
 import com.example.emby.EmbyClient.Java.ItemsServiceApi;
+import com.example.emby.EmbyClient.Java.UserLibraryServiceApi; // (CẬP NHẬT) Thêm import
 import com.example.emby.modelEmby.BaseItemDto;
+import com.example.emby.modelEmby.ImageInfo; // (CẬP NHẬT) Thêm import
 import com.example.emby.modelEmby.QueryResultBaseItemDto;
 
 import java.util.Collections;
 import java.util.List;
-// (CẬP NHẬT) Xóa import stream, vì chúng ta không lọc ở đây nữa
-// import java.util.stream.Collectors;
+import java.util.stream.Collectors; // (CẬP NHẬT) Thêm import (từ lần sửa trước)
 
 /**
  * (SỬA ĐỔI) Repository để quản lý việc truy xuất BaseItemDto (Thư viện, Phim, Series...).
- * Sửa lỗi tên hàm và logic lấy userId.
- * SỬA ĐỔI (Lần 2): Sửa lỗi bug Integer.parseInt(parentId).
- * (CẬP NHẬT 3): ĐÃ HOÀN TÁC - Trả về tất cả item, không lọc.
+ * (CẬP NHẬT) Thêm logic để lấy Chi tiết Item đầy đủ và Danh sách Ảnh.
  */
 public class ItemRepository {
 
     private final EmbyService embyService;
     private ItemsServiceApi itemsService; // Cache API service
 
+    // (CẬP NHẬT) Cache các API service mới
+    private UserLibraryServiceApi userLibraryServiceApi;
+    private ImageServiceApi imageServiceApi;
+
     // SỬA LỖI: Constructor rỗng, tự lấy Singleton
     public ItemRepository() {
         this.embyService = EmbyService.getInstance();
     }
+
+    // --- Private Helper Getters cho API Services ---
 
     private ItemsServiceApi getItemsService() {
         if (itemsService == null && embyService.isLoggedIn()) {
@@ -32,6 +38,24 @@ public class ItemRepository {
         }
         return this.itemsService;
     }
+
+    // (CẬP NHẬT) Hàm helper mới
+    private UserLibraryServiceApi getUserLibraryServiceApi() {
+        if (userLibraryServiceApi == null && embyService.isLoggedIn()) {
+            this.userLibraryServiceApi = new UserLibraryServiceApi(embyService.getApiClient());
+        }
+        return this.userLibraryServiceApi;
+    }
+
+    // (CẬP NHẬT) Hàm helper mới
+    private ImageServiceApi getImageServiceApi() {
+        if (imageServiceApi == null && embyService.isLoggedIn()) {
+            this.imageServiceApi = new ImageServiceApi(embyService.getApiClient());
+        }
+        return this.imageServiceApi;
+    }
+
+    // --- Public API Methods ---
 
     /**
      * SỬA LỖI: Đổi tên hàm thành getRootViews() (như ViewModel đang gọi)
@@ -63,7 +87,7 @@ public class ItemRepository {
         result = new RequestEmby().getUsersByUseridItems(userId, service);
 
         if (result != null && result.getItems() != null) {
-            // (CẬP NHẬT) Đã hoàn tác. Trả về mọi thứ.
+            // (CẬP NHẬT) Lọc chỉ-folder đã chuyển sang LibraryTreeViewModel
             return result.getItems();
         }
         return Collections.emptyList();
@@ -94,11 +118,56 @@ public class ItemRepository {
         QueryResultBaseItemDto result = new RequestEmby().getQueryResultBaseItemDto(parentId, service);
 
         if (result != null && result.getItems() != null) {
-            // (CẬP NHẬT) Đã hoàn tác. Trả về mọi thứ.
+            // (CẬP NHẬT) Lọc chỉ-folder đã chuyển sang LibraryTreeViewModel
             return result.getItems();
         }
         return Collections.emptyList();
     }
 
+    /**
+     * (CẬP NHẬT) HÀM MỚI
+     * Lấy thông tin chi tiết đầy đủ của một item.
+     *
+     * @param userId ID của người dùng
+     * @param itemId ID của item
+     * @return BaseItemDto với đầy đủ thông tin chi tiết.
+     * @throws ApiException Nếu API call thất bại.
+     */
+    public BaseItemDto getFullItemDetails(String userId, String itemId) throws ApiException {
+        if (!embyService.isLoggedIn() || userId == null) {
+            throw new IllegalStateException("Không thể lấy chi tiết item khi chưa đăng nhập.");
+        }
+        UserLibraryServiceApi service = getUserLibraryServiceApi();
+        if (service == null) {
+            throw new IllegalStateException("UserLibraryServiceApi is null.");
+        }
+        // Gọi API như code mẫu của bạn
+        return service.getUsersByUseridItemsById(userId, itemId);
+    }
+
+    /**
+     * (CẬP NHẬT) HÀM MỚI
+     * Lấy danh sách ảnh (Backdrop, Primary, v.v.) của một item.
+     *
+     * @param itemId ID của item
+     * @return Danh sách ImageInfo.
+     * @throws ApiException Nếu API call thất bại.
+     */
+    public List<ImageInfo> getItemImages(String itemId) throws ApiException {
+        if (!embyService.isLoggedIn()) {
+            throw new IllegalStateException("Không thể lấy ảnh khi chưa đăng nhập.");
+        }
+        ImageServiceApi service = getImageServiceApi();
+        if (service == null) {
+            throw new IllegalStateException("ImageServiceApi is null.");
+        }
+        // Gọi API như code mẫu của bạn
+        List<ImageInfo> images = service.getItemsByIdImages(itemId);
+        if (images != null) {
+            return images;
+        }
+        // Trả về danh sách rỗng an toàn
+        return Collections.emptyList();
+    }
 }
 

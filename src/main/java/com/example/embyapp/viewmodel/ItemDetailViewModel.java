@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 /**
  * (CẬP NHẬT LỚN) ViewModel cho ItemDetailView (Cột phải).
  * (CẬP NHẬT 4) Chuyển Title/Overview sang editable, thêm các trường mới.
- * (CẬP NHẬT 5) Sửa logic getStudios() để dùng NameLongIdPair.
+ * (CẬP NHẬT 5) Sửa logic getStudios() để dùng NameLongIdPair và thêm error reporting.
  */
 public class ItemDetailViewModel {
 
@@ -39,6 +39,7 @@ public class ItemDetailViewModel {
     private final StringProperty overview = new SimpleStringProperty("");
 
     private final ReadOnlyStringWrapper year = new ReadOnlyStringWrapper("");
+    // Code đã sửa:
     private final ReadOnlyStringWrapper statusMessage = new ReadOnlyStringWrapper("Vui lòng chọn một item từ danh sách...");
     private final ReadOnlyBooleanWrapper showStatusMessage = new ReadOnlyBooleanWrapper(true);
 
@@ -53,7 +54,7 @@ public class ItemDetailViewModel {
     // Properties cho đường dẫn và nút bấm
     private final ReadOnlyStringWrapper itemPath = new ReadOnlyStringWrapper("");
     private final ReadOnlyBooleanWrapper isFolder = new ReadOnlyBooleanWrapper(false);
-    private final ReadOnlyStringWrapper actionStatusMessage = new ReadOnlyStringWrapper("");
+    private final ReadOnlyStringWrapper actionStatusMessage = new ReadOnlyStringWrapper(""); // Dùng cho lỗi Mở/Phát
 
     // (MỚI) Properties cho các trường chung và chỉ-file
     private final ReadOnlyStringWrapper tags = new ReadOnlyStringWrapper("");
@@ -115,7 +116,6 @@ public class ItemDetailViewModel {
                 String releaseDateText = "";
                 if (fullDetails.getPremiereDate() != null) {
                     try {
-                        // Tạm thời dùng toString(). Cần điều chỉnh nếu kiểu dữ liệu là DateTime
                         releaseDateText = fullDetails.getPremiereDate().toString();
                     } catch (Exception e) {
                         System.err.println("Không thể format PremiereDate: " + e.getMessage());
@@ -125,12 +125,12 @@ public class ItemDetailViewModel {
                 // (SỬA ĐỔI) Dùng NameLongIdPair::getName
                 String studiosText = (fullDetails.getStudios() != null) ?
                         fullDetails.getStudios().stream()
-                                .map(NameLongIdPair::getName) // Sửa tại đây
+                                .map(NameLongIdPair::getName)
                                 .collect(Collectors.joining(", ")) : "";
 
                 String peopleText = (fullDetails.getPeople() != null) ?
                         fullDetails.getPeople().stream()
-                                .map(BaseItemPerson::getName) // Giả định SDK có BaseItemPerson
+                                .map(BaseItemPerson::getName)
                                 .collect(Collectors.joining(", ")) : "";
 
                 String primaryImageUrl = findImageUrl(images, "Primary", serverUrl, itemId);
@@ -253,7 +253,6 @@ public class ItemDetailViewModel {
         return loading.getReadOnlyProperty();
     }
 
-    // (MỚI) Trả về StringProperty để bind 2 chiều
     public StringProperty titleProperty() {
         return title;
     }
@@ -262,7 +261,6 @@ public class ItemDetailViewModel {
         return year.getReadOnlyProperty();
     }
 
-    // (MỚI) Trả về StringProperty để bind 2 chiều
     public StringProperty overviewProperty() {
         return overview;
     }
@@ -303,10 +301,19 @@ public class ItemDetailViewModel {
     public ReadOnlyStringProperty peopleProperty() { return people.getReadOnlyProperty(); }
 
 
-    // Hàm cho Controller gọi khi có lỗi hành động
+    // --- Các hàm Setter/Reporter cho Action Error (MỚI) ---
+    // Được ItemGridController và ItemDetailController gọi để báo cáo lỗi/status
+
+    /**
+     * Báo cáo lỗi hoặc thông báo lên thanh status phụ (dưới nút Mở/Phát).
+     */
     public void reportActionError(String errorMessage) {
         Platform.runLater(() -> this.actionStatusMessage.set(errorMessage));
     }
+
+    /**
+     * Xóa thông báo lỗi/status hành động.
+     */
     public void clearActionError() {
         Platform.runLater(() -> this.actionStatusMessage.set(""));
     }

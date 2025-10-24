@@ -9,9 +9,9 @@ import com.example.embyapp.viewmodel.*;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
-// SỬA LỖI 3 & 4: Thêm import
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.ReadOnlyStringProperty; // <-- ĐÃ THÊM IMPORT NÀY
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -22,13 +22,14 @@ import javafx.scene.layout.HBox;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.prefs.Preferences; // (CẬP NHẬT) Thêm import
+import java.util.prefs.Preferences;
 
 /**
  * (SỬA LỖI GĐ2)
  * Controller Điều Phối (Coordinator) cho MainView.
  * (CẬP NHẬT) Thêm logic lưu/tải vị trí SplitPane.
  * (CẬP NHẬT) Sửa constructor cho ItemDetailViewModel.
+ * (CẬP NHẬT 2) Inject ItemDetailViewModel vào ItemGridController.
  */
 public class MainController {
 
@@ -93,7 +94,6 @@ public class MainController {
         this.itemGridViewModel = new ItemGridViewModel(itemRepository);
 
         // (CẬP NHẬT) Sửa constructor
-        // Dùng constructor mới (itemRepository, embyService)
         this.itemDetailViewModel = new ItemDetailViewModel(itemRepository, embyService);
 
         // 4. Tải FXML lồng
@@ -114,6 +114,11 @@ public class MainController {
             itemDetailController = loadNestedFXML("ItemDetailView.fxml", rightPaneContainer);
             if (itemDetailController != null) {
                 itemDetailController.setViewModel(itemDetailViewModel); // Inject VM
+            }
+
+            // (MỚI) Inject ItemDetailViewModel vào ItemGridController
+            if (itemGridController != null) {
+                itemGridController.setItemDetailViewModel(itemDetailViewModel);
             }
 
         } catch (IOException e) {
@@ -198,21 +203,14 @@ public class MainController {
                 // Tải Grid
                 itemGridController.loadItemsByParentId(parentId);
 
-                // Đồng thời, xóa cột Detail (ViewModel sẽ tự gọi API khi Grid thay đổi)
-                // (KHÔNG CẦN GỌI CỘT DETAIL TỪ ĐÂY NỮA)
-                // itemDetailViewModel.setItemToDisplay(null); // <-- XÓA DÒNG NÀY
-
             } else {
                 itemGridController.loadItemsByParentId(null); // Xóa Grid
-                // itemDetailViewModel.setItemToDisplay(null); // <-- XÓA DÒNG NÀY
             }
         });
 
         // --- Flow 2: Grid -> Detail ---
-        // (CẬP NHẬT) Logic này giờ là logic chính điều khiển Cột Detail
         itemGridViewModel.selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             // Bất kể newVal là null hay không, cứ đẩy nó sang ItemDetailViewModel
-            // ViewModel sẽ tự quyết định (hiển thị "Vui lòng chọn..." hoặc gọi API)
             itemDetailViewModel.setItemToDisplay(newVal);
         });
 
@@ -223,18 +221,22 @@ public class MainController {
         // (CẬP NHẬT) Thêm trạng thái loading của Cột Detail
         ReadOnlyBooleanProperty detailLoading = itemDetailViewModel.loadingProperty();
 
+        // Trạng thái lỗi hành động (Mở/Phát)
+        ReadOnlyStringProperty actionStatus = itemDetailViewModel.actionStatusMessageProperty();
+
         // 1. Bind trạng thái Loading (ProgressIndicator)
         statusProgressIndicator.visibleProperty().bind(
                 Bindings.or(treeLoading, gridLoading).or(detailLoading)
         );
 
         // 2. Bind trạng thái Status Message
-        treeLoading.addListener((obs, old, isTreeLoading) -> updateStatusMessage(isTreeLoading, gridLoading.get(), detailLoading.get()));
-        gridLoading.addListener((obs, old, isGridLoading) -> updateStatusMessage(treeLoading.get(), isGridLoading, detailLoading.get()));
-        detailLoading.addListener((obs, old, isDetailLoading) -> updateStatusMessage(treeLoading.get(), gridLoading.get(), isDetailLoading));
+        treeLoading.addListener((obs, old, isTreeLoading) -> updateStatusMessage(isTreeLoading, gridLoading.get(), detailLoading.get(), actionStatus.get()));
+        gridLoading.addListener((obs, old, isGridLoading) -> updateStatusMessage(treeLoading.get(), isGridLoading, detailLoading.get(), actionStatus.get()));
+        detailLoading.addListener((obs, old, isDetailLoading) -> updateStatusMessage(treeLoading.get(), gridLoading.get(), isDetailLoading, actionStatus.get()));
+        // (MỚI) Lắng nghe trạng thái lỗi hành động
+        actionStatus.addListener((obs, old, newActionStatus) -> updateStatusMessage(treeLoading.get(), gridLoading.get(), detailLoading.get(), newActionStatus));
 
         // (CẬP NHẬT) Thêm listener cho status message của Cột Detail
-        // (Nếu Detail đang hiển thị status (ví dụ: lỗi), nó sẽ ưu tiên hơn)
         itemDetailViewModel.statusMessageProperty().addListener((obs, old, newStatus) -> {
             if (itemDetailViewModel.showStatusMessageProperty().get() && !newStatus.isEmpty()) {
                 // Nếu Detail VM muốn hiển thị status, hãy ưu tiên nó
@@ -245,24 +247,31 @@ public class MainController {
 
     /**
      * (CẬP NHẬT) Helper
-     * Cập nhật status message dựa trên trạng thái loading của 3 controller.
+     * Cập nhật status message dựa trên trạng thái loading và lỗi hành động.
      */
-    private void updateStatusMessage(boolean isTreeLoading, boolean isGridLoading, boolean isDetailLoading) {
+    private void updateStatusMessage(boolean isTreeLoading, boolean isGridLoading, boolean isDetailLoading, String actionStatus) {
         Platform.runLater(() -> {
-            // Ưu tiên status message của Detail VM nếu nó đang hiển thị
+            // Ưu tiên 1: Lỗi Hành động (Mở/Phát)
+            if (actionStatus != null && !actionStatus.isEmpty()) {
+                viewModel.statusMessageProperty().set(actionStatus);
+                return;
+            }
+
+            // Ưu tiên 2: Status Message của Detail VM (ví dụ: "Lỗi khi tải chi tiết...")
             if (itemDetailViewModel.showStatusMessageProperty().get()) {
                 viewModel.statusMessageProperty().set(itemDetailViewModel.statusMessageProperty().get());
                 return;
             }
 
-            // Nếu không, hiển thị status loading
+            // Ưu tiên 3: Status Loading
             if (isTreeLoading) {
                 viewModel.statusMessageProperty().set("Đang tải thư viện...");
             } else if (isGridLoading) {
                 viewModel.statusMessageProperty().set("Đang tải items...");
             } else if (isDetailLoading) {
-                viewModel.statusMessageProperty().set("Đang tải chi tiết..."); // (MỚI)
+                viewModel.statusMessageProperty().set("Đang tải chi tiết...");
             } else {
+                // Mặc định
                 viewModel.statusMessageProperty().set("Sẵn sàng.");
             }
         });
@@ -289,7 +298,6 @@ public class MainController {
         if (mainSplitPane != null && prefs != null && mainSplitPane.getDividers().size() >= 2) {
             double pos1 = mainSplitPane.getDividerPositions()[0];
             double pos2 = mainSplitPane.getDividerPositions()[1];
-            // System.out.println("Saving dividers: " + pos1 + ", " + pos2); // Debug
             prefs.putDouble(KEY_DIVIDER_1, pos1);
             prefs.putDouble(KEY_DIVIDER_2, pos2);
             try {
@@ -305,16 +313,12 @@ public class MainController {
      */
     private void loadDividerPositions() {
         if (mainSplitPane != null && prefs != null && mainSplitPane.getDividers().size() >= 2) {
-            // Lấy giá trị đã lưu, nếu không có thì dùng giá trị mặc định (ví dụ 0.25, 0.75)
             double pos1 = prefs.getDouble(KEY_DIVIDER_1, 0.25);
             double pos2 = prefs.getDouble(KEY_DIVIDER_2, 0.75);
-            // System.out.println("Loading dividers: " + pos1 + ", " + pos2); // Debug
 
-            // Phải chạy Platform.runLater() để đảm bảo SplitPane đã được render
             Platform.runLater(() -> {
                 mainSplitPane.setDividerPositions(pos1, pos2);
             });
         }
     }
 }
-

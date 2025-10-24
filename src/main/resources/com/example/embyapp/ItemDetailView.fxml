@@ -6,6 +6,7 @@
 <?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.FlowPane?>
@@ -16,15 +17,12 @@
 
 <StackPane fx:id="rootPane" style="-fx-background-color: #1a1a1a;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.embyapp.controller.ItemDetailController">
     <children>
-
         <ProgressIndicator fx:id="loadingIndicator" maxHeight="60.0" maxWidth="60.0" visible="false" />
-
         <Label fx:id="statusLabel" text="Vui lòng chọn một item..." textFill="GREY" StackPane.alignment="CENTER" wrapText="true">
             <font>
                 <Font name="System Italic" size="14.0" />
             </font>
         </Label>
-
         <ScrollPane fx:id="mainScrollPane" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-background: transparent;" visible="false" StackPane.alignment="TOP_LEFT">
             <content>
                 <VBox fx:id="detailContentPane" spacing="10.0">
@@ -39,68 +37,80 @@
                             </VBox.margin>
                         </ImageView>
 
-                        <Label fx:id="titleLabel" text="Item Title" textFill="WHITE" wrapText="true">
-                            <font>
-                                <Font name="System Bold" size="24.0" />
-                            </font>
-                        </Label>
+                        <TextField fx:id="titleTextField" promptText="Tiêu đề" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-background-color: #2e2e2e; -fx-text-fill: white; -fx-prompt-text-fill: #aaa;" />
 
-                        <Label fx:id="taglineLabel" text="Tagline goes here..." textFill="#b3b3b3" wrapText="true">
-                            <font>
-                                <Font name="System Italic" size="16.0" />
-                            </font>
-                        </Label>
-
-                        <HBox alignment="CENTER_LEFT" spacing="20.0">
-                            <children>
-                                <Label fx:id="yearLabel" text="Year" textFill="WHITE">
-                                    <font>
-                                        <Font size="14.0" />
-                                    </font>
-                                </Label>
-                                <Label fx:id="runtimeLabel" text="1h 57m" textFill="WHITE">
-                                    <font>
-                                        <Font size="14.0" />
-                                    </font>
-                                </Label>
-                            </children>
-                        </HBox>
+                        <Button fx:id="saveButton" maxWidth="Infinity" onAction="#handleSaveButtonAction" text="Lưu thay đổi">
+                            <VBox.margin>
+                                <Insets top="5.0" />
+                            </VBox.margin>
+                        </Button>
 
                         <VBox fx:id="pathContainer" spacing="5.0" visible="false">
                             <VBox.margin>
                                 <Insets top="10.0" />
                             </VBox.margin>
                             <children>
-                                <Label text="Đường dẫn trên máy" textFill="WHITE">
-                                    <font>
-                                        <Font name="System Bold" size="14.0" />
-                                    </font>
-                                </Label>
-                                <TextField fx:id="pathTextField" editable="false" style="-fx-text-fill: #b3b3b3;" />
+                                <Label text="Đường dẫn trên máy" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
+                                <TextField fx:id="pathTextField" editable="false" style="-fx-text-fill: #b3b3b3; -fx-background-color: #2e2e2e; -fx-border-color: #444;" />
                                 <Button fx:id="openButton" maxWidth="Infinity" onAction="#handleOpenButtonAction" text="Mở" />
                                 <Label fx:id="actionStatusLabel" textFill="RED" wrapText="true" />
                             </children>
                         </VBox>
 
-                        <Label fx:id="genresLabel" text="Genres: Action, Sci-Fi, Thriller" textFill="#b3b3b3" wrapText="true" />
-
-                        <Label text="Mô tả" textFill="WHITE">
-                            <font>
-                                <Font name="System Bold" size="16.0" />
-                            </font>
+                        <Label text="Tags" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;">
                             <VBox.margin>
                                 <Insets top="10.0" />
                             </VBox.margin>
                         </Label>
-                        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" maxHeight="200.0" pannable="true" style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: #333; -fx-border-radius: 5;">
-                            <content>
-                                <Label fx:id="overviewLabel" alignment="TOP_LEFT" text="Overview text will go here..." textFill="#e0e0e0" wrapText="true">
-                                    <padding>
-                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                                    </padding>
+                        <TextField fx:id="tagsTextField" editable="false" promptText="Chưa có tags" style="-fx-background-color: #2e2e2e; -fx-text-fill: #e0e0e0; -fx-prompt-text-fill: #b3b3b3; -fx-border-color: #444;" />
+
+                        <VBox fx:id="fileOnlyContainer" managed="false" spacing="10.0" visible="false">
+                            <children>
+                                <Label fx:id="taglineLabel" text="Tagline goes here..." textFill="#b3b3b3" wrapText="true">
+                                    <font>
+                                        <Font name="System Italic" size="16.0" />
+                                    </font>
+                                    <VBox.margin>
+                                        <Insets top="10.0" />
+                                    </VBox.margin>
                                 </Label>
-                            </content>
-                        </ScrollPane>
+                                <HBox alignment="CENTER_LEFT" spacing="20.0">
+                                    <children>
+                                        <Label fx:id="yearLabel" text="Year" textFill="WHITE">
+                                            <font>
+                                                <Font size="14.0" />
+                                            </font>
+                                        </Label>
+                                        <Label fx:id="runtimeLabel" text="1h 57m" textFill="WHITE">
+                                            <font>
+                                                <Font size="14.0" />
+                                            </font>
+                                        </Label>
+                                    </children>
+                                </HBox>
+                                <Label fx:id="genresLabel" text="Genres: Action, Sci-Fi, Thriller" textFill="#b3b3b3" wrapText="true" />
+
+                                <Label text="Ngày phát hành" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
+                                <TextField fx:id="releaseDateTextField" editable="false" style="-fx-background-color: #2e2e2e; -fx-text-fill: #e0e0e0; -fx-border-color: #444;" />
+
+                                <Label text="Studios" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
+                                <TextField fx:id="studiosTextField" editable="false" style="-fx-background-color: #2e2e2e; -fx-text-fill: #e0e0e0; -fx-border-color: #444;" />
+
+                                <Label text="People" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
+                                <TextField fx:id="peopleTextField" editable="false" style="-fx-background-color: #2e2e2e; -fx-text-fill: #e0e0e0; -fx-border-color: #444;" />
+
+                                <Label text="Mô tả" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 16px;">
+                                    <VBox.margin>
+                                        <Insets top="10.0" />
+                                    </VBox.margin>
+                                </Label>
+                                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" maxHeight="200.0" pannable="true" style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: #333; -fx-border-radius: 5;">
+                                    <content>
+                                        <TextArea fx:id="overviewTextArea" promptText="Mô tả chi tiết..." style="-fx-background-color: #2e2e2e; -fx-text-fill: #e0e0e0; -fx-prompt-text-fill: #b3b3b3;" wrapText="true" />
+                                    </content>
+                                </ScrollPane>
+                            </children>
+                        </VBox>
 
                         <Separator prefWidth="200.0">
                             <VBox.margin>
@@ -108,10 +118,7 @@
                             </VBox.margin>
                         </Separator>
 
-                        <Label text="Gallery Ảnh Nền (Backdrops)" textFill="WHITE">
-                            <font>
-                                <Font name="System Bold" size="16.0" />
-                            </font>
+                        <Label text="Gallery Ảnh Nền (Backdrops)" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 16px;">
                             <VBox.margin>
                                 <Insets top="10.0" />
                             </VBox.margin>

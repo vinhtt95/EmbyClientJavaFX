@@ -35,6 +35,9 @@ import java.time.ZoneId;
  * (CẬP NHẬT 20 - SỬA LỖI BIÊN DỊCH)
  * - Sửa lỗi BaseItemPerson constructor.
  * - Sửa lỗi org.threeten.bp.OffsetDateTime.
+ * (CẬP NHẬT 21 - HOÀN THIỆN UPLOAD)
+ * - Thêm logic upload cho saveNewPrimaryImage và uploadDroppedBackdropFiles.
+ * - Thêm helper reloadPrimaryImage.
  */
 public class ItemDetailViewModel {
 
@@ -315,7 +318,8 @@ public class ItemDetailViewModel {
     public void clearActionError() { Platform.runLater(() -> this.actionStatusMessage.set("")); }
 
 
-    // (Các hàm xử lý ảnh: selectNewPrimaryImage, saveNewPrimaryImage, selectNewBackdrops, deleteBackdrop, reloadBackdrops, uploadDroppedBackdropFiles... giữ nguyên)
+    // --- (*** CẬP NHẬT CÁC HÀM XỬ LÝ ẢNH ***) ---
+
     public void selectNewPrimaryImage(Stage ownerStage) {
         if (currentItemId == null) return;
         List<File> files = imageUpdater.chooseImages(ownerStage, false);
@@ -330,6 +334,10 @@ public class ItemDetailViewModel {
             }
         }
     }
+
+    /**
+     * (*** CẬP NHẬT: Hoàn thiện logic upload Primary ***)
+     */
     public void saveNewPrimaryImage() {
         File fileToSave = newPrimaryImageFile.get();
         if (fileToSave == null || currentItemId == null) {
@@ -337,12 +345,30 @@ public class ItemDetailViewModel {
             return;
         }
         reportActionError("Đang upload ảnh Primary...");
+
+        new Thread(() -> {
+            try {
+                // Gọi hàm upload đã tạo trong ItemImageUpdater
+                imageUpdater.uploadImage(currentItemId, ImageType.PRIMARY, fileToSave);
+
+                Platform.runLater(() -> {
+                    reportActionError("Upload ảnh Primary thành công!");
+                    newPrimaryImageFile.set(null); // Xóa cờ dirty
+                    reloadPrimaryImage(); // Tải lại ảnh từ server để lấy tag mới
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> reportActionError("Lỗi upload Primary: " + e.getMessage()));
+            }
+        }).start();
     }
+
     public void selectNewBackdrops(Stage ownerStage) {
         if (currentItemId == null) return;
         List<File> files = imageUpdater.chooseImages(ownerStage, true);
-        uploadDroppedBackdropFiles(files);
+        uploadDroppedBackdropFiles(files); // Gọi hàm upload
     }
+
     public void deleteBackdrop(ImageInfo backdrop) {
         if (backdrop == null || currentItemId == null) return;
         reportActionError("Đang xóa backdrop index " + backdrop.getImageIndex() + "...");
@@ -359,6 +385,50 @@ public class ItemDetailViewModel {
             }
         }).start();
     }
+
+    /**
+     * (*** HÀM HELPER MỚI: Tải lại ảnh Primary sau khi upload ***)
+     */
+    private void reloadPrimaryImage() {
+        if (currentItemId == null) return;
+        // Giả định rằng originalItemDto vẫn còn giữ tham chiếu
+        BaseItemDto item = this.originalItemDto;
+        if (item == null) return;
+
+        // Tải lại DTO đầy đủ để lấy ImageTags mới
+        new Thread(() -> {
+            try {
+                String userId = embyService.getCurrentUserId();
+                if (userId == null) throw new IllegalStateException("User ID is null");
+
+                this.originalItemDto = itemRepository.getFullItemDetails(userId, currentItemId);
+
+                // Tính toán lại URL ảnh primary
+                String serverUrl = embyService.getApiClient().getBasePath();
+                String primaryImageUrl = null;
+                if (originalItemDto.getImageTags() != null && originalItemDto.getImageTags().containsKey("Primary")) {
+                    String tag = originalItemDto.getImageTags().get("Primary");
+                    primaryImageUrl = String.format("%s/Items/%s/Images/Primary?tag=%s&maxWidth=%d&quality=90",
+                            serverUrl, currentItemId, tag, 600);
+                }
+
+                final String finalPrimaryImageUrl = primaryImageUrl;
+                Platform.runLater(() -> {
+                    if (finalPrimaryImageUrl != null) {
+                        Image img = new Image(finalPrimaryImageUrl, true);
+                        primaryImage.set(img);
+                    } else {
+                        primaryImage.set(null); // Set null nếu không có ảnh
+                    }
+                });
+            } catch (Exception e) {
+                System.err.println("Lỗi khi tải lại ảnh primary: " + e.getMessage());
+                // Không báo lỗi cho user, chỉ log
+            }
+        }).start();
+    }
+
+
     private void reloadBackdrops() {
         if (currentItemId == null) return;
         new Thread(() -> {
@@ -377,11 +447,37 @@ public class ItemDetailViewModel {
             }
         }).start();
     }
+
+    /**
+     * (*** CẬP NHẬT: Hoàn thiện logic upload Backdrop ***)
+     */
     public void uploadDroppedBackdropFiles(List<File> files) {
         if (files == null || files.isEmpty() || currentItemId == null) return;
 
         reportActionError("Đang upload " + files.size() + " ảnh backdrop...");
 
+        new Thread(() -> {
+            try {
+                for (int i = 0; i < files.size(); i++) {
+                    File file = files.get(i);
+                    final int current = i + 1;
+                    Platform.runLater(() -> reportActionError(
+                            String.format("Đang upload backdrop %d/%d: %s", current, files.size(), file.getName())
+                    ));
+                    // Gọi hàm upload
+                    imageUpdater.uploadImage(currentItemId, ImageType.BACKDROP, file);
+                }
+
+                Platform.runLater(() -> {
+                    reportActionError("Upload " + files.size() + " backdrop thành công. Đang tải lại gallery...");
+                    reloadBackdrops(); // Tải lại gallery để hiển thị ảnh mới
+                });
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> reportActionError("Lỗi upload backdrop: " + e.getMessage()));
+            }
+        }).start();
     }
 
     // (Getters cho Controller/Properties giữ nguyên)

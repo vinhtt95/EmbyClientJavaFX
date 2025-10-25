@@ -76,11 +76,22 @@ public class EmbyService {
         }
     }
 
+    // (*** THÊM HÀM GETTER NÀY ***)
+    /**
+     * Trả về một instance mới của interceptor xác thực.
+     * Dùng để tạo các OkHttpClient tùy chỉnh (ví dụ: upload file).
+     */
+    public Interceptor getAuthHeaderInterceptor() {
+        return new AuthHeaderInterceptor();
+    }
+
+
     // Private constructor
     private EmbyService() {
         apiClient = new ApiClient();
         OkHttpClient defaultClient = apiClient.getHttpClient();
-        defaultClient.interceptors().add(new AuthHeaderInterceptor());
+        // (*** SỬA LẠI DÒNG NÀY ĐỂ DÙNG GETTER ***)
+        defaultClient.interceptors().add(getAuthHeaderInterceptor());
         prefs = Preferences.userRoot().node(PREF_NODE_PATH);
         System.out.println("Using Preferences node: " + prefs.absolutePath());
     }

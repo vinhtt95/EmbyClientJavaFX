@@ -171,7 +171,8 @@ public class RequestEmby {
                     limit,   // limit <-- ĐÃ SỬA
                     true,   // recursive
                     null,   // searchTerm
-                    "Ascending",   // sortOrder
+//                    "Ascending",   // sortOrder
+                    "Descending",   // sortOrder
                     parentID,   // parentId
                     null,   // fields
                     null,   // excludeItemTypes

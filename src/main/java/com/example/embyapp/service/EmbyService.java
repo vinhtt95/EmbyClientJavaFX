@@ -60,20 +60,6 @@ public class EmbyService {
             Request originalRequest = chain.request();
             Request.Builder builder = originalRequest.newBuilder();
 
-
-            // --- TEMPORARY TEST: Comment out X-Emby-Authorization ---
-            /*
-            String localClientAuthHeader = EmbyService.this.clientAuthHeader; // Use local copy
-            if (localClientAuthHeader != null && !localClientAuthHeader.isEmpty()) {
-                builder.header("X-Emby-Authorization", localClientAuthHeader);
-                System.out.println("Interceptor: Adding X-Emby-Authorization"); // Debug
-            } else {
-                 System.out.println("Interceptor: NOT Adding X-Emby-Authorization (header is null/empty)"); // Debug
-            }
-            */
-            // --- END TEMPORARY TEST ---
-
-
             // 2. Add X-Emby-Token header IF we have an access token stored in EmbyService
             String localAccessToken = EmbyService.this.currentAccessToken; // Use local copy from outer class
             if (localAccessToken != null && !localAccessToken.isEmpty()) {
@@ -86,8 +72,6 @@ public class EmbyService {
 
 
             Request newRequest = builder.build();
-            // System.out.println("Interceptor: Sending request to: " + newRequest.urlString()); // Debug URL
-            // System.out.println("Interceptor: Headers: " + newRequest.headers().toString()); // Debug Headers
             return chain.proceed(newRequest);
         }
     }

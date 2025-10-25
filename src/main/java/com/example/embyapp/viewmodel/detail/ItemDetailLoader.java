@@ -8,7 +8,10 @@ import embyclient.model.ImageType; // <-- THÊM IMPORT
 import embyclient.model.NameLongIdPair;
 import com.example.embyapp.service.EmbyService;
 import com.example.embyapp.service.ItemRepository;
-import org.threeten.bp.OffsetDateTime;
+// import org.threeten.bp.OffsetDateTime; // <-- XÓA IMPORT NÀY
+
+// (*** THÊM IMPORT SỬA LỖI ***)
+import java.time.OffsetDateTime;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -23,6 +26,8 @@ import java.util.stream.Collectors;
  * (CẬP NHẬT 19)
  * - Sửa lỗi: Lấy URL ảnh Primary từ BaseItemDto.getImageTags() thay vì ImageInfo.
  * - Sửa LoadResult để chỉ chứa List<ImageInfo> cho backdrops.
+ * (CẬP NHẬT 21 - SỬA LỖI BIÊN DỊCH)
+ * - Sửa lỗi org.threeten.bp.OffsetDateTime.
  */
 public class ItemDetailLoader {
 
@@ -66,13 +71,15 @@ public class ItemDetailLoader {
         }
         result.setTagItems(parsedTags);
 
+        // (*** SỬA LỖI TẠI ĐÂY ***)
+        // fullDetails.getPremiereDate() trả về java.time.OffsetDateTime
+        // hàm dateToString giờ đây cũng chấp nhận java.time.OffsetDateTime
         result.setReleaseDateText(dateToString(fullDetails.getPremiereDate()));
+
         result.setStudiosText(studiosToString(fullDetails.getStudios()));
         result.setPeopleText(peopleToString(fullDetails.getPeople()));
 
-        // (*** SỬA LỖI LOGIC ẢNH ***)
-
-        // 1. Lấy ảnh Primary (từ BaseItemDto)
+        // (*** LOGIC ẢNH (giữ nguyên) ***)
         String primaryImageUrl = null;
         if (fullDetails.getImageTags() != null && fullDetails.getImageTags().containsKey("Primary")) {
             String tag = fullDetails.getImageTags().get("Primary");
@@ -80,15 +87,10 @@ public class ItemDetailLoader {
                     serverUrl, itemId, tag, 600);
         }
         result.setPrimaryImageUrl(primaryImageUrl);
-
-        // 2. Lấy Backdrops (từ List<ImageInfo>)
         List<ImageInfo> backdrops = images.stream()
                 .filter(img -> ImageType.BACKDROP.equals(img.getImageType()))
                 .collect(Collectors.toList());
-        result.setBackdropImages(backdrops); // <-- Dùng setter mới
-
-        // (*** KẾT THÚC SỬA LỖI ẢNH ***)
-
+        result.setBackdropImages(backdrops);
 
         // Lấy tên file export
         if (fullDetails.getOriginalTitle() != null && !fullDetails.getOriginalTitle().isEmpty()) {
@@ -100,19 +102,24 @@ public class ItemDetailLoader {
         return result;
     }
 
-    // --- Các hàm helper định dạng (Giữ nguyên) ---
+    // --- Các hàm helper định dạng ---
     private String listToString(List<String> list) {
         return (list != null) ? String.join(", ", list) : "";
     }
-    private String dateToString(OffsetDateTime date) {
+
+    // (*** SỬA LỖI TẠI ĐÂY: Thay đổi kiểu tham số ***)
+    private String dateToString(OffsetDateTime date) { // <-- Đổi từ org.threeten.bp sang java.time
         if (date == null) return "";
         try {
+            // Logic bên trong hàm này (toInstant().toEpochMilli())
+            // hoạt động đúng cho cả hai thư viện.
             return dateFormat.format(new java.util.Date(date.toInstant().toEpochMilli()));
         } catch (Exception e) {
             System.err.println("Lỗi format dateToString: " + e.getMessage());
             return "";
         }
     }
+
     private String studiosToString(List<NameLongIdPair> studios) {
         return (studios != null) ? studios.stream().map(NameLongIdPair::getName).filter(Objects::nonNull).collect(Collectors.joining(", ")) : "";
     }
@@ -136,24 +143,19 @@ public class ItemDetailLoader {
         }
     }
 
-    // (Hàm findImageUrl và buildBackdropUrls đã bị XÓA/Thay thế)
-
-
     /**
      * Lớp POJO nội bộ.
-     * (*** SỬA ĐỔI: Chứa List<ImageInfo> cho backdrops ***)
      */
     public static class LoadResult {
         private final BaseItemDto fullDetails;
-        // private final List<ImageInfo> allImages; // <-- XÓA
         private String titleText, overviewText, releaseDateText, studiosText, peopleText;
         private List<TagModel> tagItems;
         private String yearText, taglineText, genresText, runtimeText, pathText;
         private String primaryImageUrl, originalTitleForExport;
         private boolean isFolder;
-        private List<ImageInfo> backdropImages; // <-- THAY ĐỔI
+        private List<ImageInfo> backdropImages;
 
-        public LoadResult(BaseItemDto fullDetails) { // <-- SỬA CONSTRUCTOR
+        public LoadResult(BaseItemDto fullDetails) {
             this.fullDetails = fullDetails;
         }
 
@@ -169,7 +171,6 @@ public class ItemDetailLoader {
 
         // --- Getters & Setters ---
         public BaseItemDto getFullDetails() { return fullDetails; }
-        // public List<ImageInfo> getAllImages() { return allImages; } // <-- XÓA
         public String getTitleText() { return titleText; }
         public void setTitleText(String titleText) { this.titleText = titleText; }
         public String getOverviewText() { return overviewText; }
@@ -198,8 +199,6 @@ public class ItemDetailLoader {
         public void setOriginalTitleForExport(String originalTitleForExport) { this.originalTitleForExport = originalTitleForExport; }
         public boolean isFolder() { return isFolder; }
         public void setFolder(boolean folder) { isFolder = folder; }
-
-        // (*** SỬA ĐỔI GETTER/SETTER CHO BACKDROP ***)
         public List<ImageInfo> getBackdropImages() { return backdropImages; }
         public void setBackdropImages(List<ImageInfo> backdropImages) { this.backdropImages = backdropImages; }
     }

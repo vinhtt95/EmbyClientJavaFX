@@ -22,12 +22,19 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.threeten.bp.OffsetDateTime;
+// import org.threeten.bp.OffsetDateTime; // <-- XÓA DÒNG NÀY
 
+// (*** THÊM CÁC IMPORT SỬA LỖI ***)
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 /**
  * (CẬP NHẬT 19)
  * - Sửa setItemToDisplay để dùng result.getBackdropImages()
+ * (CẬP NHẬT 20 - SỬA LỖI BIÊN DỊCH)
+ * - Sửa lỗi BaseItemPerson constructor.
+ * - Sửa lỗi org.threeten.bp.OffsetDateTime.
  */
 public class ItemDetailViewModel {
 
@@ -231,7 +238,9 @@ public class ItemDetailViewModel {
         }).start();
     }
 
-    // (createDtoWithAcceptedChanges giữ nguyên)
+    /**
+     * (*** ĐÃ SỬA LỖI BIÊN DỊCH ***)
+     */
     private BaseItemDto createDtoWithAcceptedChanges(Set<String> acceptedFields) {
         if (originalItemDto == null) {
             throw new RuntimeException("originalItemDto không được null khi tạo DTO thay đổi.");
@@ -251,11 +260,14 @@ public class ItemDetailViewModel {
                     .collect(Collectors.toList());
             dtoCopy.setTagItems(tagItemsToSave);
         }
+
+        // (*** SỬA LỖI DATE ***)
         if (acceptedFields.contains("releaseDate")) {
             try {
                 Date parsedDate = dateFormat.parse(releaseDate.get());
-                org.threeten.bp.Instant threetenInstant = org.threeten.bp.Instant.ofEpochMilli(parsedDate.getTime());
-                OffsetDateTime odt = OffsetDateTime.ofInstant(threetenInstant, org.threeten.bp.ZoneId.systemDefault());
+                // Sửa lỗi: Chuyển sang java.time
+                Instant instant = Instant.ofEpochMilli(parsedDate.getTime());
+                OffsetDateTime odt = OffsetDateTime.ofInstant(instant, ZoneId.systemDefault());
                 dtoCopy.setPremiereDate(odt);
             } catch (ParseException e) {
                 System.err.println("Không thể parse ngày (save accepted): " + releaseDate.get() + ". Sẽ giữ giá trị gốc.");
@@ -272,10 +284,18 @@ public class ItemDetailViewModel {
                     .collect(Collectors.toList());
             dtoCopy.setStudios(studiosList);
         }
+
+        // (*** SỬA LỖI PEOPLE ***)
         if (acceptedFields.contains("people")) {
             List<BaseItemPerson> peopleList = Arrays.stream(people.get().split(","))
                     .map(String::trim).filter(s -> !s.isEmpty())
-                    .map(name -> new BaseItemPerson(name, PersonType.ACTOR))
+                    .map(name -> {
+                        // Sửa lỗi: Dùng constructor rỗng và setter
+                        BaseItemPerson person = new BaseItemPerson();
+                        person.setName(name);
+                        person.setType(PersonType.ACTOR);
+                        return person;
+                    })
                     .collect(Collectors.toList());
             dtoCopy.setPeople(peopleList);
         }

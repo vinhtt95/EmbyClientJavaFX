@@ -17,7 +17,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set; // <-- MỚI
 import java.util.stream.Collectors;
-import org.threeten.bp.OffsetDateTime;
+// import org.threeten.bp.OffsetDateTime; // <-- XÓA IMPORT NÀY
+
+// (*** THÊM IMPORT SỬA LỖI ***)
+import java.time.OffsetDateTime;
 
 
 /**
@@ -26,6 +29,8 @@ import org.threeten.bp.OffsetDateTime;
  * - Lưu importedDto.
  * - Theo dõi acceptedFields.
  * - Thêm getAcceptedFields() và wasImportInProgress().
+ * (CẬP NHẬT 22 - SỬA LỖI BIÊN DỊCH)
+ * - Sửa lỗi org.threeten.bp.OffsetDateTime.
  */
 public class ItemDetailImportHandler {
 
@@ -92,8 +97,10 @@ public class ItemDetailImportHandler {
             // Tags không có nút accept riêng, coi như được accept ngầm khi import
             acceptedFields.add("tags"); // <-- Tự động accept tags
 
-            // 4. Release Date
+            // 4. Release Date (*** SỬA LỖI TẠI ĐÂY ***)
             preImportState.put("releaseDate", viewModel.releaseDateProperty().get());
+            // importedDto.getPremiereDate() là java.time
+            // hàm dateToString giờ cũng nhận java.time
             viewModel.releaseDateProperty().set(dateToString(importedDto.getPremiereDate()));
             showReleaseDateReview.set(true);
 
@@ -224,12 +231,16 @@ public class ItemDetailImportHandler {
 
 
     // --- Hàm helper định dạng ---
-    private String dateToString(OffsetDateTime date) {
+
+    // (*** SỬA LỖI TẠI ĐÂY: Thay đổi kiểu tham số ***)
+    private String dateToString(OffsetDateTime date) { // <-- Đổi từ org.threeten.bp sang java.time
         if (date == null) return "";
         try {
+            // Logic bên trong (toInstant().toEpochMilli()) hoạt động cho cả hai
             return dateFormat.format(new java.util.Date(date.toInstant().toEpochMilli()));
         } catch (Exception e) { return ""; }
     }
+
     private String studiosToString(List<NameLongIdPair> studios) {
         return (studios != null) ? studios.stream().map(NameLongIdPair::getName).filter(Objects::nonNull).collect(Collectors.joining(", ")) : "";
     }

@@ -7,7 +7,12 @@ import embyclient.model.BaseItemPerson;
 import embyclient.model.NameLongIdPair; // (*** QUAN TRỌNG ***)
 import embyclient.model.PersonType;
 import com.example.embyapp.service.EmbyService;
-import org.threeten.bp.OffsetDateTime;
+// import org.threeten.bp.OffsetDateTime; // <-- XÓA IMPORT NÀY
+
+// (*** THÊM CÁC IMPORT java.time ***)
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -22,6 +27,9 @@ import java.util.stream.Collectors;
  * - Ghi List<String> này vào dto.setTags(...).
  * (CẬP NHẬT 10)
  * - Sửa logic parse để tạo List<NameLongIdPair> và ghi vào dto.setTagItems(...).
+ * (CẬP NHẬT 11 - SỬA LỖI BIÊN DỊCH)
+ * - Sửa lỗi BaseItemPerson constructor.
+ * - Sửa lỗi org.threeten.bp.OffsetDateTime.
  */
 public class ItemDetailSaver {
 
@@ -93,19 +101,30 @@ public class ItemDetailSaver {
                 .collect(Collectors.toList());
         dto.setStudios(studiosList);
 
+        // (*** SỬA LỖI 1 & 2: PEOPLE ***)
         // Parse People (String -> List<BaseItemPerson>)
         List<BaseItemPerson> peopleList = Arrays.stream(request.getPeople().split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
-                .map(name -> new BaseItemPerson()) // Mặc định là Actor
+                .map(name -> {
+                    // Sửa lỗi: Sử dụng constructor rỗng và setter
+                    BaseItemPerson person = new BaseItemPerson();
+                    person.setName(name);
+                    person.setType(PersonType.ACTOR); // Gán type mặc định
+                    return person;
+                })
                 .collect(Collectors.toList());
         dto.setPeople(peopleList);
 
-        // Parse Date (String -> OffsetDateTime)
+        // (*** SỬA LỖI 3: DATE ***)
+        // Parse Date (String -> java.time.OffsetDateTime)
         try {
             Date parsedDate = dateFormat.parse(request.getReleaseDate());
-            org.threeten.bp.Instant threetenInstant = org.threeten.bp.Instant.ofEpochMilli(parsedDate.getTime());
-            OffsetDateTime odt = OffsetDateTime.ofInstant(threetenInstant, org.threeten.bp.ZoneId.systemDefault());
+
+            // Sửa lỗi: Chuyển sang java.time.Instant và java.time.OffsetDateTime
+            Instant instant = Instant.ofEpochMilli(parsedDate.getTime());
+            OffsetDateTime odt = OffsetDateTime.ofInstant(instant, ZoneId.systemDefault());
+
             dto.setPremiereDate(odt);
         } catch (ParseException e) {
             System.err.println("Không thể parse ngày: " + request.getReleaseDate() + ". Sẽ set thành null.");

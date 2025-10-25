@@ -206,11 +206,16 @@ public class ItemDetailController {
         });
         updateGenresFlowPane();
 
+        // (*** PHỤC HỒI: 6. Binding Gallery (Lắng nghe danh sách ImageInfo) ***)
+        viewModel.getBackdropImages().addListener((ListChangeListener<ImageInfo>) c -> {
+            Platform.runLater(this::updateImageGallery);
+        });
+        updateImageGallery(); // Cập nhật lần đầu
 
-        // 6. Binding Ảnh Primary
+        // 7. Binding Ảnh Primary
         primaryImageView.imageProperty().bind(viewModel.primaryImageProperty());
 
-        // 7. Binding kiểm soát hiển thị (Loading / Status / Content)
+        // 8. Binding kiểm soát hiển thị (Loading / Status / Content)
         loadingIndicator.visibleProperty().bind(viewModel.loadingProperty());
 
         // *** FIX LỖI: Thêm lại binding cho statusLabel.visibleProperty (Ưu tiên hiển thị status nếu loading HOẶC có message) ***
@@ -225,7 +230,7 @@ public class ItemDetailController {
         bottomButtonBar.managedProperty().bind(mainScrollPane.visibleProperty());
 
 
-        // 8. Binding UI linh hoạt, Path...
+        // 9. Binding UI linh hoạt, Path...
         pathTextField.textProperty().bind(viewModel.itemPathProperty());
         pathContainer.visibleProperty().bind(
                 viewModel.itemPathProperty().isNotEmpty()
@@ -252,7 +257,7 @@ public class ItemDetailController {
         releaseDateContainer.visibleProperty().bind(viewModel.isFolderProperty().not());
         releaseDateContainer.managedProperty().bind(viewModel.isFolderProperty().not());
 
-        // 9. Binding Review Containers
+        // 10. Binding Review Containers
         bindReviewContainer(reviewTitleContainer, viewModel.showTitleReviewProperty());
         bindReviewContainer(reviewOverviewContainer, viewModel.showOverviewReviewProperty());
         bindReviewContainer(reviewReleaseDateContainer, viewModel.showReleaseDateReviewProperty());
@@ -260,10 +265,10 @@ public class ItemDetailController {
         bindReviewContainer(reviewPeopleContainer, viewModel.showPeopleReviewProperty());
         bindReviewContainer(reviewGenresContainer, viewModel.showGenresReviewProperty());
 
-        // 10. Binding nút Save
+        // 11. Binding nút Save
         saveButton.disableProperty().bind(viewModel.isDirtyProperty().not());
 
-        // 11. Binding nút Lưu ảnh Primary
+        // 12. Binding nút Lưu ảnh Primary
         savePrimaryImageButton.visibleProperty().bind(viewModel.primaryImageDirtyProperty());
         savePrimaryImageButton.managedProperty().bind(viewModel.primaryImageDirtyProperty());
     }

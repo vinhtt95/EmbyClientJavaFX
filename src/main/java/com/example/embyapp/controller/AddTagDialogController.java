@@ -8,7 +8,7 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
-import javafx.scene.control.Separator;
+// (*** XÓA IMPORT Separator ***)
 import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
@@ -28,11 +28,10 @@ import java.util.stream.Collectors;
 
 
 /**
- * (CẬP NHẬT 16)
- * - Thay đổi layout gợi ý sang 2 dòng (Key/Value).
- * - Cập nhật FXML PANE.
- * (CẬP NHẬT 17)
- * - Tự động chọn Key đầu tiên khi mở dialog.
+ * (CẬP NHẬT 19)
+ * - Trả lại layout Tag Đơn Giản về 1 dòng.
+ * - Xóa simpleKeySuggestionGroup.
+ * - Cập nhật logic listener cho 2 group (JSONKey và Value/Simple).
  */
 public class AddTagDialogController {
 
@@ -47,15 +46,19 @@ public class AddTagDialogController {
     @FXML private TextField keyField;
     @FXML private TextField valueField;
 
+    // (*** THAY ĐỔI FXML ***)
     @FXML private VBox suggestionJsonContainer;
     @FXML private FlowPane suggestionKeysPane;
     @FXML private FlowPane suggestionValuesPane;
 
     @FXML private VBox suggestionSimpleContainer;
+    // (*** SỬA: Quay về FXML gốc cho Simple ***)
     @FXML private FlowPane suggestionSimplePane;
+    // (*** KẾT THÚC THAY ĐỔI FXML ***)
 
+    // (*** SỬA: Chỉ 2 ToggleGroup ***)
     private final ToggleGroup keySuggestionGroup = new ToggleGroup();
-    private final ToggleGroup valueSuggestionGroup = new ToggleGroup();
+    private final ToggleGroup valueSuggestionGroup = new ToggleGroup(); // Dùng chung cho JSON Value và Simple
 
     private Stage dialogStage;
     private TagModel resultTag = null;
@@ -90,16 +93,26 @@ public class AddTagDialogController {
         jsonTagPane.setManaged(true);
         jsonTagRadio.setSelected(true);
 
-        // Listener cho cột Key
+        // (*** SỬA: Cập nhật Listeners cho 2 Group ***)
+
+        // 1. Listener cho JSON Key
         keySuggestionGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
+            if (newToggle != null) {
+                // Hủy chọn các tag trong nhóm Value/Simple
+                valueSuggestionGroup.selectToggle(null);
+            }
+            // Điền value cho JSON
             populateValues(newToggle);
         });
+
+        // 2. Listener cho Value/Simple (Không cần, vì đã gán trên từng chip)
 
         // Tải tag gợi ý (chạy nền)
         loadSuggestedTags();
     }
 
     private void loadSuggestedTags() {
+        // (Logic hàm này giữ nguyên)
         new Thread(() -> {
             List<String> suggestedNames = fetchTagsFromServer();
             Platform.runLater(() -> populateSuggestedTags(suggestedNames));
@@ -148,8 +161,8 @@ public class AddTagDialogController {
                 .filter(pt -> !pt.model.isJson())
                 .collect(Collectors.toList());
 
-        populateKeys();
-        populateSimpleTags(simpleTags);
+        populateKeys(); // JSON Keys
+        populateSimpleTags(simpleTags); // Simple Tags
 
         suggestionJsonContainer.setVisible(!jsonGroups.isEmpty());
         suggestionJsonContainer.setManaged(!jsonGroups.isEmpty());
@@ -157,10 +170,8 @@ public class AddTagDialogController {
         suggestionSimpleContainer.setManaged(!simpleTags.isEmpty());
     }
 
-    /**
-     * (*** ĐÃ THÊM LOGIC AUTO-SELECT ***)
-     */
     private void populateKeys() {
+        // (Logic hàm này giữ nguyên - có auto-select)
         suggestionKeysPane.getChildren().clear();
         keySuggestionGroup.getToggles().clear();
 
@@ -175,20 +186,20 @@ public class AddTagDialogController {
             suggestionKeysPane.getChildren().add(chip);
         }
 
-        // (*** THÊM MỚI: Tự động chọn Key đầu tiên ***)
         if (!keySuggestionGroup.getToggles().isEmpty()) {
-            // Lấy toggle đầu tiên và chọn nó
             keySuggestionGroup.selectToggle(keySuggestionGroup.getToggles().get(0));
-            // Listener trong initialize() sẽ tự động gọi populateValues()
         }
     }
 
     private void populateValues(Toggle selectedKeyToggle) {
         // (Logic hàm này giữ nguyên)
         suggestionValuesPane.getChildren().clear();
-        valueSuggestionGroup.getToggles().clear();
+        // (*** KHÔNG XÓA Toggles khỏi valueSuggestionGroup ở đây ***)
+        // valueSuggestionGroup.getToggles().clear(); // <--- XÓA DÒNG NÀY
 
         if (selectedKeyToggle == null) {
+            // Nếu không chọn Key, thì xóa Value
+            suggestionValuesPane.getChildren().clear();
             return;
         }
 
@@ -201,9 +212,11 @@ public class AddTagDialogController {
 
         for (ParsedTag pt : tagsInGroup) {
             ToggleButton chip = new ToggleButton(pt.model.getValue());
-            chip.setToggleGroup(valueSuggestionGroup);
+            chip.setToggleGroup(valueSuggestionGroup); // Thêm vào group chung
             chip.getStyleClass().addAll("suggested-tag-button", "tag-view-json");
             chip.setUserData(pt.rawString);
+
+            // Listener này chỉ fill, không cần hủy chọn
             chip.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
                 if (isSelected) {
                     fillFormFromSuggestion((String) chip.getUserData());
@@ -213,28 +226,33 @@ public class AddTagDialogController {
         }
     }
 
+    /**
+     * (*** SỬA: Trả lại logic 1 dòng cho Tag Đơn Giản ***)
+     */
     private void populateSimpleTags(List<ParsedTag> simpleTags) {
-        // (Logic hàm này giữ nguyên)
         suggestionSimplePane.getChildren().clear();
-        valueSuggestionGroup.getToggles().clear();
+        // (*** KHÔNG XÓA Toggles khỏi valueSuggestionGroup ở đây ***)
+        // valueSuggestionGroup.getToggles().clear(); // <--- XÓA DÒNG NÀY
 
         simpleTags.sort((pt1, pt2) -> pt1.model.getDisplayName().compareToIgnoreCase(pt2.model.getDisplayName()));
 
         for (ParsedTag pt : simpleTags) {
             ToggleButton chip = new ToggleButton(pt.model.getDisplayName());
-            chip.setToggleGroup(valueSuggestionGroup);
-            chip.getStyleClass().add("suggested-tag-button");
+            chip.setToggleGroup(valueSuggestionGroup); // Dùng chung group Value
+            chip.getStyleClass().add("suggested-tag-button"); // Style Xám
             chip.setUserData(pt.rawString);
 
+            // (*** SỬA: Listener hủy chọn JSON Key ***)
             chip.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
                 if (isSelected) {
-                    keySuggestionGroup.selectToggle(null);
+                    keySuggestionGroup.selectToggle(null); // Hủy chọn JSON Key
                     fillFormFromSuggestion((String) chip.getUserData());
                 }
             });
             suggestionSimplePane.getChildren().add(chip);
         }
     }
+
 
     private void fillFormFromSuggestion(String selectedTagName) {
         // (Logic hàm này giữ nguyên)

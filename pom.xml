@@ -54,11 +54,7 @@
             <artifactId>gson</artifactId>
             <version>${gson.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.threeten</groupId>
-            <artifactId>threetenbp</artifactId>
-            <version>${threetenbp.version}</version>
-        </dependency>
+
         <dependency>
             <groupId>io.gsonfire</groupId>
             <artifactId>gson-fire</artifactId>
@@ -106,15 +102,21 @@
                             <options>
                                 <option>--add-opens=emby.sdk.java/com.example.emby.modelEmby=com.google.gson</option>
                                 <option>--add-opens=emby.sdk.java/com.example.emby.EmbyClient=com.google.gson</option>
+                                <option>--add-opens=java.base/java.time=com.google.gson</option>
                             </options>
                             <addModules>
                                 <module>javafx.controls</module>
                                 <module>javafx.fxml</module>
                                 <module>javafx.graphics</module>
                                 <module>javafx.base</module>
+
                                 <module>emby.sdk.java</module>
                                 <module>com.google.gson</module>
-                                <module>org.threeten.bp</module>
+
+                                <module>java.prefs</module>
+                                <module>java.sql</module>
+                                <module>java.desktop</module>
+                                <module>okhttp</module>
                             </addModules>
                         </configuration>
                     </execution>

@@ -31,6 +31,10 @@ import java.io.File;
  * Thêm logic ẩn/hiện fileOnlyContainer.
  * (CẬP NHẬT 4)
  * Thêm logic Import/Export/Review.
+ * (CẬP NHẬT 5)
+ * Thay đổi binding sang 2-way và bind nút Save.
+ * (CẬP NHẬT 6)
+ * Sửa logic export filename để dùng original title.
  */
 public class ItemDetailController {
 
@@ -135,15 +139,14 @@ public class ItemDetailController {
         genresLabel.textProperty().bind(viewModel.genresProperty());
         statusLabel.textProperty().bind(viewModel.statusMessageProperty());
 
-        // 2. (MỚI) Binding các trường CÓ THỂ CHỈNH SỬA (2 chiều)
+        // 2. (SỬA ĐỔI) Binding 2 CHIỀU cho TẤT CẢ các trường edit
         titleTextField.textProperty().bindBidirectional(viewModel.titleProperty());
         overviewTextArea.textProperty().bindBidirectional(viewModel.overviewProperty());
+        tagsTextField.textProperty().bindBidirectional(viewModel.tagsProperty());
+        releaseDateTextField.textProperty().bindBidirectional(viewModel.releaseDateProperty());
+        studiosTextField.textProperty().bindBidirectional(viewModel.studiosProperty());
+        peopleTextField.textProperty().bindBidirectional(viewModel.peopleProperty());
 
-        // 3. (MỚI) Binding các trường CHỈ ĐỌC (1 chiều)
-        tagsTextField.textProperty().bind(viewModel.tagsProperty());
-        releaseDateTextField.textProperty().bind(viewModel.releaseDateProperty());
-        studiosTextField.textProperty().bind(viewModel.studiosProperty());
-        peopleTextField.textProperty().bind(viewModel.peopleProperty());
 
         // 4. Binding Ảnh Primary
         primaryImageView.imageProperty().bind(viewModel.primaryImageProperty());
@@ -188,6 +191,9 @@ public class ItemDetailController {
         bindReviewContainer(reviewReleaseDateContainer, viewModel.showReleaseDateReviewProperty());
         bindReviewContainer(reviewStudiosContainer, viewModel.showStudiosReviewProperty());
         bindReviewContainer(reviewPeopleContainer, viewModel.showPeopleReviewProperty());
+
+        // 10. (MỚI) Binding cho nút Save
+        saveButton.disableProperty().bind(viewModel.isDirtyProperty().not());
     }
 
     /**
@@ -325,9 +331,13 @@ public class ItemDetailController {
             }
 
             Stage stage = (Stage) rootPane.getScene().getWindow();
-            // Tạo tên file gợi ý (ví dụ: TenPhim.json)
-            String initialFileName = (dtoToExport.getName() != null ? dtoToExport.getName().replaceAll("[^a-zA-Z0-9.-]", "_") : "item") + ".json";
 
+            // (*** SỬA ĐỔI ***)
+            // Lấy tên file gợi ý từ Tiêu đề GỐC (originalTitle), không phải từ DTO
+            String originalTitle = viewModel.getOriginalTitleForExport();
+            System.out.println(originalTitle);
+            String initialFileName = (originalTitle != null ? originalTitle.replaceAll("[^a-zA-Z0-9.-]", "_") : "item") + ".json";
+            System.out.println(initialFileName);
             File targetFile = JsonFileHandler.showSaveJsonDialog(stage, initialFileName);
 
             if (targetFile != null) {

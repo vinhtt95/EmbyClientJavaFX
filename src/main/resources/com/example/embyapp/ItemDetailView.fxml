@@ -51,7 +51,7 @@
 
                         <HBox spacing="10.0" alignment="CENTER_LEFT">
                             <children>
-                                <Button fx:id="saveButton" onAction="#handleSaveButtonAction" text="Lưu thay đổi" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+                                <Button fx:id="saveButton" onAction="#handleSaveButtonAction" text="Lưu thay đổi" HBox.hgrow="ALWAYS" maxWidth="Infinity" disable="true"/>
                                 <Button fx:id="importButton" onAction="#handleImportButtonAction" text="Import JSON"/>
                                 <Button fx:id="exportButton" onAction="#handleExportButtonAction" text="Export JSON"/>
                             </children>
@@ -87,7 +87,7 @@
                                 </HBox>
                             </children>
                         </HBox>
-                        <TextField fx:id="tagsTextField" editable="false" promptText="Chưa có tags" />
+                        <TextField fx:id="tagsTextField" promptText="Chưa có tags (phân cách bởi dấu phẩy ,)" />
 
                         <VBox fx:id="fileOnlyContainer" managed="false" spacing="10.0" visible="false">
                             <children>
@@ -109,7 +109,7 @@
                                         </HBox>
                                     </children>
                                 </HBox>
-                                <TextField fx:id="releaseDateTextField" editable="false" />
+                                <TextField fx:id="releaseDateTextField" promptText="Định dạng dd/MM/yyyy" />
 
                                 <HBox alignment="CENTER_LEFT" spacing="10.0">
                                     <children>
@@ -122,7 +122,7 @@
                                         </HBox>
                                     </children>
                                 </HBox>
-                                <TextField fx:id="studiosTextField" editable="false" />
+                                <TextField fx:id="studiosTextField" promptText="Tên studio (phân cách bởi dấu phẩy ,)" />
 
                                 <HBox alignment="CENTER_LEFT" spacing="10.0">
                                     <children>
@@ -135,7 +135,7 @@
                                         </HBox>
                                     </children>
                                 </HBox>
-                                <TextField fx:id="peopleTextField" editable="false" />
+                                <TextField fx:id="peopleTextField" promptText="Tên người (phân cách bởi dấu phẩy ,)" />
 
                                 <HBox alignment="CENTER_LEFT" spacing="10.0" VBox.vgrow="NEVER">
                                     <children>

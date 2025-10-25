@@ -1,37 +1,41 @@
 package com.example.embyapp.viewmodel;
 
-import com.example.emby.EmbyClient.ApiClient;
 import com.example.emby.EmbyClient.ApiException;
-import com.example.emby.EmbyClient.Java.ItemUpdateServiceApi; // (MỚI)
+import com.example.emby.EmbyClient.Java.ItemUpdateServiceApi;
 import com.example.emby.modelEmby.BaseItemDto;
 import com.example.emby.modelEmby.ImageInfo;
 import com.example.emby.modelEmby.BaseItemPerson;
 import com.example.emby.modelEmby.NameLongIdPair;
+import com.example.emby.modelEmby.PersonType; // (MỚI) Import PersonType
 import com.example.embyapp.service.EmbyService;
 import com.example.embyapp.service.ItemRepository;
 import javafx.application.Platform;
 import javafx.beans.property.*;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.image.Image;
-import org.threeten.bp.OffsetDateTime; // (MỚI)
+import org.threeten.bp.OffsetDateTime;
+import org.threeten.bp.ZoneId;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap; // (MỚI)
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map; // (MỚI)
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * (CẬP NHẬT LỚN) ViewModel cho ItemDetailView (Cột phải).
- * (CẬP NHẬT 4) Chuyển Title/Overview sang editable, thêm các trường mới.
- * (CẬP NHẬT 5) Sửa logic getStudios() để dùng NameLongIdPair và thêm error reporting.
- * (CẬP NHẬT 6) Thêm logic Import/Export/Review/Save.
- * (CẬP NHẬT 7) Sửa lỗi incompatible types (ThreeTen Instant vs Java Instant).
- * (CẬP NHẬT 8) Sửa lỗi logic clearDetails() khiến currentItemId bị null khi lưu.
+ * (CẬP NHẬT 10)
+ * - Sửa lỗi constructor BaseItemPerson (thêm PersonType.ACTOR).
+ * (CẬP NHẬT 11)
+ * - Sửa logic export: Thêm trường exportFileNameTitle để lưu OriginalTitle (tên gốc)
+ * thay vì Name (tên hiển thị).
  */
 public class ItemDetailViewModel {
 
@@ -43,12 +47,15 @@ public class ItemDetailViewModel {
     // --- Properties cho UI Binding ---
     private final ReadOnlyBooleanWrapper loading = new ReadOnlyBooleanWrapper(false);
 
-    // (MỚI) Thay đổi sang StringProperty để bind 2 chiều
+    // (SỬA ĐỔI) Tất cả các trường form giờ là StringProperty
     private final StringProperty title = new SimpleStringProperty("");
     private final StringProperty overview = new SimpleStringProperty("");
+    private final StringProperty tags = new SimpleStringProperty("");
+    private final StringProperty releaseDate = new SimpleStringProperty("");
+    private final StringProperty studios = new SimpleStringProperty("");
+    private final StringProperty people = new SimpleStringProperty("");
 
     private final ReadOnlyStringWrapper year = new ReadOnlyStringWrapper("");
-    // Code đã sửa:
     private final ReadOnlyStringWrapper statusMessage = new ReadOnlyStringWrapper("Vui lòng chọn một item từ danh sách...");
     private final ReadOnlyBooleanWrapper showStatusMessage = new ReadOnlyBooleanWrapper(true);
 
@@ -65,16 +72,19 @@ public class ItemDetailViewModel {
     private final ReadOnlyBooleanWrapper isFolder = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyStringWrapper actionStatusMessage = new ReadOnlyStringWrapper(""); // Dùng cho lỗi Mở/Phát
 
-    // (MỚI) Properties cho các trường chung và chỉ-file
-    private final ReadOnlyStringWrapper tags = new ReadOnlyStringWrapper("");
-    private final ReadOnlyStringWrapper releaseDate = new ReadOnlyStringWrapper("");
-    private final ReadOnlyStringWrapper studios = new ReadOnlyStringWrapper("");
-    private final ReadOnlyStringWrapper people = new ReadOnlyStringWrapper("");
+    // (MỚI) Quản lý trạng thái "Dirty"
+    private final BooleanProperty isDirty = new SimpleBooleanProperty(false);
+    // (MỚI) Lưu trạng thái gốc của các string (dùng cho dirty check)
+    private String originalTitle, originalOverview, originalTags, originalReleaseDate, originalStudios, originalPeople;
+    // (MỚI) Listener để theo dõi thay đổi
+    private final ChangeListener<String> dirtyFlagListener = (obs, oldVal, newVal) -> checkForChanges();
 
     // (MỚI) Các trường quản lý trạng thái Import/Save
     private BaseItemDto originalItemDto; // Lưu trữ DTO gốc tải từ server
     private final Map<String, Object> preImportState = new HashMap<>(); // Lưu trạng thái ngay trước khi import
-    private String currentItemId; // (MỚI) Lưu ID của item hiện tại
+    private String currentItemId;
+    private String exportFileNameTitle; // (MỚI) Tên file gốc (OriginalTitle) để export
+
 
     // (MỚI) Thêm các BooleanProperty cho 6 cặp nút (v/x)
     private final ReadOnlyBooleanWrapper showTitleReview = new ReadOnlyBooleanWrapper(false);
@@ -94,8 +104,8 @@ public class ItemDetailViewModel {
         if (item == null) {
             Platform.runLater(() -> {
                 clearDetails();
-                this.currentItemId = null; // (MỚI) <-- Đặt ở đây là ĐÚNG
-                this.originalItemDto = null; // (MỚI) <-- Đặt ở đây là ĐÚNG
+                this.currentItemId = null;
+                this.originalItemDto = null;
                 statusMessage.set("Vui lòng chọn một item từ danh sách...");
                 showStatusMessage.set(true);
                 loading.set(false);
@@ -103,10 +113,10 @@ public class ItemDetailViewModel {
             return;
         }
 
-        this.currentItemId = item.getId(); // (MỚI) Lưu ID
+        this.currentItemId = item.getId();
 
         Platform.runLater(() -> {
-            clearDetails(); // <-- Hàm này giờ đã AN TOÀN, không xóa currentItemId
+            clearDetails(); // Xóa UI và listener cũ
             statusMessage.set("Đang tải chi tiết cho: " + item.getName() + "...");
             showStatusMessage.set(true);
             loading.set(true);
@@ -115,7 +125,7 @@ public class ItemDetailViewModel {
         new Thread(() -> {
             try {
                 String userId = embyService.getCurrentUserId();
-                String itemId = item.getId(); // Lấy ID đã lưu (an toàn)
+                String itemId = this.currentItemId;
                 String serverUrl = embyService.getApiClient().getBasePath();
 
                 if (userId == null) {
@@ -123,70 +133,66 @@ public class ItemDetailViewModel {
                 }
 
                 BaseItemDto fullDetails = itemRepository.getFullItemDetails(userId, itemId);
-
-                // (MỚI) Lưu DTO gốc
                 this.originalItemDto = fullDetails;
+
+                // (MỚI) Lấy Tên Gốc (OriginalTitle) để dùng làm tên file export
+                // Fallback về Name nếu OriginalTitle không có
+                final String originalTitleForExport;
+                if (fullDetails.getOriginalTitle() != null && !fullDetails.getOriginalTitle().isEmpty()) {
+                    originalTitleForExport = fullDetails.getOriginalTitle();
+                } else {
+                    originalTitleForExport = fullDetails.getName(); // Fallback
+                }
+
 
                 List<ImageInfo> images = itemRepository.getItemImages(itemId);
 
                 // --- Xử lý dữ liệu (luồng nền) ---
-                String titleText = fullDetails.getName() != null ? fullDetails.getName() : "Không có tiêu đề";
+                String titleText = fullDetails.getName() != null ? fullDetails.getName() : "";
                 String yearText = fullDetails.getProductionYear() != null ? String.valueOf(fullDetails.getProductionYear()) : "";
                 String overviewText = fullDetails.getOverview() != null ? fullDetails.getOverview() : "";
                 String taglineText = (fullDetails.getTaglines() != null && !fullDetails.getTaglines().isEmpty()) ? fullDetails.getTaglines().get(0) : "";
                 String genresText = (fullDetails.getGenres() != null) ? String.join(", ", fullDetails.getGenres()) : "";
                 String runtimeText = formatRuntime(fullDetails.getRunTimeTicks());
-
                 final String path = fullDetails.getPath();
                 final boolean folder = fullDetails.isIsFolder() != null && fullDetails.isIsFolder();
 
-                // (MỚI) Trích xuất dữ liệu mới
-                String tagsText = (fullDetails.getTags() != null) ? String.join(", ", fullDetails.getTags()) : "";
-
-                String releaseDateText = "";
-                if (fullDetails.getPremiereDate() != null) {
-                    try {
-                        // (SỬA LỖI) Dùng hàm helper mới
-                        releaseDateText = dateToString(fullDetails.getPremiereDate());
-                    } catch (Exception e) {
-                        System.err.println("Không thể format PremiereDate: " + e.getMessage());
-                    }
-                }
-
-                // (SỬA ĐỔI) Dùng NameLongIdPair::getName
-                String studiosText = (fullDetails.getStudios() != null) ?
-                        fullDetails.getStudios().stream()
-                                .map(NameLongIdPair::getName)
-                                .collect(Collectors.joining(", ")) : "";
-
-                String peopleText = (fullDetails.getPeople() != null) ?
-                        fullDetails.getPeople().stream()
-                                .map(BaseItemPerson::getName)
-                                .collect(Collectors.joining(", ")) : "";
+                // (SỬA ĐỔI) Dùng helper để lấy text
+                String tagsText = listToString(fullDetails.getTags());
+                String releaseDateText = dateToString(fullDetails.getPremiereDate());
+                String studiosText = studiosToString(fullDetails.getStudios());
+                String peopleText = peopleToString(fullDetails.getPeople());
 
                 String primaryImageUrl = findImageUrl(images, "Primary", serverUrl, itemId);
                 List<String> backdropUrls = buildBackdropUrls(images, serverUrl, itemId);
 
 
                 // --- Cập nhật UI (JavaFX Thread) ---
-                String finalReleaseDateText = releaseDateText;
                 Platform.runLater(() -> {
+                    // (MỚI) Lưu tên file export
+                    this.exportFileNameTitle = originalTitleForExport;
+
+                    // (MỚI) Cập nhật snapshot chuỗi gốc (dùng titleText, là Name)
+                    updateOriginalStrings(titleText, overviewText, tagsText, releaseDateText, studiosText, peopleText);
+
+                    // Cập nhật UI
                     title.set(titleText);
-                    year.set(yearText);
                     overview.set(overviewText);
+                    tags.set(tagsText);
+                    releaseDate.set(releaseDateText);
+                    studios.set(studiosText);
+                    people.set(peopleText);
+
+                    year.set(yearText);
                     tagline.set(taglineText);
                     genres.set(genresText);
                     runtime.set(runtimeText);
-
                     itemPath.set(path != null ? path : "Không có đường dẫn");
                     isFolder.set(folder);
                     actionStatusMessage.set("");
 
-                    // (MỚI) Cập nhật các trường mới
-                    tags.set(tagsText);
-                    releaseDate.set(finalReleaseDateText);
-                    studios.set(studiosText);
-                    people.set(peopleText);
+                    // (MỚI) Thêm listener để theo dõi
+                    addDirtyListeners();
 
                     if (primaryImageUrl != null) {
                         Image img = new Image(primaryImageUrl, true);
@@ -202,9 +208,8 @@ public class ItemDetailViewModel {
                     }
 
                     backdropImageUrls.setAll(backdropUrls);
-
-                    // (MỚI) Reset tất cả các nút review
                     hideAllReviewButtons();
+                    isDirty.set(false); // (MỚI) Reset trạng thái dirty
                     loading.set(false);
                     showStatusMessage.set(false);
                 });
@@ -226,6 +231,9 @@ public class ItemDetailViewModel {
      * Hàm này chỉ xóa các trường UI, KHÔNG xóa state (currentItemId, originalItemDto).
      */
     private void clearDetails() {
+        // (MỚI) Xóa listener
+        removeDirtyListeners();
+
         title.set("");
         year.set("");
         overview.set("");
@@ -239,17 +247,15 @@ public class ItemDetailViewModel {
         isFolder.set(false);
         actionStatusMessage.set("");
 
-        // (MỚI)
         tags.set("");
         releaseDate.set("");
         studios.set("");
         people.set("");
 
-        // (MỚI)
-        // this.originalItemDto = null; // <<<--- ĐÃ XÓA
-        // this.currentItemId = null; // <<<--- ĐÃ XÓA
         this.preImportState.clear();
         hideAllReviewButtons();
+        isDirty.set(false); // (MỚI)
+        this.exportFileNameTitle = null; // (MỚI) Xóa tên file export
     }
 
     // (MỚI) Thêm hàm ẩn tất cả nút review
@@ -262,7 +268,58 @@ public class ItemDetailViewModel {
         showPeopleReview.set(false);
     }
 
-    // (MỚI) Các hàm helper chuyển đổi
+    // --- (MỚI) Logic theo dõi thay đổi (Dirty) ---
+
+    /** (MỚI) Cập nhật snapshot chuỗi gốc */
+    private void updateOriginalStrings(String title, String overview, String tags, String releaseDate, String studios, String people) {
+        this.originalTitle = title;
+        this.originalOverview = overview;
+        this.originalTags = tags;
+        this.originalReleaseDate = releaseDate;
+        this.originalStudios = studios;
+        this.originalPeople = people;
+    }
+
+    /** (MỚI) Hàm helper để cập nhật snapshot sau khi LƯU THÀNH CÔNG */
+    private void updateOriginalStringsFromCurrent() {
+        updateOriginalStrings(title.get(), overview.get(), tags.get(), releaseDate.get(), studios.get(), people.get());
+    }
+
+    /** (MỚI) Thêm listener theo dõi */
+    private void addDirtyListeners() {
+        title.addListener(dirtyFlagListener);
+        overview.addListener(dirtyFlagListener);
+        tags.addListener(dirtyFlagListener);
+        releaseDate.addListener(dirtyFlagListener);
+        studios.addListener(dirtyFlagListener);
+        people.addListener(dirtyFlagListener);
+    }
+
+    /** (MỚI) Xóa listener theo dõi */
+    private void removeDirtyListeners() {
+        title.removeListener(dirtyFlagListener);
+        overview.removeListener(dirtyFlagListener);
+        tags.removeListener(dirtyFlagListener);
+        releaseDate.removeListener(dirtyFlagListener);
+        studios.removeListener(dirtyFlagListener);
+        people.removeListener(dirtyFlagListener);
+    }
+
+    /** (MỚI) Kiểm tra xem có thay đổi không */
+    private void checkForChanges() {
+        if (originalItemDto == null) return; // Chưa tải xong
+
+        boolean hasChanges = !Objects.equals(title.get(), originalTitle) ||
+                !Objects.equals(overview.get(), originalOverview) ||
+                !Objects.equals(tags.get(), originalTags) ||
+                !Objects.equals(releaseDate.get(), originalReleaseDate) ||
+                !Objects.equals(studios.get(), originalStudios) ||
+                !Objects.equals(people.get(), originalPeople);
+
+        isDirty.set(hasChanges);
+    }
+
+    // --- (MỚI) Các hàm helper chuyển đổi ---
     private String listToString(List<String> list) {
         return (list != null) ? String.join(", ", list) : "";
     }
@@ -281,10 +338,10 @@ public class ItemDetailViewModel {
     }
 
     private String studiosToString(List<NameLongIdPair> studios) {
-        return (studios != null) ? studios.stream().map(NameLongIdPair::getName).collect(Collectors.joining(", ")) : "";
+        return (studios != null) ? studios.stream().map(NameLongIdPair::getName).filter(Objects::nonNull).collect(Collectors.joining(", ")) : "";
     }
     private String peopleToString(List<BaseItemPerson> people) {
-        return (people != null) ? people.stream().map(BaseItemPerson::getName).collect(Collectors.joining(", ")) : "";
+        return (people != null) ? people.stream().map(BaseItemPerson::getName).filter(Objects::nonNull).collect(Collectors.joining(", ")) : "";
     }
 
     private String formatRuntime(Long runTimeTicks) {
@@ -338,6 +395,14 @@ public class ItemDetailViewModel {
     }
 
     /**
+     * (SỬA ĐỔI) Lấy Tiêu đề GỐC (OriginalTitle) để làm tên file export
+     */
+    public String getOriginalTitleForExport() {
+        // Trả về tên đã lưu (OriginalTitle), fallback về title hiện tại nếu bị null
+        return this.exportFileNameTitle != null ? this.exportFileNameTitle : this.title.get();
+    }
+
+    /**
      * (MỚI) Nhận DTO từ file import và cập nhật UI để review.
      */
     public void importAndPreview(BaseItemDto importedDto) {
@@ -348,7 +413,7 @@ public class ItemDetailViewModel {
             hideAllReviewButtons(); // Ẩn tất cả nút
 
             // 1. Title (Editable)
-            preImportState.put("title", title.get()); // Lưu giá trị HIỆN TẠI (có thể đã edit)
+            preImportState.put("title", title.get()); // Lưu giá trị HIỆN TẠI
             title.set(importedDto.getName() != null ? importedDto.getName() : "");
             showTitleReview.set(true);
 
@@ -357,36 +422,31 @@ public class ItemDetailViewModel {
             overview.set(importedDto.getOverview() != null ? importedDto.getOverview() : "");
             showOverviewReview.set(true);
 
-            // 3. Tags (Read-only field)
-            preImportState.put("tags_string", tags.get()); // Lưu string UI
-            preImportState.put("tags_data", originalItemDto.getTags()); // Lưu data thật
+            // 3. Tags (Editable)
+            preImportState.put("tags_string", tags.get());
             List<String> importTags = importedDto.getTags() != null ? importedDto.getTags() : Collections.emptyList();
-            tags.set(listToString(importTags)); // Cập nhật UI
-            originalItemDto.setTags(importTags); // Cập nhật data thật
+            tags.set(listToString(importTags));
             showTagsReview.set(true);
 
-            // 4. Release Date (Read-only field)
+            // 4. Release Date (Editable)
             preImportState.put("releaseDate_string", releaseDate.get());
-            preImportState.put("releaseDate_data", originalItemDto.getPremiereDate());
             releaseDate.set(dateToString(importedDto.getPremiereDate()));
-            originalItemDto.setPremiereDate(importedDto.getPremiereDate());
             showReleaseDateReview.set(true);
 
-            // 5. Studios (Read-only field)
+            // 5. Studios (Editable)
             preImportState.put("studios_string", studios.get());
-            preImportState.put("studios_data", originalItemDto.getStudios());
             List<NameLongIdPair> importStudios = importedDto.getStudios() != null ? importedDto.getStudios() : Collections.emptyList();
             studios.set(studiosToString(importStudios));
-            originalItemDto.setStudios(importStudios);
             showStudiosReview.set(true);
 
-            // 6. People (Read-only field)
+            // 6. People (Editable)
             preImportState.put("people_string", people.get());
-            preImportState.put("people_data", originalItemDto.getPeople());
             List<BaseItemPerson> importPeople = importedDto.getPeople() != null ? importedDto.getPeople() : Collections.emptyList();
             people.set(peopleToString(importPeople));
-            originalItemDto.setPeople(importPeople);
             showPeopleReview.set(true);
+
+            // (MỚI) Import là một thay đổi, bật nút Save
+            isDirty.set(true);
         });
     }
 
@@ -394,6 +454,7 @@ public class ItemDetailViewModel {
      * (MỚI) Người dùng nhấn (v) - Chấp nhận thay đổi.
      */
     public void acceptImportField(String fieldName) {
+        // Chỉ cần ẩn nút (v/x), dữ liệu đã ở trong textfield
         switch (fieldName) {
             case "title": showTitleReview.set(false); break;
             case "overview": showOverviewReview.set(false); break;
@@ -402,6 +463,10 @@ public class ItemDetailViewModel {
             case "studios": showStudiosReview.set(false); break;
             case "people": showPeopleReview.set(false); break;
         }
+        // Cập nhật snapshot gốc để (v) có nghĩa là "chấp nhận"
+        updateOriginalStringsFromCurrent();
+        // Kiểm tra lại (có thể các trường khác vẫn dirty)
+        checkForChanges();
     }
 
     /**
@@ -409,6 +474,7 @@ public class ItemDetailViewModel {
      */
     @SuppressWarnings("unchecked")
     public void rejectImportField(String fieldName) {
+        // (SỬA ĐỔI) Chỉ khôi phục UI. DTO gốc sẽ được parse khi lưu.
         switch (fieldName) {
             case "title":
                 title.set((String) preImportState.get("title"));
@@ -420,29 +486,28 @@ public class ItemDetailViewModel {
                 break;
             case "tags":
                 tags.set((String) preImportState.get("tags_string"));
-                originalItemDto.setTags((List<String>) preImportState.get("tags_data"));
                 showTagsReview.set(false);
                 break;
             case "releaseDate":
                 releaseDate.set((String) preImportState.get("releaseDate_string"));
-                originalItemDto.setPremiereDate((OffsetDateTime) preImportState.get("releaseDate_data"));
                 showReleaseDateReview.set(false);
                 break;
             case "studios":
                 studios.set((String) preImportState.get("studios_string"));
-                originalItemDto.setStudios((List<NameLongIdPair>) preImportState.get("studios_data"));
                 showStudiosReview.set(false);
                 break;
             case "people":
                 people.set((String) preImportState.get("people_string"));
-                originalItemDto.setPeople((List<BaseItemPerson>) preImportState.get("people_data"));
                 showPeopleReview.set(false);
                 break;
         }
+        // Kiểm tra lại, vì hành động reject có thể làm nó hết dirty
+        checkForChanges();
     }
 
     /**
-     * (MỚI) Được gọi bởi Controller khi nhấn nút "Lưu thay đổi".
+     * (SỬA ĐỔI) Được gọi bởi Controller khi nhấn nút "Lưu thay đổi".
+     * Sẽ parse dữ liệu từ UI (String) về DTO trước khi gửi.
      */
     public void saveChanges() {
         if (originalItemDto == null || currentItemId == null) {
@@ -450,34 +515,78 @@ public class ItemDetailViewModel {
             return;
         }
 
-        // 1. Cập nhật các trường editable (Title, Overview) vào DTO
+        // 1. (SỬA ĐỔI) Parse dữ liệu từ UI (String) vào DTO
         originalItemDto.setName(title.get());
         originalItemDto.setOverview(overview.get());
-        // Các trường (Tags, Studios, People...) ĐÃ ĐƯỢC CẬP NHẬT trong DTO
-        // bởi logic `importAndPreview` và `rejectImportField`.
+
+        // Parse Tags (String -> List<String>)
+        List<String> tagsList = Arrays.stream(tags.get().split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+        originalItemDto.setTags(tagsList);
+
+        // Parse Studios (String -> List<NameLongIdPair>)
+        List<NameLongIdPair> studiosList = Arrays.stream(studios.get().split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(name -> {
+                    NameLongIdPair pair = new NameLongIdPair();
+                    pair.setName(name);
+                    // Lưu ý: ID sẽ bị null. Emby server thường sẽ tự khớp tên.
+                    return pair;
+                })
+                .collect(Collectors.toList());
+        originalItemDto.setStudios(studiosList);
+
+        // Parse People (String -> List<BaseItemPerson>)
+        List<BaseItemPerson> peopleList = Arrays.stream(people.get().split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(name -> {
+                    // *** SỬA LỖI (FIX) ***
+                    // Phải cung cấp Name (String) và Type (PersonType)
+                    // Chúng ta mặc định là Actor
+                    return new BaseItemPerson(name, PersonType.ACTOR);
+                })
+                .collect(Collectors.toList());
+        originalItemDto.setPeople(peopleList);
+
+        // Parse Date (String -> OffsetDateTime)
+        try {
+            Date parsedDate = dateFormat.parse(releaseDate.get());
+            // Dùng time và ZoneId của threetenbp
+            org.threeten.bp.Instant threetenInstant = org.threeten.bp.Instant.ofEpochMilli(parsedDate.getTime());
+            OffsetDateTime odt = OffsetDateTime.ofInstant(threetenInstant, org.threeten.bp.ZoneId.systemDefault());
+            originalItemDto.setPremiereDate(odt);
+        } catch (Exception e) {
+            System.err.println("Không thể parse ngày: " + releaseDate.get() + ". Sẽ set thành null.");
+            originalItemDto.setPremiereDate(null); // Set null nếu định dạng sai
+        }
 
         reportActionError("Đang lưu thay đổi lên server...");
-        hideAllReviewButtons(); // Ẩn các nút (v/x) sau khi lưu
+        hideAllReviewButtons();
 
         // 2. Gọi API trong luồng nền
         new Thread(() -> {
             try {
-                // (MỚI) Lấy API service từ EmbyService
                 ItemUpdateServiceApi itemUpdateServiceApi = embyService.getItemUpdateServiceApi();
                 if (itemUpdateServiceApi == null) {
                     throw new IllegalStateException("Không thể lấy ItemUpdateServiceApi. Vui lòng đăng nhập lại.");
                 }
 
-                // Gọi API (theo code mẫu của bạn)
                 itemUpdateServiceApi.postItemsByItemid(originalItemDto, currentItemId);
 
                 // Báo thành công
                 Platform.runLater(() -> {
                     reportActionError("Đã lưu thay đổi thành công!");
+                    isDirty.set(false); // (MỚI) Tắt nút Lưu
+                    updateOriginalStringsFromCurrent(); // (MỚI) Cập nhật snapshot gốc
                 });
 
             } catch (ApiException e) {
                 System.err.println("API Error saving item: " + e.getMessage());
+                e.printStackTrace();
                 Platform.runLater(() -> reportActionError("Lỗi API khi lưu: " + e.getMessage()));
             } catch (Exception e) {
                 System.err.println("Generic Error saving item: " + e.getMessage());
@@ -498,6 +607,9 @@ public class ItemDetailViewModel {
 
 
     // --- Getters cho Properties ---
+
+    // (MỚI)
+    public BooleanProperty isDirtyProperty() { return isDirty; }
 
     public ReadOnlyBooleanProperty loadingProperty() {
         return loading.getReadOnlyProperty();
@@ -544,11 +656,11 @@ public class ItemDetailViewModel {
     public ReadOnlyBooleanProperty isFolderProperty() { return isFolder.getReadOnlyProperty(); }
     public ReadOnlyStringProperty actionStatusMessageProperty() { return actionStatusMessage.getReadOnlyProperty(); }
 
-    // (MỚI) Getters cho các trường mới
-    public ReadOnlyStringProperty tagsProperty() { return tags.getReadOnlyProperty(); }
-    public ReadOnlyStringProperty releaseDateProperty() { return releaseDate.getReadOnlyProperty(); }
-    public ReadOnlyStringProperty studiosProperty() { return studios.getReadOnlyProperty(); }
-    public ReadOnlyStringProperty peopleProperty() { return people.getReadOnlyProperty(); }
+    // (SỬA ĐỔI) Getters cho các trường mới (không còn ReadOnly)
+    public StringProperty tagsProperty() { return tags; }
+    public StringProperty releaseDateProperty() { return releaseDate; }
+    public StringProperty studiosProperty() { return studios; }
+    public StringProperty peopleProperty() { return people; }
 
 
     // --- Các hàm Setter/Reporter cho Action Error (MỚI) ---

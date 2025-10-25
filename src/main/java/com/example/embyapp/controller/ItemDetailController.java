@@ -4,7 +4,7 @@ import embyclient.model.BaseItemDto;
 import embyclient.model.ImageInfo;
 import com.example.embyapp.MainApp;
 import com.example.embyapp.service.EmbyService;
-import com.example.embyapp.service.ItemRepository; // THÊM IMPORT
+import com.example.embyapp.service.ItemRepository;
 import com.example.embyapp.service.JsonFileHandler;
 import com.example.embyapp.viewmodel.ItemDetailViewModel;
 import com.example.embyapp.viewmodel.detail.TagModel;
@@ -39,8 +39,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * (CẬP NHẬT 30) Thêm Genres.
- * - Thêm FXML fields và handlers cho Genres.
+ * (CẬP NHẬT 31) Cập nhật bố cục UI Detail.
+ * - Sửa FXML fields để khớp với cấu trúc mới (Path, Release Date, Fixed Footer).
+ * - Cập nhật logic binding để khớp với cấu trúc mới.
+ * (FIX LỖI) Khắc phục lỗi statusLabel không mất đi sau khi tải xong và xóa binding cho actionStatusLabel.
  */
 public class ItemDetailController {
 
@@ -58,40 +60,39 @@ public class ItemDetailController {
 
     // (*** TRƯỜNG TEXT ***)
     @FXML private TextField titleTextField;
-    @FXML private Button saveButton;
     @FXML private TextArea overviewTextArea;
     @FXML private Label taglineLabel;
-    @FXML private Label genresLabel; // Giữ lại cho hiển thị phụ, nhưng không dùng nữa
+    @FXML private Label genresLabel; // Giữ lại nhưng bị ẩn
+    // Xóa runtimeLabel
 
     // (*** GALLERY ***)
     @FXML private Button addBackdropButton;
     @FXML private FlowPane imageGalleryPane;
 
-    // (*** CÁC TRƯỜNG DỮ LIỆU CŨ ***)
-    @FXML private VBox pathContainer;
+    // (*** CÁC TRƯỜNG DỮ LIỆU MỚI ***)
+    @FXML private HBox pathContainer; // Container cho path/open
     @FXML private TextField pathTextField;
     @FXML private Button openButton;
-    @FXML private Label actionStatusLabel;
+    @FXML private Label actionStatusLabel; // Vẫn khai báo để tránh NPE khi FXML field bị xóa.
+
+    @FXML private HBox releaseDateContainer; // Container cho date/tagline/runtime
+    @FXML private TextField releaseDateTextField;
 
     // (*** TAGS ***)
     @FXML private FlowPane tagsFlowPane;
     @FXML private Button addTagButton;
 
-    // (*** FILE ONLY ***)
-    @FXML private VBox fileOnlyContainer;
-    @FXML private TextField releaseDateTextField;
-
-    // (*** STUDIOS/PEOPLE DẠNG CHIP ***)
+    // (*** STUDIOS/PEOPLE/GENRES DẠNG CHIP ***)
     @FXML private FlowPane studiosFlowPane;
     @FXML private Button addStudioButton;
     @FXML private FlowPane peopleFlowPane;
     @FXML private Button addPeopleButton;
+    @FXML private FlowPane genresFlowPane;
+    @FXML private Button addGenreButton;
 
-    // (*** GENRES DẠNG CHIP (MỚI) ***)
-    @FXML private FlowPane genresFlowPane; // FXML field mới
-    @FXML private Button addGenreButton; // FXML field mới
-
-    // (*** IMPORT/EXPORT ***)
+    // (*** FIXED BOTTOM BAR ***)
+    @FXML private HBox bottomButtonBar;
+    @FXML private Button saveButton;
     @FXML private Button importButton;
     @FXML private Button exportButton;
 
@@ -111,15 +112,12 @@ public class ItemDetailController {
     @FXML private HBox reviewPeopleContainer;
     @FXML private Button acceptPeopleButton;
     @FXML private Button rejectPeopleButton;
-
-    // (*** REVIEW BUTTONS MỚI ***)
     @FXML private HBox reviewGenresContainer;
     @FXML private Button acceptGenresButton;
     @FXML private Button rejectGenresButton;
 
-    private ItemDetailViewModel viewModel;
 
-    // (*** THÊM FIELD MỚI ***)
+    private ItemDetailViewModel viewModel;
     private final ItemRepository itemRepository = new ItemRepository();
 
     @FXML
@@ -135,8 +133,6 @@ public class ItemDetailController {
         rejectStudiosButton.setOnAction(e -> viewModel.rejectImportField("studios"));
         acceptPeopleButton.setOnAction(e -> viewModel.acceptImportField("people"));
         rejectPeopleButton.setOnAction(e -> viewModel.rejectImportField("people"));
-
-        // (*** GÁN SỰ KIỆN CHO GENRES ***)
         acceptGenresButton.setOnAction(e -> viewModel.acceptImportField("genres"));
         rejectGenresButton.setOnAction(e -> viewModel.rejectImportField("genres"));
 
@@ -158,6 +154,11 @@ public class ItemDetailController {
 
         // (*** DRAG-DROP ***)
         setupBackdropDragAndDrop();
+
+        // (*** GÁN LẠI SỰ KIỆN CHO NÚT DƯỚI ĐÁY ***)
+        saveButton.setOnAction(e -> handleSaveButtonAction());
+        importButton.setOnAction(e -> handleImportButtonAction());
+        exportButton.setOnAction(e -> handleExportButtonAction());
     }
 
     /**
@@ -169,7 +170,13 @@ public class ItemDetailController {
         // --- BINDING UI VỚI VIEWMODEL ---
         // 1. Labels & TextFields cơ bản
         taglineLabel.textProperty().bind(viewModel.taglineProperty());
-        // genresLabel.textProperty().bind(viewModel.genresProperty()); // Không cần bind vì dùng FlowPane mới
+
+        if (genresLabel != null) {
+            genresLabel.visibleProperty().set(false); // Hide Genres Label (legacy)
+            genresLabel.managedProperty().set(false); // Hide Genres Label (legacy)
+        }
+
+        // BINDING CHUNG
         statusLabel.textProperty().bind(viewModel.statusMessageProperty());
         titleTextField.textProperty().bindBidirectional(viewModel.titleProperty());
         overviewTextArea.textProperty().bindBidirectional(viewModel.overviewProperty());
@@ -181,19 +188,19 @@ public class ItemDetailController {
         });
         updateTagsFlowPane();
 
-        // 3. Binding cho Studios (MỚI)
+        // 3. Binding cho Studios
         viewModel.getStudioItems().addListener((ListChangeListener<TagModel>) c -> {
             Platform.runLater(this::updateStudiosFlowPane);
         });
         updateStudiosFlowPane();
 
-        // 4. Binding cho People (MỚI)
+        // 4. Binding cho People
         viewModel.getPeopleItems().addListener((ListChangeListener<TagModel>) c -> {
             Platform.runLater(this::updatePeopleFlowPane);
         });
         updatePeopleFlowPane();
 
-        // 5. Binding cho Genres (MỚI)
+        // 5. Binding cho Genres
         viewModel.getGenreItems().addListener((ListChangeListener<TagModel>) c -> {
             Platform.runLater(this::updateGenresFlowPane);
         });
@@ -205,52 +212,65 @@ public class ItemDetailController {
 
         // 7. Binding kiểm soát hiển thị (Loading / Status / Content)
         loadingIndicator.visibleProperty().bind(viewModel.loadingProperty());
-        statusLabel.visibleProperty().bind(viewModel.showStatusMessageProperty());
+
+        // *** FIX LỖI: Thêm lại binding cho statusLabel.visibleProperty (Ưu tiên hiển thị status nếu loading HOẶC có message) ***
+        statusLabel.visibleProperty().bind(viewModel.loadingProperty().or(viewModel.showStatusMessageProperty()));
+
         mainScrollPane.visibleProperty().bind(
                 viewModel.loadingProperty().not().and(viewModel.showStatusMessageProperty().not())
         );
+        mainScrollPane.managedProperty().bind(mainScrollPane.visibleProperty());
 
-        // 8. Binding Gallery (Lắng nghe danh sách ImageInfo)
-        viewModel.getBackdropImages().addListener((ListChangeListener<ImageInfo>) c -> {
-            updateImageGallery();
-        });
-        updateImageGallery(); // Cập nhật lần đầu
+        bottomButtonBar.visibleProperty().bind(mainScrollPane.visibleProperty());
+        bottomButtonBar.managedProperty().bind(mainScrollPane.visibleProperty());
 
-        // 9. Binding UI linh hoạt, Path...
-        fileOnlyContainer.visibleProperty().bind(viewModel.isFolderProperty().not());
-        fileOnlyContainer.managedProperty().bind(viewModel.isFolderProperty().not());
-        if (pathContainer != null) {
-            pathTextField.textProperty().bind(viewModel.itemPathProperty());
-            pathContainer.visibleProperty().bind(
-                    viewModel.itemPathProperty().isNotEmpty()
-                            .and(viewModel.itemPathProperty().isNotEqualTo("Không có đường dẫn"))
-            );
-            openButton.textProperty().bind(
-                    Bindings.when(viewModel.isFolderProperty())
-                            .then("Mở trong Finder")
-                            .otherwise("Phát (Mặc định)")
-            );
-            actionStatusLabel.textProperty().bind(viewModel.actionStatusMessageProperty());
+
+        // 8. Binding UI linh hoạt, Path...
+        pathTextField.textProperty().bind(viewModel.itemPathProperty());
+        pathContainer.visibleProperty().bind(
+                viewModel.itemPathProperty().isNotEmpty()
+                        .and(viewModel.itemPathProperty().isNotEqualTo("Không có đường dẫn"))
+        );
+        pathContainer.managedProperty().bind(pathContainer.visibleProperty());
+
+        // actionStatusLabel KHÔNG CÒN HIỂN THỊ NỮA. (Chỉ hiển thị lỗi Mở/Phát)
+        // actionStatusLabel là lỗi xảy ra trong luồng Mở/Phát.
+        // Ta sẽ giữ lại logic quản lý lỗi, nhưng không hiển thị label này nữa.
+        if (actionStatusLabel != null) {
+            actionStatusLabel.managedProperty().set(false);
+            actionStatusLabel.visibleProperty().set(false);
+            // Giữ lại binding text để logic cũ vẫn hoạt động:
+            // actionStatusLabel.textProperty().bind(viewModel.actionStatusMessageProperty());
         }
 
-        // 10. Binding Review Containers
+        openButton.textProperty().bind(
+                Bindings.when(viewModel.isFolderProperty())
+                        .then("Mở trong Finder")
+                        .otherwise("Phát (Mặc định)")
+        );
+
+        releaseDateContainer.visibleProperty().bind(viewModel.isFolderProperty().not());
+        releaseDateContainer.managedProperty().bind(viewModel.isFolderProperty().not());
+
+        // 9. Binding Review Containers
         bindReviewContainer(reviewTitleContainer, viewModel.showTitleReviewProperty());
         bindReviewContainer(reviewOverviewContainer, viewModel.showOverviewReviewProperty());
         bindReviewContainer(reviewReleaseDateContainer, viewModel.showReleaseDateReviewProperty());
         bindReviewContainer(reviewStudiosContainer, viewModel.showStudiosReviewProperty());
         bindReviewContainer(reviewPeopleContainer, viewModel.showPeopleReviewProperty());
-        // (*** BINDING GENRES MỚI ***)
         bindReviewContainer(reviewGenresContainer, viewModel.showGenresReviewProperty());
 
-        // 11. Binding nút Save
+        // 10. Binding nút Save
         saveButton.disableProperty().bind(viewModel.isDirtyProperty().not());
 
-        // 12. Binding nút Lưu ảnh Primary
+        // 11. Binding nút Lưu ảnh Primary
         savePrimaryImageButton.visibleProperty().bind(viewModel.primaryImageDirtyProperty());
         savePrimaryImageButton.managedProperty().bind(viewModel.primaryImageDirtyProperty());
     }
 
-    // (Hàm helper bindReviewContainer giữ nguyên)
+    /**
+     * Hàm helper bindReviewContainer giữ nguyên.
+     */
     private void bindReviewContainer(HBox container, ReadOnlyBooleanProperty visibilityProperty) {
         if (container != null && visibilityProperty != null) {
             container.visibleProperty().bind(visibilityProperty);
@@ -258,10 +278,8 @@ public class ItemDetailController {
         }
     }
 
-    // ... (updateImageGallery, updateTagsFlowPane, updateStudiosFlowPane, updatePeopleFlowPane giữ nguyên)
-
     /**
-     * Helper: Cập nhật FlowPane gallery
+     * Helper: Cập nhật FlowPane gallery.
      */
     private void updateImageGallery() {
         Platform.runLater(() -> {
@@ -331,9 +349,10 @@ public class ItemDetailController {
             TagView genreChip = new TagView(genre, viewModel::removeGenre);
             genresFlowPane.getChildren().add(genreChip);
         }
-        // Ẩn genresLabel cũ (nếu còn)
-        genresLabel.setVisible(false);
-        genresLabel.setManaged(false);
+        if (genresLabel != null) {
+            genresLabel.visibleProperty().set(false);
+            genresLabel.managedProperty().set(false);
+        }
     }
 
 
@@ -350,7 +369,7 @@ public class ItemDetailController {
             // Lấy controller và thiết lập context (thao tác quan trọng)
             AddTagDialogController controller = loader.getController();
             controller.setDialogStage(dialogStage);
-            controller.setContext(context, itemRepository); // TRUYỀN CONTEXT VÀ REPOSITORY
+            controller.setContext(context, itemRepository);
 
             // Cấu hình Stage
             String title = context == AddTagDialogController.SuggestionContext.STUDIO ? "Thêm Studio Mới" :
@@ -490,7 +509,6 @@ public class ItemDetailController {
                         if (importedDto != null) {
                             Platform.runLater(() -> {
                                 viewModel.importAndPreview(importedDto);
-                                viewModel.reportActionError("Đã tải " + selectedFile.getName() + ". Vui lòng duyệt thay đổi.");
                             });
                         } else {
                             throw new Exception("File JSON không hợp lệ hoặc rỗng.");

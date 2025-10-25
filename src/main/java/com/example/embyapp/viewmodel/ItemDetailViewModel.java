@@ -69,7 +69,7 @@ public class ItemDetailViewModel {
     private final ReadOnlyStringWrapper year = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper tagline = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper genres = new ReadOnlyStringWrapper(""); // Giữ lại cho hiển thị legacy/phụ
-    private final ReadOnlyStringWrapper runtime = new ReadOnlyStringWrapper("");
+//    private final ReadOnlyStringWrapper runtime = new ReadOnlyStringWrapper("");
     private final ReadOnlyObjectWrapper<Image> primaryImage = new ReadOnlyObjectWrapper<>(null);
     private final ObservableList<ImageInfo> backdropImages = FXCollections.observableArrayList();
     private final ReadOnlyStringWrapper itemPath = new ReadOnlyStringWrapper("");
@@ -137,7 +137,7 @@ public class ItemDetailViewModel {
                     year.set(result.getYearText());
                     tagline.set(result.getTaglineText());
                     genres.set(result.getGenresText()); // Giữ lại cho hiển thị legacy/phụ
-                    runtime.set(result.getRuntimeText());
+//                    runtime.set(result.getRuntimeText());
                     itemPath.set(result.getPathText());
                     isFolder.set(result.isFolder());
                     actionStatusMessage.set("");
@@ -181,7 +181,7 @@ public class ItemDetailViewModel {
         overview.set("");
         tagline.set("");
         genres.set("");
-        runtime.set("");
+//        runtime.set("");
         primaryImage.set(null);
         backdropImages.clear();
         itemPath.set("");
@@ -577,7 +577,7 @@ public class ItemDetailViewModel {
     public ReadOnlyBooleanProperty showStatusMessageProperty() { return showStatusMessage.getReadOnlyProperty(); }
     public ReadOnlyStringProperty taglineProperty() { return tagline.getReadOnlyProperty(); }
     public ReadOnlyStringProperty genresProperty() { return genres.getReadOnlyProperty(); }
-    public ReadOnlyStringProperty runtimeProperty() { return runtime.getReadOnlyProperty(); }
+//    public ReadOnlyStringProperty runtimeProperty() { return runtime.getReadOnlyProperty(); }
     public ReadOnlyObjectProperty<Image> primaryImageProperty() { return primaryImage.getReadOnlyProperty(); }
     public ObservableList<ImageInfo> getBackdropImages() { return backdropImages; }
     public ReadOnlyStringProperty itemPathProperty() { return itemPath.getReadOnlyProperty(); }

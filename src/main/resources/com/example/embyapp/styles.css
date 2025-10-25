@@ -7,6 +7,7 @@
  * (CẬP NHẬT 15): Sửa nền trắng cho ScrollPane trong dialog gợi ý tag.
  * (CẬP NHẬT 18): Thêm style cho các nút/view cập nhật ảnh.
  * (CẬP NHẬT 17): Sửa style nút Key cho bo tròn.
+ * (CẬP NHẬT 33): Thống nhất style các nút Add (+), Accept (✓), Reject (✕) thành hình tròn và màu sắc theo yêu cầu.
  */
 
 /* --- DARK MODE GLOBAL STYLES --- */
@@ -213,19 +214,6 @@
     -fx-background-color: #dc3545;
     -fx-text-fill: #ffffff;
 }
-#addTagButton {
-    -fx-background-color: #333;
-    -fx-border-color: #555;
-    -fx-font-weight: normal;
-    -fx-text-fill: #b0b0b0;
-    -fx-font-size: 14px;
-    -fx-background-radius: 15px;
-}
-#addTagButton:hover {
-    -fx-background-color: #28a745;
-    -fx-border-color: #28a745;
-    -fx-text-fill: #ffffff;
-}
 
 /* --- (CẬP NHẬT 17) POPUP & SUGGESTION TAG STYLES (2 DÒNG) --- */
 
@@ -263,7 +251,6 @@
 }
 
 /* (*** SỬA: Style cho DÒNG KEY (trên) ***) */
-/* (*** Giờ đây giống hệt .suggested-tag-button.tag-view-json ***) */
 .suggestion-key-button {
     -fx-background-color: #004d80; /* Màu xanh */
     -fx-border-color: #007acc;
@@ -301,11 +288,15 @@
 .image-save-button:hover {
     -fx-background-color: #218838;
 }
+
+/* *** ADD/BACKDROP BUTTONS (Unified) *** */
 .add-backdrop-button {
-    -fx-background-color: #28a745;
+    /* MÀU XÁM */
+    -fx-background-color: #555555;
     -fx-text-fill: white;
     -fx-font-size: 16px;
     -fx-font-weight: bold;
+    /* HÌNH DÁNG TRÒN */
     -fx-background-radius: 100px;
     -fx-padding: 0px 10px 0px 10px;
     -fx-min-width: 30px;
@@ -313,8 +304,41 @@
     -fx-border-width: 0;
 }
 .add-backdrop-button:hover {
+    -fx-background-color: #666666;
+}
+
+/* *** REVIEW BUTTONS (Unified Round) *** */
+.review-button-round {
+    /* Hình dáng chung (Tròn và Kích thước) */
+    -fx-background-radius: 100px;
+    -fx-border-radius: 100px;
+    -fx-min-width: 30px;
+    -fx-min-height: 30px;
+    -fx-padding: 0;
+    -fx-alignment: center;
+    -fx-border-width: 0;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 16px; /* Tăng size font để nhìn rõ hơn */
+}
+
+/* Specific style for Accept (Green) */
+.accept-button {
+    -fx-background-color: #28a745; /* XANH */
+}
+.accept-button:hover {
     -fx-background-color: #218838;
 }
+
+/* Specific style for Reject (Red) */
+.reject-button {
+    -fx-background-color: #dc3545; /* ĐỎ */
+}
+.reject-button:hover {
+    -fx-background-color: #c82333;
+}
+/* *** END REVIEW BUTTONS *** */
+
 .backdrop-view {
     -fx-background-color: #222;
     -fx-background-radius: 5px;

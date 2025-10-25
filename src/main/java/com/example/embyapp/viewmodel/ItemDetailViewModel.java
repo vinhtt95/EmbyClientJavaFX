@@ -337,18 +337,6 @@ public class ItemDetailViewModel {
             return;
         }
         reportActionError("Đang upload ảnh Primary...");
-        new Thread(() -> {
-            try {
-                imageUpdater.uploadImage(currentItemId, ImageType.PRIMARY, fileToSave);
-                Platform.runLater(() -> {
-                    reportActionError("Upload ảnh Primary thành công!");
-                    newPrimaryImageFile.set(null);
-                });
-            } catch (Exception e) {
-                e.printStackTrace();
-                Platform.runLater(() -> reportActionError("Lỗi upload ảnh: " + e.getMessage()));
-            }
-        }).start();
     }
     public void selectNewBackdrops(Stage ownerStage) {
         if (currentItemId == null) return;
@@ -393,20 +381,7 @@ public class ItemDetailViewModel {
         if (files == null || files.isEmpty() || currentItemId == null) return;
 
         reportActionError("Đang upload " + files.size() + " ảnh backdrop...");
-        new Thread(() -> {
-            try {
-                for (File file : files) {
-                    imageUpdater.uploadImage(currentItemId, ImageType.BACKDROP, file);
-                }
-                Platform.runLater(() -> {
-                    reportActionError("Upload " + files.size() + " ảnh thành công. Đang tải lại gallery...");
-                    reloadBackdrops();
-                });
-            } catch (Exception e) {
-                e.printStackTrace();
-                Platform.runLater(() -> reportActionError("Lỗi upload backdrop: " + e.getMessage()));
-            }
-        }).start();
+
     }
 
     // (Getters cho Controller/Properties giữ nguyên)

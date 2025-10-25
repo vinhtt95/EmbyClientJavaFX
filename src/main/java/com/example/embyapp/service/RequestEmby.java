@@ -45,7 +45,6 @@ public class RequestEmby {
     public QueryResultBaseItemDto getQueryResultFullBaseItemDto(String parentID, ItemsServiceApi itemsServiceApi, Integer startIndex, Integer limit){
         QueryResultBaseItemDto result = null;
         try {
-            System.out.println(parentID);
             result = itemsServiceApi.getItems(null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,startIndex,limit,true,null,"Descending",parentID,null,null,"Movie",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,"ProductionYear,PremiereDate,SortName",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null);
         } catch (ApiException e) {
             System.out.println(e.getMessage());

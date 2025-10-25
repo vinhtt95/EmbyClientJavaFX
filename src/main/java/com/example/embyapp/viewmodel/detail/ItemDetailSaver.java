@@ -22,17 +22,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * (CẬP NHẬT 7)
- * - Sửa logic parse để đọc List<TagModel> và serialize nó thành List<String>.
- * - Ghi List<String> này vào dto.setTags(...).
- * (CẬP NHẬT 10)
- * - Sửa logic parse để tạo List<NameLongIdPair> và ghi vào dto.setTagItems(...).
- * (CẬP NHẬT 11 - SỬA LỖI BIÊN DỊCH)
- * - Sửa lỗi BaseItemPerson constructor.
- * - Sửa lỗi org.threeten.bp.OffsetDateTime.
- * (CẬP NHẬT 27 - THÊM STUDIOS/PEOPLE DẠNG TAG)
- * - Cập nhật SaveRequest để dùng List<TagModel> cho Studios/People.
- * - Cập nhật logic parse để serialize List<TagModel> cho Studios/People.
+ * (CẬP NHẬT 30) Thêm Genres.
+ * - Cập nhật SaveRequest để chứa Genres.
  */
 public class ItemDetailSaver {
 
@@ -115,6 +106,9 @@ public class ItemDetailSaver {
                 .collect(Collectors.toList());
         dto.setPeople(peopleList);
 
+        // (*** Genres không được xử lý ở đây. Nó sẽ được xử lý trong ItemDetailViewModel ***)
+        // Lý do: Genres được lưu dưới dạng List<String>, không phải List<NameLongIdPair> hay List<BaseItemPerson>
+
         // (*** SỬA LỖI 3: DATE ***)
         // Parse Date (String -> java.time.OffsetDateTime)
         try {
@@ -136,7 +130,6 @@ public class ItemDetailSaver {
 
     /**
      * Lớp POJO nội bộ để chứa yêu cầu lưu (SaveRequest).
-     * (Đã sửa ở lần trước, giữ nguyên)
      */
     public static class SaveRequest {
         private final BaseItemDto originalDto;
@@ -147,18 +140,21 @@ public class ItemDetailSaver {
         private final String releaseDate;
         private final List<TagModel> studioItems; // MODIFIED
         private final List<TagModel> peopleItems; // MODIFIED
+        private final List<TagModel> genreItems; // (*** MỚI ***)
 
         public SaveRequest(BaseItemDto originalDto, String itemId, String title, String overview,
                            List<TagModel> tagItems,
-                           String releaseDate, List<TagModel> studioItems, List<TagModel> peopleItems) { // MODIFIED
+                           String releaseDate, List<TagModel> studioItems, List<TagModel> peopleItems,
+                           List<TagModel> genreItems) { // (*** THÊM GENRE ***)
             this.originalDto = originalDto;
             this.itemId = itemId;
             this.title = title;
             this.overview = overview;
             this.tagItems = tagItems;
             this.releaseDate = releaseDate;
-            this.studioItems = studioItems; // MODIFIED
-            this.peopleItems = peopleItems; // MODIFIED
+            this.studioItems = studioItems;
+            this.peopleItems = peopleItems;
+            this.genreItems = genreItems; // (*** MỚI ***)
         }
 
         // --- Getters ---
@@ -168,7 +164,8 @@ public class ItemDetailSaver {
         public String getOverview() { return overview; }
         public List<TagModel> getTagItems() { return tagItems; }
         public String getReleaseDate() { return releaseDate; }
-        public List<TagModel> getStudioItems() { return studioItems; } // MODIFIED
-        public List<TagModel> getPeopleItems() { return peopleItems; } // MODIFIED
+        public List<TagModel> getStudioItems() { return studioItems; }
+        public List<TagModel> getPeopleItems() { return peopleItems; }
+        public List<TagModel> getGenreItems() { return genreItems; } // (*** MỚI ***)
     }
 }

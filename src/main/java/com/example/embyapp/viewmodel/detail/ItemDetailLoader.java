@@ -23,14 +23,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * (CẬP NHẬT 19)
- * - Sửa lỗi: Lấy URL ảnh Primary từ BaseItemDto.getImageTags() thay vì ImageInfo.
- * - Sửa LoadResult để chỉ chứa List<ImageInfo> cho backdrops.
- * (CẬP NHẬT 21 - SỬA LỖI BIÊN DỊCH)
- * - Sửa lỗi org.threeten.bp.OffsetDateTime.
- * (CẬP NHẬT 27 - THÊM STUDIOS/PEOPLE DẠNG TAG)
- * - Thay đổi LoadResult để trả về List<TagModel> cho Studios/People.
- * - Thêm các hàm chuyển đổi Studios/People sang List<TagModel).
+ * (CẬP NHẬT 30) Thêm Genres.
+ * - Thêm logic tải và chuyển đổi Genres sang List<TagModel>.
  */
 public class ItemDetailLoader {
 
@@ -75,12 +69,14 @@ public class ItemDetailLoader {
         result.setTagItems(parsedTags);
 
         // (*** SỬA LỖI TẠI ĐÂY ***)
-        // fullDetails.getPremiereDate() trả về java.time.OffsetDateTime
-        // hàm dateToString giờ đây cũng chấp nhận java.time.OffsetDateTime
         result.setReleaseDateText(dateToString(fullDetails.getPremiereDate()));
 
         result.setStudioItems(studiosToTagModelList(fullDetails.getStudios())); // MODIFIED
         result.setPeopleItems(peopleToTagModelList(fullDetails.getPeople())); // MODIFIED
+
+        // (*** LOGIC GENRES MỚI ***)
+        result.setGenreItems(genresToTagModelList(fullDetails.getGenres()));
+
 
         // (*** LOGIC ẢNH (giữ nguyên) ***)
         String primaryImageUrl = null;
@@ -141,6 +137,15 @@ public class ItemDetailLoader {
                 .collect(Collectors.toList()) : new ArrayList<>();
     }
 
+    // (*** HÀM HELPER MỚI ***)
+    private List<TagModel> genresToTagModelList(List<String> genres) {
+        return (genres != null) ? genres.stream()
+                .filter(Objects::nonNull)
+                .map(TagModel::parse) // Genres được lưu dưới dạng List<String> nên ta parse nó
+                .collect(Collectors.toList()) : new ArrayList<>();
+    }
+
+
     private String formatRuntime(Long runTimeTicks) {
         if (runTimeTicks == null || runTimeTicks == 0) return "";
         try {
@@ -164,7 +169,8 @@ public class ItemDetailLoader {
     public static class LoadResult {
         private final BaseItemDto fullDetails;
         private String titleText, overviewText, releaseDateText;
-        private List<TagModel> tagItems, studioItems, peopleItems; // MODIFIED
+        private List<TagModel> tagItems, studioItems, peopleItems;
+        private List<TagModel> genreItems; // (*** MỚI ***)
         private String yearText, taglineText, genresText, runtimeText, pathText;
         private String primaryImageUrl, originalTitleForExport;
         private boolean isFolder;
@@ -179,7 +185,6 @@ public class ItemDetailLoader {
             originals.put("title", titleText);
             originals.put("overview", overviewText);
             originals.put("releaseDate", releaseDateText);
-            // REMOVED: Không lưu studios/people dạng String vào đây nữa
             return originals;
         }
 
@@ -193,14 +198,14 @@ public class ItemDetailLoader {
         public void setTagItems(List<TagModel> tagItems) { this.tagItems = tagItems; }
         public String getReleaseDateText() { return releaseDateText; }
         public void setReleaseDateText(String releaseDateText) { this.releaseDateText = releaseDateText; }
-        // REMOVED: public String getStudiosText() { return studiosText; }
-        // REMOVED: public void setStudiosText(String studiosText) { this.studiosText = studiosText; }
-        // REMOVED: public String getPeopleText() { return peopleText; }
-        // REMOVED: public void setPeopleText(String peopleText) { this.peopleText = peopleText; }
-        public List<TagModel> getStudioItems() { return studioItems; } // ADDED
-        public void setStudioItems(List<TagModel> studioItems) { this.studioItems = studioItems; } // ADDED
-        public List<TagModel> getPeopleItems() { return peopleItems; } // ADDED
-        public void setPeopleItems(List<TagModel> peopleItems) { this.peopleItems = peopleItems; } // ADDED
+
+        public List<TagModel> getStudioItems() { return studioItems; }
+        public void setStudioItems(List<TagModel> studioItems) { this.studioItems = studioItems; }
+        public List<TagModel> getPeopleItems() { return peopleItems; }
+        public void setPeopleItems(List<TagModel> peopleItems) { this.peopleItems = peopleItems; }
+        public List<TagModel> getGenreItems() { return genreItems; } // (*** MỚI ***)
+        public void setGenreItems(List<TagModel> genreItems) { this.genreItems = genreItems; } // (*** MỚI ***)
+
 
         public String getYearText() { return yearText; }
         public void setYearText(String yearText) { this.yearText = yearText; }

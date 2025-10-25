@@ -12,14 +12,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * (CẬP NHẬT 16)
- * - Thêm pauseTracking() và resumeTracking() để tạm dừng listener khi import.
- * (CẬP NHẬT 17)
- * - Thêm importAcceptancePending state.
- * - forceDirty() now transitions out of pending state.
- * - checkForChanges() respects pending state.
- * (CẬP NHẬT 27 - THÊM STUDIOS/PEOPLE DẠNG TAG)
- * - Thay đổi theo dõi Studios/People từ String sang List<TagModel>.
+ * (CẬP NHẬT 30) Thêm Genres.
+ * - Thêm theo dõi Genres.
  */
 public class ItemDetailDirtyTracker {
 
@@ -28,20 +22,22 @@ public class ItemDetailDirtyTracker {
     private final BooleanProperty isDirty = new SimpleBooleanProperty(false);
 
     // Snapshot gốc
-    private String originalTitle, originalOverview, originalReleaseDate; // MODIFIED (Removed studios/people strings)
+    private String originalTitle, originalOverview, originalReleaseDate;
     private List<TagModel> originalTagItems;
-    private List<TagModel> originalStudioItems; // ADDED
-    private List<TagModel> originalPeopleItems; // ADDED
+    private List<TagModel> originalStudioItems;
+    private List<TagModel> originalPeopleItems;
+    private List<TagModel> originalGenreItems; // (*** MỚI ***)
 
     // Listeners
     private final ChangeListener<String> dirtyFlagListener = (obs, oldVal, newVal) -> checkForChanges();
     private final ListChangeListener<TagModel> tagsListener = (c) -> checkForChanges();
-    private final ListChangeListener<TagModel> studioItemsListener = (c) -> checkForChanges(); // ADDED
-    private final ListChangeListener<TagModel> peopleItemsListener = (c) -> checkForChanges(); // ADDED
+    private final ListChangeListener<TagModel> studioItemsListener = (c) -> checkForChanges();
+    private final ListChangeListener<TagModel> peopleItemsListener = (c) -> checkForChanges();
+    private final ListChangeListener<TagModel> genreItemsListener = (c) -> checkForChanges(); // (*** MỚI ***)
 
     // State flags
     private boolean paused = false;
-    private boolean importAcceptancePending = false; // <-- MỚI: Cờ chờ accept
+    private boolean importAcceptancePending = false; // <-- Cờ chờ accept
 
 
     public ItemDetailDirtyTracker(ItemDetailViewModel viewModel) {
@@ -54,8 +50,9 @@ public class ItemDetailDirtyTracker {
     public void startTracking(Map<String, String> originalStrings) {
         updateOriginalStrings(originalStrings);
         this.originalTagItems = new ArrayList<>(viewModel.getTagItems());
-        this.originalStudioItems = new ArrayList<>(viewModel.getStudioItems()); // ADDED
-        this.originalPeopleItems = new ArrayList<>(viewModel.getPeopleItems()); // ADDED
+        this.originalStudioItems = new ArrayList<>(viewModel.getStudioItems());
+        this.originalPeopleItems = new ArrayList<>(viewModel.getPeopleItems());
+        this.originalGenreItems = new ArrayList<>(viewModel.getGenreItems()); // (*** MỚI ***)
         addListeners();
         paused = false;
         importAcceptancePending = false; // <-- Reset cờ
@@ -74,6 +71,7 @@ public class ItemDetailDirtyTracker {
     }
 
     // --- Import State Management ---
+    // (Giữ nguyên logic startImport/endImport)
 
     /**
      * Được gọi bởi ImportHandler TRƯỚC KHI cập nhật UI.
@@ -120,17 +118,18 @@ public class ItemDetailDirtyTracker {
         viewModel.titleProperty().addListener(dirtyFlagListener);
         viewModel.overviewProperty().addListener(dirtyFlagListener);
         viewModel.releaseDateProperty().addListener(dirtyFlagListener);
-        // REMOVED: viewModel.studiosProperty().addListener(dirtyFlagListener);
-        // REMOVED: viewModel.peopleProperty().addListener(dirtyFlagListener);
 
         if (viewModel.getTagItems() != null) {
             viewModel.getTagItems().addListener(tagsListener);
         }
-        if (viewModel.getStudioItems() != null) { // ADDED
+        if (viewModel.getStudioItems() != null) {
             viewModel.getStudioItems().addListener(studioItemsListener);
         }
-        if (viewModel.getPeopleItems() != null) { // ADDED
+        if (viewModel.getPeopleItems() != null) {
             viewModel.getPeopleItems().addListener(peopleItemsListener);
+        }
+        if (viewModel.getGenreItems() != null) { // (*** MỚI ***)
+            viewModel.getGenreItems().addListener(genreItemsListener);
         }
     }
 
@@ -138,17 +137,18 @@ public class ItemDetailDirtyTracker {
         viewModel.titleProperty().removeListener(dirtyFlagListener);
         viewModel.overviewProperty().removeListener(dirtyFlagListener);
         viewModel.releaseDateProperty().removeListener(dirtyFlagListener);
-        // REMOVED: viewModel.studiosProperty().removeListener(dirtyFlagListener);
-        // REMOVED: viewModel.peopleProperty().removeListener(dirtyFlagListener);
 
         if (viewModel.getTagItems() != null) {
             viewModel.getTagItems().removeListener(tagsListener);
         }
-        if (viewModel.getStudioItems() != null) { // ADDED
+        if (viewModel.getStudioItems() != null) {
             viewModel.getStudioItems().removeListener(studioItemsListener);
         }
-        if (viewModel.getPeopleItems() != null) { // ADDED
+        if (viewModel.getPeopleItems() != null) {
             viewModel.getPeopleItems().removeListener(peopleItemsListener);
+        }
+        if (viewModel.getGenreItems() != null) { // (*** MỚI ***)
+            viewModel.getGenreItems().removeListener(genreItemsListener);
         }
     }
 
@@ -176,14 +176,14 @@ public class ItemDetailDirtyTracker {
         boolean stringChanges = !Objects.equals(viewModel.titleProperty().get(), originalTitle) ||
                 !Objects.equals(viewModel.overviewProperty().get(), originalOverview) ||
                 !Objects.equals(viewModel.releaseDateProperty().get(), originalReleaseDate);
-        // REMOVED studios/people string check
 
         boolean tagChanges = !Objects.equals(viewModel.getTagItems(), originalTagItems);
 
-        boolean studioChanges = !Objects.equals(viewModel.getStudioItems(), originalStudioItems); // ADDED
-        boolean peopleChanges = !Objects.equals(viewModel.getPeopleItems(), originalPeopleItems); // ADDED
+        boolean studioChanges = !Objects.equals(viewModel.getStudioItems(), originalStudioItems);
+        boolean peopleChanges = !Objects.equals(viewModel.getPeopleItems(), originalPeopleItems);
+        boolean genreChanges = !Objects.equals(viewModel.getGenreItems(), originalGenreItems); // (*** MỚI ***)
 
-        isDirty.set(stringChanges || tagChanges || studioChanges || peopleChanges); // MODIFIED
+        isDirty.set(stringChanges || tagChanges || studioChanges || peopleChanges || genreChanges); // (*** THÊM GENRE ***)
         // System.out.println("DirtyTracker: isDirty = " + isDirty.get()); // Debug
     }
 
@@ -191,7 +191,7 @@ public class ItemDetailDirtyTracker {
      * Bật cờ isDirty (thường do Accept hoặc Sửa thủ công).
      * Thoát khỏi trạng thái importAcceptancePending nếu đang ở đó.
      */
-    public void forceDirty() {
+    public void forceDirty() { // <-- Đảm bảo phương thức này tồn tại
         if (paused) return; // Không force khi đang pause
 
         // Nếu đang chờ accept, đây là lần accept đầu tiên
@@ -214,8 +214,6 @@ public class ItemDetailDirtyTracker {
         this.originalTitle = originals.get("title");
         this.originalOverview = originals.get("overview");
         this.originalReleaseDate = originals.get("releaseDate");
-        // REMOVED: this.originalStudios = originals.get("studios");
-        // REMOVED: this.originalPeople = originals.get("people");
     }
 
     /**
@@ -227,11 +225,11 @@ public class ItemDetailDirtyTracker {
         this.originalTitle = viewModel.titleProperty().get();
         this.originalOverview = viewModel.overviewProperty().get();
         this.originalReleaseDate = viewModel.releaseDateProperty().get();
-        // REMOVED: this.originalStudios = viewModel.studiosProperty().get();
-        // REMOVED: this.originalPeople = viewModel.peopleProperty().get();
+
         this.originalTagItems = new ArrayList<>(viewModel.getTagItems());
-        this.originalStudioItems = new ArrayList<>(viewModel.getStudioItems()); // ADDED
-        this.originalPeopleItems = new ArrayList<>(viewModel.getPeopleItems()); // ADDED
+        this.originalStudioItems = new ArrayList<>(viewModel.getStudioItems());
+        this.originalPeopleItems = new ArrayList<>(viewModel.getPeopleItems());
+        this.originalGenreItems = new ArrayList<>(viewModel.getGenreItems()); // (*** MỚI ***)
 
         importAcceptancePending = false; // <-- Reset cờ sau khi lưu
 
@@ -246,11 +244,11 @@ public class ItemDetailDirtyTracker {
         this.originalTitle = null;
         this.originalOverview = null;
         this.originalReleaseDate = null;
-        // REMOVED: this.originalStudios = null;
-        // REMOVED: this.originalPeople = null;
+
         this.originalTagItems = null;
-        this.originalStudioItems = null; // ADDED
-        this.originalPeopleItems = null; // ADDED
+        this.originalStudioItems = null;
+        this.originalPeopleItems = null;
+        this.originalGenreItems = null; // (*** MỚI ***)
     }
 
     // --- Getter ---

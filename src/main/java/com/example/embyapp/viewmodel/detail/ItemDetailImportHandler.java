@@ -11,11 +11,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet; // <-- MỚI
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set; // <-- MỚI
+import java.util.Set;
 import java.util.stream.Collectors;
 // import org.threeten.bp.OffsetDateTime; // <-- XÓA IMPORT NÀY
 
@@ -24,16 +24,8 @@ import java.time.OffsetDateTime;
 
 
 /**
- * (CẬP NHẬT 17)
- * - Gọi startImport/endImport của DirtyTracker.
- * - Lưu importedDto.
- * - Theo dõi acceptedFields.
- * - Thêm getAcceptedFields() và wasImportInProgress().
- * (CẬP NHẬT 22 - SỬA LỖI BIÊN DỊCH)
- * - Sửa lỗi org.threeten.bp.OffsetDateTime.
- * (CẬP NHẬT 27 - THÊM STUDIOS/PEOPLE DẠNG TAG)
- * - Cập nhật logic import để thao tác với List<TagModel> cho Studios/People.
- * - Xóa các hàm helper studiosToString/peopleToString.
+ * (CẬP NHẬT 30) Thêm Genres.
+ * - Thêm logic cho Genres (state, import, accept/reject).
  */
 public class ItemDetailImportHandler {
 
@@ -54,6 +46,7 @@ public class ItemDetailImportHandler {
     private final ReadOnlyBooleanWrapper showReleaseDateReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showStudiosReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showPeopleReview = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyBooleanWrapper showGenresReview = new ReadOnlyBooleanWrapper(false); // (*** MỚI ***)
 
     public ItemDetailImportHandler(ItemDetailViewModel viewModel, ItemDetailDirtyTracker dirtyTracker) {
         this.viewModel = viewModel;
@@ -133,6 +126,19 @@ public class ItemDetailImportHandler {
             viewModel.getPeopleItems().setAll(importedPeople);
             showPeopleReview.set(true);
 
+            // 7. Genres (*** MỚI ***)
+            preImportState.put("genres", new ArrayList<>(viewModel.getGenreItems()));
+            List<TagModel> importedGenres = new ArrayList<>();
+            if (importedDto.getGenres() != null) {
+                importedGenres = importedDto.getGenres().stream()
+                        .filter(Objects::nonNull)
+                        .map(TagModel::parse)
+                        .collect(Collectors.toList());
+            }
+            viewModel.getGenreItems().setAll(importedGenres);
+            showGenresReview.set(true);
+
+
         } finally {
             dirtyTracker.endImport(); // <-- Báo cho Tracker kết thúc cập nhật UI
         }
@@ -191,6 +197,12 @@ public class ItemDetailImportHandler {
                         viewModel.getPeopleItems().setAll(originalPeople);
                     }
                     break;
+                case "genres": // (*** MỚI ***)
+                    List<TagModel> originalGenres = (List<TagModel>) preImportState.get("genres");
+                    if (originalGenres != null) {
+                        viewModel.getGenreItems().setAll(originalGenres);
+                    }
+                    break;
             }
             // Ẩn nút (v/x) sau khi revert
             hideReviewButton(fieldName);
@@ -208,6 +220,7 @@ public class ItemDetailImportHandler {
             case "releaseDate": showReleaseDateReview.set(false); break;
             case "studios": showStudiosReview.set(false); break;
             case "people": showPeopleReview.set(false); break;
+            case "genres": showGenresReview.set(false); break; // (*** MỚI ***)
         }
     }
 
@@ -217,6 +230,7 @@ public class ItemDetailImportHandler {
         showReleaseDateReview.set(false);
         showStudiosReview.set(false);
         showPeopleReview.set(false);
+        showGenresReview.set(false); // (*** MỚI ***)
     }
 
     /**
@@ -255,7 +269,7 @@ public class ItemDetailImportHandler {
 
     // --- Hàm helper định dạng ---
 
-    // (*** SỬA LỖI TẠI ĐÂY: Thay đổi kiểu tham số ***)
+    // (*** SỬA LỖI TẠY ĐÂY: Thay đổi kiểu tham số ***)
     private String dateToString(OffsetDateTime date) { // <-- Đổi từ org.threeten.bp sang java.time
         if (date == null) return "";
         try {
@@ -273,4 +287,5 @@ public class ItemDetailImportHandler {
     public ReadOnlyBooleanProperty showReleaseDateReviewProperty() { return showReleaseDateReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showStudiosReviewProperty() { return showStudiosReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showPeopleReviewProperty() { return showPeopleReview.getReadOnlyProperty(); }
+    public ReadOnlyBooleanProperty showGenresReviewProperty() { return showGenresReview.getReadOnlyProperty(); } // (*** MỚI ***)
 }

@@ -33,21 +33,10 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
 /**
- * (CẬP NHẬT 19)
- * - Sửa setItemToDisplay để dùng result.getBackdropImages()
- * (CẬP NHẬT 20 - SỬA LỖI BIÊN DỊCH)
- * - Sửa lỗi BaseItemPerson constructor.
- * - Sửa lỗi org.threeten.bp.OffsetDateTime.
- * (CẬP NHẬT 21 - HOÀN THIỆN UPLOAD)
- * - Thêm logic upload cho saveNewPrimaryImage và uploadDroppedBackdropFiles.
- * - Thêm helper reloadPrimaryImage.
- * (CẬP NHẬT 22 - THÊM POP-OUT DIALOG)
- * - Thêm tín hiệu popOutRequest
- * (CẬP NHẬT 27 - THÊM STUDIOS/PEOPLE DẠNG TAG)
- * - Thay thế StringProperty bằng ObservableList<TagModel> cho studios và people.
- * - Cập nhật logic lưu để serialize List<TagModel> cho Studios/People.
- * (FIX LỖI)
- * - Sửa lỗi incompatible types: SimpleStringProperty -> ReadOnlyStringWrapper cho actionStatusMessage.
+ * (CẬP NHẬT 30) Thêm Genres.
+ * - Thêm ObservableList<TagModel> cho Genres và logic liên quan.
+ * (FIX LỖI) Sửa constructor SaveRequest và lỗi thiếu symbol cho hàm ủy quyền.
+ * (FIX LỖI) Sửa lỗi lưu Genres: Chuyển sang GenreItems (List<NameLongIdPair>).
  */
 public class ItemDetailViewModel {
 
@@ -76,9 +65,10 @@ public class ItemDetailViewModel {
     private final StringProperty releaseDate = new SimpleStringProperty("");
     private final ObservableList<TagModel> studiosItems = FXCollections.observableArrayList(); // MODIFIED
     private final ObservableList<TagModel> peopleItems = FXCollections.observableArrayList(); // MODIFIED
+    private final ObservableList<TagModel> genresItems = FXCollections.observableArrayList(); // (*** MỚI ***)
     private final ReadOnlyStringWrapper year = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper tagline = new ReadOnlyStringWrapper("");
-    private final ReadOnlyStringWrapper genres = new ReadOnlyStringWrapper("");
+    private final ReadOnlyStringWrapper genres = new ReadOnlyStringWrapper(""); // Giữ lại cho hiển thị legacy/phụ
     private final ReadOnlyStringWrapper runtime = new ReadOnlyStringWrapper("");
     private final ReadOnlyObjectWrapper<Image> primaryImage = new ReadOnlyObjectWrapper<>(null);
     private final ObservableList<ImageInfo> backdropImages = FXCollections.observableArrayList();
@@ -86,7 +76,7 @@ public class ItemDetailViewModel {
     private final ReadOnlyBooleanWrapper isFolder = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyStringWrapper statusMessage = new ReadOnlyStringWrapper("Vui lòng chọn một item từ danh sách...");
     private final ReadOnlyBooleanWrapper showStatusMessage = new ReadOnlyBooleanWrapper(true);
-    private final ReadOnlyStringWrapper actionStatusMessage = new ReadOnlyStringWrapper(""); // FIXED: actionStatusMessage phải là ReadOnlyStringWrapper
+    private final ReadOnlyStringWrapper actionStatusMessage = new ReadOnlyStringWrapper("");
     private final ReadOnlyBooleanWrapper primaryImageDirty = new ReadOnlyBooleanWrapper(false);
 
     // (*** THÊM MỚI: Tín hiệu yêu cầu pop-out dialog ***)
@@ -141,11 +131,12 @@ public class ItemDetailViewModel {
                     overview.set(result.getOverviewText());
                     tagItems.setAll(result.getTagItems());
                     releaseDate.set(result.getReleaseDateText());
-                    studiosItems.setAll(result.getStudioItems()); // MODIFIED
-                    peopleItems.setAll(result.getPeopleItems()); // MODIFIED
+                    studiosItems.setAll(result.getStudioItems());
+                    peopleItems.setAll(result.getPeopleItems());
+                    genresItems.setAll(result.getGenreItems()); // (*** MỚI ***)
                     year.set(result.getYearText());
                     tagline.set(result.getTaglineText());
-                    genres.set(result.getGenresText());
+                    genres.set(result.getGenresText()); // Giữ lại cho hiển thị legacy/phụ
                     runtime.set(result.getRuntimeText());
                     itemPath.set(result.getPathText());
                     isFolder.set(result.isFolder());
@@ -182,7 +173,7 @@ public class ItemDetailViewModel {
         }).start();
     }
 
-    // (clearAllDetailsUI giữ nguyên)
+    // (clearAllDetailsUI)
     private void clearAllDetailsUI() {
         dirtyTracker.stopTracking();
         title.set("");
@@ -198,8 +189,9 @@ public class ItemDetailViewModel {
         actionStatusMessage.set("");
         tagItems.clear();
         releaseDate.set("");
-        studiosItems.clear(); // MODIFIED
-        peopleItems.clear(); // MODIFIED
+        studiosItems.clear();
+        peopleItems.clear();
+        genresItems.clear(); // (*** MỚI ***)
         importHandler.clearState();
         currentItemId = null;
         originalItemDto = null;
@@ -207,7 +199,7 @@ public class ItemDetailViewModel {
         newPrimaryImageFile.set(null);
     }
 
-    // (saveChanges giữ nguyên)
+    // (saveChanges)
     public void saveChanges() {
         if (originalItemDto == null || currentItemId == null) {
             reportActionError("Lỗi: Không có item nào đang được chọn để lưu.");
@@ -215,8 +207,21 @@ public class ItemDetailViewModel {
         }
         reportActionError("Đang lưu thay đổi lên server...");
         importHandler.hideAllReviewButtons();
+
+        // FIX: Tạo các biến local final cho các giá trị cần thiết
+        final BaseItemDto finalOriginalItemDto = this.originalItemDto;
+        final String finalCurrentItemId = this.currentItemId;
+        final String finalTitle = this.title.get();
+        final String finalOverview = this.overview.get();
+        final String finalReleaseDate = this.releaseDate.get();
+        final List<TagModel> finalTagItems = List.copyOf(this.tagItems);
+        final List<TagModel> finalStudiosItems = List.copyOf(this.studiosItems);
+        final List<TagModel> finalPeopleItems = List.copyOf(this.peopleItems);
+        final List<TagModel> finalGenresItems = List.copyOf(this.genresItems);
+
         final boolean isSavingAfterImport = importHandler.wasImportInProgress();
         final Set<String> acceptedFields = isSavingAfterImport ? importHandler.getAcceptedFields() : null;
+
         new Thread(() -> {
             try {
                 BaseItemDto dtoToSave;
@@ -225,17 +230,34 @@ public class ItemDetailViewModel {
                     dtoToSave = createDtoWithAcceptedChanges(acceptedFields);
                 } else {
                     System.out.println("Saving manual edits...");
+                    // FIX LỖI: Thêm List.copyOf(genresItems) vào SaveRequest
                     ItemDetailSaver.SaveRequest manualSaveRequest = new ItemDetailSaver.SaveRequest(
-                            originalItemDto, currentItemId, title.get(), overview.get(),
-                            List.copyOf(tagItems), releaseDate.get(), List.copyOf(studiosItems), List.copyOf(peopleItems) // MODIFIED
+                            finalOriginalItemDto, finalCurrentItemId, finalTitle, finalOverview,
+                            finalTagItems, finalReleaseDate, finalStudiosItems, finalPeopleItems,
+                            finalGenresItems // <-- ĐÃ THÊM
                     );
+
                     dtoToSave = saver.parseUiToDto(manualSaveRequest);
+
+                    // (*** PHẦN SỬA LỖI GENRES CHO MANUAL SAVE ***)
+                    // Chuyển List<TagModel> thành List<NameLongIdPair> và set GenreItems
+                    List<NameLongIdPair> genreItemsToSave = finalGenresItems.stream()
+                            .map(tagModel -> {
+                                NameLongIdPair pair = new NameLongIdPair();
+                                pair.setName(tagModel.serialize());
+                                pair.setId(null);
+                                return pair;
+                            })
+                            .collect(Collectors.toList());
+                    dtoToSave.setGenreItems(genreItemsToSave); // <--- SET VÀO GenreItems
+                    // *LƯU Ý: setGenres(null) sẽ không cần thiết vì ta không setGenres()
+
                 }
                 ItemUpdateServiceApi itemUpdateServiceApi = embyService.getItemUpdateServiceApi();
                 if (itemUpdateServiceApi == null) {
                     throw new IllegalStateException("Không thể lấy ItemUpdateServiceApi.");
                 }
-                itemUpdateServiceApi.postItemsByItemid(dtoToSave, currentItemId);
+                itemUpdateServiceApi.postItemsByItemid(dtoToSave, finalCurrentItemId); // Sử dụng finalCurrentItemId
                 Platform.runLater(() -> {
                     reportActionError("Đã lưu thay đổi thành công!");
                     this.originalItemDto = gson.fromJson(gson.toJson(dtoToSave), BaseItemDto.class);
@@ -255,8 +277,11 @@ public class ItemDetailViewModel {
     }
 
     /**
-     * (*** ĐÃ SỬA LỖI BIÊN DỊCH ***)
+     * (*** HÀM HELPER CŨ: ĐÃ XÓA VÌ KHÔNG CẦN THIẾT NỮA ***)
      */
+    // private BaseItemDto setGenresOnDto(BaseItemDto dto, List<TagModel> genreItems) { ... }
+
+
     private BaseItemDto createDtoWithAcceptedChanges(Set<String> acceptedFields) {
         if (originalItemDto == null) {
             throw new RuntimeException("originalItemDto không được null khi tạo DTO thay đổi.");
@@ -316,22 +341,41 @@ public class ItemDetailViewModel {
                     .collect(Collectors.toList());
             dtoCopy.setPeople(peopleList);
         }
+
+        // (*** PHẦN SỬA LỖI GENRES: SỬ DỤNG GenreItems ***)
+        if (acceptedFields.contains("genres")) {
+            // Chuyển List<TagModel> thành List<NameLongIdPair>
+            List<NameLongIdPair> genreItemsToSave = genresItems.stream()
+                    .map(tagModel -> {
+                        NameLongIdPair pair = new NameLongIdPair();
+                        pair.setName(tagModel.serialize());
+                        pair.setId(null);
+                        return pair;
+                    })
+                    .collect(Collectors.toList());
+            dtoCopy.setGenreItems(genreItemsToSave); // <--- SET VÀO GenreItems
+        }
+
         return dtoCopy;
     }
 
-    // (Các hàm Import/Accept/Reject, Tag, Export, Action... giữ nguyên)
+    // (*** FIX LỖI: Đảm bảo các hàm này ủy quyền đúng cách ***)
     public void importAndPreview(BaseItemDto importedDto) { if (originalItemDto == null) return; importHandler.importAndPreview(importedDto); }
     public void acceptImportField(String fieldName) { importHandler.acceptImportField(fieldName); }
     public void rejectImportField(String fieldName) { importHandler.rejectImportField(fieldName); }
     public void markAsDirtyByAccept() { dirtyTracker.forceDirty(); }
+
+    // MODIFIED: Thêm hàm xử lý Studio/People/Genres
     public void addTag(TagModel newTag) { if (newTag != null) { tagItems.add(newTag); } }
     public void removeTag(TagModel tagToRemove) { if (tagToRemove != null) { tagItems.remove(tagToRemove); } }
 
-    // MODIFIED: Thêm hàm xử lý Studio/People
     public void addStudio(TagModel newStudio) { if (newStudio != null) { studiosItems.add(newStudio); } }
     public void removeStudio(TagModel studioToRemove) { if (studioToRemove != null) { studiosItems.remove(studioToRemove); } }
     public void addPerson(TagModel newPerson) { if (newPerson != null) { peopleItems.add(newPerson); } }
     public void removePerson(TagModel personToRemove) { if (personToRemove != null) { peopleItems.remove(personToRemove); } }
+    public void addGenre(TagModel newGenre) { if (newGenre != null) { genresItems.add(newGenre); } } // (*** MỚI ***)
+    public void removeGenre(TagModel genreToRemove) { if (genreToRemove != null) { genresItems.remove(genreToRemove); } } // (*** MỚI ***)
+
 
     public BaseItemDto getItemForExport() { return this.originalItemDto; }
     public String getOriginalTitleForExport() { return this.exportFileNameTitle != null ? this.exportFileNameTitle : this.title.get(); }
@@ -340,6 +384,7 @@ public class ItemDetailViewModel {
 
 
     // --- (*** CẬP NHẬT CÁC HÀM XỬ LÝ ẢNH ***) ---
+    // (Giữ nguyên logic Ảnh)
 
     public void selectNewPrimaryImage(Stage ownerStage) {
         if (currentItemId == null) return;
@@ -516,15 +561,16 @@ public class ItemDetailViewModel {
     }
 
 
-    // (Getters cho Controller/Properties giữ nguyên)
+    // (Getters cho Controller/Properties)
+    public ObservableList<TagModel> getGenreItems() { return genresItems; } // (*** MỚI ***)
     public String getCurrentItemId() { return currentItemId; }
     public EmbyService getEmbyService() { return embyService; }
     public StringProperty titleProperty() { return title; }
     public StringProperty overviewProperty() { return overview; }
     public ObservableList<TagModel> getTagItems() { return tagItems; }
     public StringProperty releaseDateProperty() { return releaseDate; }
-    public ObservableList<TagModel> getStudioItems() { return studiosItems; } // MODIFIED
-    public ObservableList<TagModel> getPeopleItems() { return peopleItems; } // MODIFIED
+    public ObservableList<TagModel> getStudioItems() { return studiosItems; }
+    public ObservableList<TagModel> getPeopleItems() { return peopleItems; }
     public ReadOnlyBooleanProperty loadingProperty() { return loading.getReadOnlyProperty(); }
     public ReadOnlyStringProperty yearProperty() { return year.getReadOnlyProperty(); }
     public ReadOnlyStringProperty statusMessageProperty() { return statusMessage.getReadOnlyProperty(); }
@@ -544,4 +590,5 @@ public class ItemDetailViewModel {
     public ReadOnlyBooleanProperty showReleaseDateReviewProperty() { return importHandler.showReleaseDateReviewProperty(); }
     public ReadOnlyBooleanProperty showStudiosReviewProperty() { return importHandler.showStudiosReviewProperty(); }
     public ReadOnlyBooleanProperty showPeopleReviewProperty() { return importHandler.showPeopleReviewProperty(); }
+    public ReadOnlyBooleanProperty showGenresReviewProperty() { return importHandler.showGenresReviewProperty(); } // (*** MỚI ***)
 }

@@ -30,13 +30,13 @@ import java.util.stream.Collectors;
 
 
 /**
- * (CẬP NHẬT 29) Hợp nhất logic gợi ý cho Tag, Studio, People.
- * - Cho phép Studio/People hiển thị và nhập JSON Key-Value.
+ * (CẬP NHẬT 30) Thêm Genres.
+ * - Cập nhật SuggestionContext và loadSuggestedTags.
  */
 public class AddTagDialogController {
 
     public enum SuggestionContext {
-        TAG, STUDIO, PEOPLE
+        TAG, STUDIO, PEOPLE, GENRE // (*** THÊM GENRE ***)
     }
 
     @FXML private ToggleGroup tagTypeGroup;
@@ -65,7 +65,6 @@ public class AddTagDialogController {
 
     private ItemRepository itemRepository;
     private SuggestionContext currentContext = SuggestionContext.TAG;
-    // Xóa generalSuggestions, dùng rawNames/jsonGroups/simpleTags đã parse
 
     private static class ParsedTag {
         final String rawString;
@@ -118,19 +117,22 @@ public class AddTagDialogController {
             Stage stage = (Stage) dialogStage.getScene().getWindow();
             String title = context == SuggestionContext.STUDIO ? "Thêm Studio Mới" :
                     context == SuggestionContext.PEOPLE ? "Thêm Người Mới" :
-                            "Thêm Tag Mới";
+                            context == SuggestionContext.GENRE ? "Thêm Thể Loại Mới" : // (*** MỚI ***)
+                                    "Thêm Tag Mới";
             stage.setTitle(title);
 
-            // Đặt lại label cho Simple Tags (dù là Tag, Studio hay People)
+            // Đặt lại label cho Simple Tags (dù là Tag, Studio, People hay Genre)
             simpleTagRadio.setText(context == SuggestionContext.TAG ? "Tag Đơn giản" :
                     context == SuggestionContext.STUDIO ? "Tên Studio" :
-                            "Tên Người");
+                            context == SuggestionContext.PEOPLE ? "Tên Người" :
+                                    "Tên Thể Loại");
 
             // Cập nhật label cho Simple Suggestions
             Label suggestionLabel = (Label) suggestionSimpleContainer.getChildren().get(0);
             suggestionLabel.setText("Gợi ý " + (context == SuggestionContext.TAG ? "Tag Đơn giản" :
                     context == SuggestionContext.STUDIO ? "Studios" :
-                            "People"));
+                            context == SuggestionContext.PEOPLE ? "People" :
+                                    "Genres")); // (*** MỚI ***)
 
             // Luôn hiển thị cả hai radio buttons và containers
             jsonTagRadio.setVisible(true);
@@ -146,6 +148,7 @@ public class AddTagDialogController {
 
     private void loadSuggestedTags() {
         new Thread(() -> {
+            // FIX: Khai báo final List<T> để khắc phục lỗi 'effectively final'
             final List<String> rawNames = new ArrayList<>();
 
             try {
@@ -165,6 +168,10 @@ public class AddTagDialogController {
                         break;
                     case PEOPLE:
                         rawNames.addAll(itemRepository.getPeopleSuggestions(embyService.getApiClient())
+                                .stream().map(SuggestionItemModel::getName).collect(Collectors.toList()));
+                        break;
+                    case GENRE: // (*** MỚI ***)
+                        rawNames.addAll(itemRepository.getGenreSuggestions(embyService.getApiClient())
                                 .stream().map(SuggestionItemModel::getName).collect(Collectors.toList()));
                         break;
                 }
@@ -237,10 +244,10 @@ public class AddTagDialogController {
 
         // 4. Populate UI
         populateKeys(); // JSON Keys
-        populateSimpleTags(simpleTags); // Simple Tags (hoặc Studio/People đơn giản)
+        populateSimpleTags(simpleTags); // Simple Tags (hoặc Studio/People/Genre đơn giản)
     }
 
-    private void populateKeys() {
+    private void populateKeys( ) {
         suggestionKeysPane.getChildren().clear();
         keySuggestionGroup.getToggles().clear();
 
@@ -292,7 +299,7 @@ public class AddTagDialogController {
     }
 
     /**
-     * Dùng cho Tag Đơn Giản, Studio Đơn giản, People Đơn giản.
+     * Dùng cho Tag Đơn Giản, Studio Đơn giản, People Đơn giản, Genre Đơn giản.
      */
     private void populateSimpleTags(List<ParsedTag> simpleTags) {
         suggestionSimplePane.getChildren().clear();
@@ -332,12 +339,6 @@ public class AddTagDialogController {
             valueField.clear();
         }
     }
-
-    /**
-     * Không cần hàm fillSimpleFormFromSuggestion riêng nữa.
-     */
-    // private void fillSimpleFormFromSuggestion(String name) { ... }
-
 
     public void setDialogStage(Stage dialogStage) {
         this.dialogStage = dialogStage;

@@ -101,6 +101,16 @@ public class TagModel {
         return isJson;
     }
 
+    // (*** THÊM CÁC HÀM GETTERS MỚI ***)
+    public String getKey() {
+        return key;
+    }
+
+    public String getValue() {
+        return value;
+    }
+    // (*** KẾT THÚC THÊM MỚI ***)
+
     // (QUAN TRỌNG) Thêm equals và hashCode để ListChangeListener có thể so sánh
     @Override
     public boolean equals(Object o) {

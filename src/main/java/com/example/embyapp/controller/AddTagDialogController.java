@@ -1,24 +1,27 @@
 package com.example.embyapp.controller;
 
-import com.example.embyapp.service.EmbyService; // (*** MỚI IMPORT ***)
-import com.example.embyapp.service.RequestEmby; // (*** MỚI IMPORT ***)
+import com.example.embyapp.service.EmbyService;
+import com.example.embyapp.service.RequestEmby;
 import com.example.embyapp.viewmodel.detail.TagModel;
-import embyclient.model.UserLibraryTagItem; // (*** MỚI IMPORT ***)
-import javafx.application.Platform; // (*** MỚI IMPORT ***)
+import embyclient.model.UserLibraryTagItem;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.control.Label; // (*** MỚI IMPORT ***)
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.Separator; // (*** MỚI IMPORT ***)
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton; // (*** MỚI IMPORT ***)
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.layout.FlowPane; // (*** MỚI IMPORT ***)
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox; // (*** MỚI IMPORT ***)
 import javafx.stage.Stage;
 
-import java.util.ArrayList; // (*** MỚI IMPORT ***)
-import java.util.Collections; // (*** MỚI IMPORT ***)
-import java.util.List; // (*** MỚI IMPORT ***)
-import java.util.Map; // (*** MỚI IMPORT ***)
-import java.util.stream.Collectors; // (*** MỚI IMPORT ***)
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 /**
@@ -28,6 +31,9 @@ import java.util.stream.Collectors; // (*** MỚI IMPORT ***)
  * - Mặc định chọn JSON.
  * (CẬP NHẬT 13):
  * - Sử dụng hàm API thật để lấy tag gợi ý.
+ * (CẬP NHẬT 14):
+ * - Thay đổi @FXML suggestionTagsPane từ FlowPane sang VBox.
+ * - Viết lại populateSuggestedTags để nhóm tag JSON theo Key.
  */
 public class AddTagDialogController {
 
@@ -42,11 +48,24 @@ public class AddTagDialogController {
     @FXML private TextField keyField;
     @FXML private TextField valueField;
 
-    @FXML private FlowPane suggestionTagsPane; // (*** MỚI ***)
-    private final ToggleGroup suggestionGroup = new ToggleGroup(); // (*** MỚI: Để đảm bảo chỉ chọn 1 gợi ý ***)
+    // (*** THAY ĐỔI: Giờ đây là VBox, không phải FlowPane ***)
+    @FXML private VBox suggestionTagsPane;
+    private final ToggleGroup suggestionGroup = new ToggleGroup();
 
     private Stage dialogStage;
     private TagModel resultTag = null;
+
+    // (*** Lớp helper nội bộ để giữ cả chuỗi gốc và model đã parse ***)
+    private static class ParsedTag {
+        final String rawString;
+        final TagModel model;
+
+        ParsedTag(String rawString, TagModel model) {
+            this.rawString = rawString;
+            this.model = model;
+        }
+    }
+
 
     @FXML
     public void initialize() {
@@ -69,81 +88,151 @@ public class AddTagDialogController {
         loadSuggestedTags();
     }
 
-    // (*** MỚI: Logic tải và hiển thị gợi ý ***)
     private void loadSuggestedTags() {
         new Thread(() -> {
-            // (*** GỌI HÀM API THẬT ***)
             List<String> suggestedNames = fetchTagsFromServer();
             Platform.runLater(() -> populateSuggestedTags(suggestedNames));
         }).start();
     }
 
-    // (*** HÀM NÀY ĐÃ ĐƯỢC SỬA ĐỔI ***)
     /**
      * Lấy danh sách tên tag từ Emby Server.
-     * @return List<String> chứa tên các tag, hoặc list rỗng nếu lỗi.
      */
     private List<String> fetchTagsFromServer() {
         try {
             EmbyService embyService = EmbyService.getInstance();
             if (embyService.isLoggedIn() && embyService.getApiClient() != null) {
-                // Gọi hàm từ RequestEmby, truyền ApiClient vào
                 List<UserLibraryTagItem> tagItems = new RequestEmby().getListTagsItem(embyService.getApiClient());
 
                 if (tagItems != null) {
-                    // Trích xuất tên từ danh sách tag items
                     return tagItems.stream()
-                            .map(UserLibraryTagItem::getName) // Lấy trường Name
-                            .filter(name -> name != null && !name.isEmpty()) // Lọc bỏ null hoặc rỗng
-                            .distinct() // Loại bỏ trùng lặp
+                            .map(UserLibraryTagItem::getName)
+                            .filter(name -> name != null && !name.isEmpty())
+                            .distinct()
                             .collect(Collectors.toList());
                 }
             } else {
                 System.err.println("Chưa đăng nhập, không thể lấy tag gợi ý.");
             }
         } catch (Exception e) {
-            // Bắt lỗi chung thay vì chỉ ApiException
             System.err.println("Lỗi khi lấy tag gợi ý từ server: " + e.getMessage());
-            e.printStackTrace(); // In stack trace để debug
+            e.printStackTrace();
         }
-        return Collections.emptyList(); // Trả về list rỗng nếu có lỗi hoặc không đăng nhập
+        return Collections.emptyList();
     }
 
-    // (*** HÀM NÀY GIỮ NGUYÊN TỪ LẦN TRƯỚC ***)
+    /**
+     * (*** HÀM NÀY ĐÃ VIẾT LẠI HOÀN TOÀN ***)
+     * Phân tích, nhóm và hiển thị các tag gợi ý.
+     */
     private void populateSuggestedTags(List<String> tagNames) {
         suggestionTagsPane.getChildren().clear();
-        suggestionGroup.getToggles().clear(); // Xóa toggle cũ khỏi group
+        suggestionGroup.getToggles().clear();
 
-        for (String tagName : tagNames) {
-            try {
-                TagModel tagModel = TagModel.parse(tagName); // Phân tích tag
-                ToggleButton chip = new ToggleButton(tagModel.getDisplayName());
-                chip.setToggleGroup(suggestionGroup); // Thêm vào group
-                chip.getStyleClass().add("suggested-tag-button"); // CSS
-                if (tagModel.isJson()) {
-                    chip.getStyleClass().add("tag-view-json"); // Dùng lại style màu của chip JSON
-                }
+        if (tagNames == null || tagNames.isEmpty()) {
+            return;
+        }
 
-                // Lưu trữ tag gốc để dùng khi chọn
-                chip.setUserData(tagName);
+        // 1. Phân tích tất cả tag, giữ lại chuỗi gốc
+        List<ParsedTag> parsedTags = tagNames.stream()
+                .map(raw -> new ParsedTag(raw, TagModel.parse(raw)))
+                .collect(Collectors.toList());
 
-                // Thêm listener khi chọn/bỏ chọn
+        // 2. Tách tag JSON và tag Đơn giản
+        Map<String, List<ParsedTag>> jsonGroups = parsedTags.stream()
+                .filter(pt -> pt.model.isJson())
+                .collect(Collectors.groupingBy(pt -> pt.model.getKey())); // Nhóm theo Key
+
+        List<ParsedTag> simpleTags = parsedTags.stream()
+                .filter(pt -> !pt.model.isJson())
+                .collect(Collectors.toList());
+
+        // 3. Hiển thị các nhóm JSON
+        // Sắp xếp các nhóm theo Key (A-Z)
+        List<Map.Entry<String, List<ParsedTag>>> sortedJsonGroups = new ArrayList<>(jsonGroups.entrySet());
+        sortedJsonGroups.sort(Map.Entry.comparingByKey());
+
+        for (Map.Entry<String, List<ParsedTag>> entry : sortedJsonGroups) {
+            String key = entry.getKey();
+            List<ParsedTag> tagsInGroup = entry.getValue();
+
+            // Tạo Tiêu đề (Key)
+            Label groupTitle = new Label(key);
+            groupTitle.getStyleClass().add("suggestion-group-title");
+            suggestionTagsPane.getChildren().add(groupTitle);
+
+            // Tạo FlowPane cho các Value
+            FlowPane valuesPane = new FlowPane();
+            valuesPane.getStyleClass().add("suggestion-value-pane");
+            valuesPane.setHgap(8.0);
+            valuesPane.setVgap(8.0);
+
+            // Sắp xếp các value trong nhóm (A-Z)
+            tagsInGroup.sort((pt1, pt2) -> pt1.model.getValue().compareToIgnoreCase(pt2.model.getValue()));
+
+            for (ParsedTag pt : tagsInGroup) {
+                // Tạo chip CHỈ HIỂN THỊ VALUE
+                ToggleButton chip = new ToggleButton(pt.model.getValue());
+                chip.setToggleGroup(suggestionGroup);
+                chip.getStyleClass().addAll("suggested-tag-button", "tag-view-json");
+
+                // (QUAN TRỌNG) UserData vẫn lưu CHUỖI GỐC
+                chip.setUserData(pt.rawString);
+
+                // Listener (giống như cũ)
                 chip.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
                     if (isSelected) {
                         fillFormFromSuggestion((String) chip.getUserData());
                     }
-                    // Optional: Xử lý khi bỏ chọn (ví dụ: xóa trắng form?)
-                    // else { clearForm(); }
                 });
-
-                suggestionTagsPane.getChildren().add(chip);
-            } catch (Exception e) {
-                System.err.println("Lỗi khi tạo chip cho tag: " + tagName + " - " + e.getMessage());
+                valuesPane.getChildren().add(chip);
             }
+            suggestionTagsPane.getChildren().add(valuesPane); // Thêm FlowPane vào VBox
+        }
+
+        // 4. Hiển thị các tag Đơn giản (nếu có)
+        if (!simpleTags.isEmpty()) {
+            // Thêm dấu ngăn cách
+            if (!jsonGroups.isEmpty()) {
+                suggestionTagsPane.getChildren().add(new Separator());
+            }
+
+            Label simpleTitle = new Label("Tags Đơn Giản");
+            simpleTitle.getStyleClass().add("suggestion-group-title");
+            suggestionTagsPane.getChildren().add(simpleTitle);
+
+            FlowPane simplePane = new FlowPane();
+            simplePane.getStyleClass().add("suggestion-value-pane");
+            simplePane.setHgap(8.0);
+            simplePane.setVgap(8.0);
+
+            // Sắp xếp tag đơn giản (A-Z)
+            simpleTags.sort((pt1, pt2) -> pt1.model.getDisplayName().compareToIgnoreCase(pt2.model.getDisplayName()));
+
+            for (ParsedTag pt : simpleTags) {
+                ToggleButton chip = new ToggleButton(pt.model.getDisplayName());
+                chip.setToggleGroup(suggestionGroup);
+                chip.getStyleClass().add("suggested-tag-button");
+
+                // UserData lưu CHUỖI GỐC
+                chip.setUserData(pt.rawString);
+
+                chip.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+                    if (isSelected) {
+                        fillFormFromSuggestion((String) chip.getUserData());
+                    }
+                });
+                simplePane.getChildren().add(chip);
+            }
+            suggestionTagsPane.getChildren().add(simplePane);
         }
     }
 
-    // (*** HÀM NÀY GIỮ NGUYÊN TỪ LẦN TRƯỚC ***)
+
+    /**
+     * (*** HÀM NÀY GIỮ NGUYÊN - KHÔNG THAY ĐỔI ***)
+     * Vì UserData vẫn được set là chuỗi JSON/string gốc, logic này hoạt động hoàn hảo.
+     */
     private void fillFormFromSuggestion(String selectedTagName) {
         TagModel selectedTag = TagModel.parse(selectedTagName);
         if (selectedTag.isJson()) {

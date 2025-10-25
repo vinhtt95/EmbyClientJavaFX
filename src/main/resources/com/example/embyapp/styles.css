@@ -357,3 +357,62 @@
 .backdrop-delete-button:hover {
     -fx-background-color: rgba(200, 33, 49, 1.0); /* Đậm hơn khi hover */
 }
+
+/* ... (Tất cả các style trước đó giữ nguyên) ... */
+
+/* --- (CẬP NHẬT 14) POPUP & SUGGESTION TAG STYLES --- */
+
+/* Style cho nút gợi ý tag (dùng ToggleButton) - Giống .tag-view */
+.suggested-tag-button {
+    -fx-background-color: #383838;
+    -fx-text-fill: #ffffff;
+    -fx-background-radius: 15px;
+    -fx-border-color: #555555;
+    -fx-border-radius: 15px;
+    -fx-padding: 4px 10px 4px 10px;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+}
+/* Style màu cho nút gợi ý JSON (kế thừa từ tag-view-json) */
+.suggested-tag-button.tag-view-json {
+    -fx-background-color: #004d80;
+    -fx-border-color: #007acc;
+}
+
+/* Hover state cho nút gợi ý */
+.suggested-tag-button:hover {
+    -fx-background-color: #4a4a4a;
+}
+.suggested-tag-button.tag-view-json:hover {
+    -fx-background-color: #005f9e;
+}
+
+/* Selected state cho nút gợi ý (màu sáng hơn để nổi bật) */
+.suggested-tag-button:selected {
+    -fx-background-color: #5a5a5a;
+    -fx-border-color: #777777;
+    -fx-text-fill: white;
+}
+.suggested-tag-button.tag-view-json:selected {
+    -fx-background-color: #007acc; /* Giữ nguyên màu xanh dương đậm khi chọn */
+    -fx-border-color: #009cff;    /* Viền sáng hơn chút */
+    -fx-text-fill: white;
+}
+
+/* (*** THÊM MỚI: Style cho nhóm gợi ý ***) */
+.suggestion-group-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #00aeff; /* Màu xanh sáng */
+    -fx-padding: 10px 0 5px 0; /* Khoảng cách trên/dưới */
+}
+
+/* (*** THÊM MỚI: Style cho FlowPane chứa các value chip ***) */
+.suggestion-value-pane {
+    -fx-padding: 0 0 5px 0; /* Một chút khoảng cách dưới */
+}
+/* (*** KẾT THÚC THÊM MỚI ***)
+
+
+/* --- (CẬP NHẬT 18) IMAGE UPDATE STYLES --- */
+/* ... (Các style ảnh giữ nguyên) ... */

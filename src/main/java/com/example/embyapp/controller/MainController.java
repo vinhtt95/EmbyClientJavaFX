@@ -11,7 +11,7 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.ReadOnlyStringProperty; // <-- ĐÃ THÊM IMPORT NÀY
+import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -42,6 +42,10 @@ import java.util.prefs.Preferences;
  * - Sửa lỗi "Location is not set" khi tải FXML cho dialog.
  * (CẬP NHẬT 24 - SỬA LỖI)
  * - Xóa initOwner() để dialog hoạt động độc lập.
+ * (CẬP NHẬT 25 - SỬA LỖI)
+ * - Thêm logic lưu/tải kích thước cửa sổ dialog.
+ * (CẬP NHẬT 26 - FIX LỖI COMPILE)
+ * - Sửa lỗi 'array required' bằng cách lưu getDividerPositions() vào biến rõ ràng.
  */
 public class MainController {
 
@@ -85,6 +89,8 @@ public class MainController {
     private static final String PREF_NODE_PATH = "/com/example/embyapp/mainview";
     private static final String KEY_DIVIDER_1 = "dividerPos1";
     private static final String KEY_DIVIDER_2 = "dividerPos2";
+    private static final String KEY_DIALOG_WIDTH = "dialogWidth";
+    private static final String KEY_DIALOG_HEIGHT = "dialogHeight";
 
     // (*** THÊM MỚI: Các trường để quản lý dialog pop-out ***)
     private Stage detailDialog;
@@ -324,11 +330,14 @@ public class MainController {
 
     /**
      * Lưu vị trí hiện tại của các thanh chia SplitPane.
+     * (*** FIX LỖI COMPILE ***)
      */
     private void saveDividerPositions() {
         if (mainSplitPane != null && prefs != null && mainSplitPane.getDividers().size() >= 2) {
-            double pos1 = mainSplitPane.getDividerPositions()[0];
-            double pos2 = mainSplitPane.getDividerPositions()[1];
+            // Lấy array vị trí ra trước khi truy cập index
+            double[] positions = mainSplitPane.getDividerPositions();
+            double pos1 = positions[0];
+            double pos2 = positions[1];
             prefs.putDouble(KEY_DIVIDER_1, pos1);
             prefs.putDouble(KEY_DIVIDER_2, pos2);
             try {
@@ -389,30 +398,45 @@ public class MainController {
                     scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
                 }
 
+                // --- TÍNH TOÁN KÍCH THƯỚC MẶC ĐỊNH & TẢI KÍCH THƯỚC ĐÃ LƯU ---
+                double defaultWidth = 1000; // Fallback cứng
+                double defaultHeight = 800; // Fallback cứng
+
+                if (rootPane.getScene() != null && rootPane.getScene().getWindow() != null) {
+                    // Nếu cửa sổ chính có, dùng 80% làm mặc định
+                    defaultWidth = rootPane.getScene().getWindow().getWidth() * 0.8;
+                    defaultHeight = rootPane.getScene().getWindow().getHeight() * 0.8;
+                }
+
+                // Tải kích thước đã lưu (dùng kích thước tính toán làm mặc định)
+                double savedWidth = prefs.getDouble(KEY_DIALOG_WIDTH, defaultWidth);
+                double savedHeight = prefs.getDouble(KEY_DIALOG_HEIGHT, defaultHeight);
+
+
                 // Tạo Stage (Dialog)
                 detailDialog = new Stage();
                 detailDialog.setTitle("Chi tiết Item (Pop-out)");
 
-                if (rootPane.getScene() != null && rootPane.getScene().getWindow() != null) {
-                    // (*** SỬA ĐỔI: XÓA DÒNG NÀY ĐỂ HOẠT ĐỘNG ĐỘC LẬP ***)
-                    // detailDialog.initOwner(rootPane.getScene().getWindow());
-
-                    // Đặt kích thước theo yêu cầu (tương đương cửa sổ chính)
-                    // Chúng ta sẽ đặt nhỏ hơn một chút (80%)
-                    detailDialog.setWidth(rootPane.getScene().getWindow().getWidth() * 0.8);
-                    detailDialog.setHeight(rootPane.getScene().getWindow().getHeight() * 0.8);
-                } else {
-                    detailDialog.setWidth(1000); // Kích thước dự phòng
-                    detailDialog.setHeight(800);  // Kích thước dự phòng
-                }
+                // Set loaded size
+                detailDialog.setWidth(savedWidth);
+                detailDialog.setHeight(savedHeight);
 
                 // (*** QUAN TRỌNG ***) Không khóa cửa sổ chính
                 detailDialog.initModality(Modality.NONE);
                 detailDialog.setScene(scene);
 
                 // (*** QUAN TRỌNG ***) Khi user đóng dialog (nhấn 'x')
-                // chỉ ẩn (hide) nó đi, không hủy (destroy).
                 detailDialog.setOnCloseRequest(e -> {
+                    // (*** LƯU KÍCH THƯỚC HIỆN TẠI ***)
+                    prefs.putDouble(KEY_DIALOG_WIDTH, detailDialog.getWidth());
+                    prefs.putDouble(KEY_DIALOG_HEIGHT, detailDialog.getHeight());
+                    try {
+                        prefs.flush();
+                        System.out.println("Đã lưu kích thước Dialog: " + detailDialog.getWidth() + "x" + detailDialog.getHeight());
+                    } catch (Exception ex) {
+                        System.err.println("Error flushing dialog size preferences: " + ex.getMessage());
+                    }
+
                     if (detailDialog != null) {
                         detailDialog.hide();
                     }

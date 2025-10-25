@@ -44,6 +44,9 @@ import java.util.stream.Collectors; // <-- THÊM IMPORT
  * - Thêm handler cho click/drag-drop ảnh.
  * (CẬP NHẬT 22 - THÊM POP-OUT DIALOG)
  * - Sửa handleOpenButtonAction để gọi requestPopOut()
+ * (CẬP NHẬT 27 - THÊM STUDIOS/PEOPLE DẠNG TAG)
+ * - Xóa TextField cho Studios/People. Thêm FlowPane và Button cho Studios/People.
+ * - Thêm logic update/handle cho Studios/People.
  */
 public class ItemDetailController {
 
@@ -54,36 +57,49 @@ public class ItemDetailController {
     @FXML private ScrollPane mainScrollPane;
     @FXML private VBox detailContentPane;
 
-    // (*** THÊM MỚI FXML ẢNH ***)
+    // (*** ẢNH ***)
     @FXML private StackPane primaryImageContainer;
     @FXML private ImageView primaryImageView;
     @FXML private Button savePrimaryImageButton;
-    // (*** KẾT THÚC THÊM MỚI ***)
 
+    // (*** TRƯỜNG TEXT ***)
     @FXML private TextField titleTextField;
     @FXML private Button saveButton;
     @FXML private TextArea overviewTextArea;
     @FXML private Label taglineLabel;
     @FXML private Label genresLabel;
 
-    // (*** THÊM MỚI FXML ẢNH ***)
+    // (*** GALLERY ***)
     @FXML private Button addBackdropButton;
     @FXML private FlowPane imageGalleryPane;
-    // (*** KẾT THÚC THÊM MỚI ***)
 
-    // ... (Các FXML cho Path, Tags, Fields, Import/Export, Review Buttons... giữ nguyên) ...
+    // (*** CÁC TRƯỜNG DỮ LIỆU CŨ ***)
     @FXML private VBox pathContainer;
     @FXML private TextField pathTextField;
     @FXML private Button openButton;
     @FXML private Label actionStatusLabel;
+
+    // (*** TAGS ***)
     @FXML private FlowPane tagsFlowPane;
     @FXML private Button addTagButton;
+
+    // (*** FILE ONLY ***)
     @FXML private VBox fileOnlyContainer;
     @FXML private TextField releaseDateTextField;
-    @FXML private TextField studiosTextField;
-    @FXML private TextField peopleTextField;
+
+    // (*** STUDIOS/PEOPLE DẠNG CHIP ***)
+    // REMOVED: @FXML private TextField studiosTextField;
+    // REMOVED: @FXML private TextField peopleTextField;
+    @FXML private FlowPane studiosFlowPane; // ADDED
+    @FXML private Button addStudioButton; // ADDED
+    @FXML private FlowPane peopleFlowPane; // ADDED
+    @FXML private Button addPeopleButton; // ADDED
+
+    // (*** IMPORT/EXPORT ***)
     @FXML private Button importButton;
     @FXML private Button exportButton;
+
+    // (*** REVIEW BUTTONS ***)
     @FXML private HBox reviewTitleContainer;
     @FXML private Button acceptTitleButton;
     @FXML private Button rejectTitleButton;
@@ -116,7 +132,7 @@ public class ItemDetailController {
         acceptPeopleButton.setOnAction(e -> viewModel.acceptImportField("people"));
         rejectPeopleButton.setOnAction(e -> viewModel.rejectImportField("people"));
 
-        // (*** THÊM MỚI: Gán sự kiện cho các nút ảnh ***)
+        // (*** NÚT ẢNH ***)
         primaryImageContainer.setOnMouseClicked(e -> {
             if (viewModel != null) {
                 viewModel.selectNewPrimaryImage((Stage) rootPane.getScene().getWindow());
@@ -131,7 +147,7 @@ public class ItemDetailController {
             }
         });
 
-        // (*** THÊM MỚI: Xử lý Drag-Drop cho Backdrop ***)
+        // (*** DRAG-DROP ***)
         setupBackdropDragAndDrop();
     }
 
@@ -142,38 +158,50 @@ public class ItemDetailController {
         this.viewModel = viewModel;
 
         // --- BINDING UI VỚI VIEWMODEL ---
-        // (1, 2, 3 - Binding Labels, TextFields, Tags... giữ nguyên)
+        // 1. Labels & TextFields cơ bản
         taglineLabel.textProperty().bind(viewModel.taglineProperty());
         genresLabel.textProperty().bind(viewModel.genresProperty());
         statusLabel.textProperty().bind(viewModel.statusMessageProperty());
         titleTextField.textProperty().bindBidirectional(viewModel.titleProperty());
         overviewTextArea.textProperty().bindBidirectional(viewModel.overviewProperty());
+        releaseDateTextField.textProperty().bindBidirectional(viewModel.releaseDateProperty());
+
+        // 2. Binding cho Tags
         viewModel.getTagItems().addListener((ListChangeListener<TagModel>) c -> {
             Platform.runLater(this::updateTagsFlowPane);
         });
         updateTagsFlowPane();
-        releaseDateTextField.textProperty().bindBidirectional(viewModel.releaseDateProperty());
-        studiosTextField.textProperty().bindBidirectional(viewModel.studiosProperty());
-        peopleTextField.textProperty().bindBidirectional(viewModel.peopleProperty());
 
-        // 4. Binding Ảnh Primary
+        // 3. Binding cho Studios (MỚI)
+        viewModel.getStudioItems().addListener((ListChangeListener<TagModel>) c -> {
+            Platform.runLater(this::updateStudiosFlowPane);
+        });
+        updateStudiosFlowPane();
+
+        // 4. Binding cho People (MỚI)
+        viewModel.getPeopleItems().addListener((ListChangeListener<TagModel>) c -> {
+            Platform.runLater(this::updatePeopleFlowPane);
+        });
+        updatePeopleFlowPane();
+
+
+        // 5. Binding Ảnh Primary
         primaryImageView.imageProperty().bind(viewModel.primaryImageProperty());
 
-        // 5. Binding kiểm soát hiển thị (Loading / Status / Content)
+        // 6. Binding kiểm soát hiển thị (Loading / Status / Content)
         loadingIndicator.visibleProperty().bind(viewModel.loadingProperty());
         statusLabel.visibleProperty().bind(viewModel.showStatusMessageProperty());
         mainScrollPane.visibleProperty().bind(
                 viewModel.loadingProperty().not().and(viewModel.showStatusMessageProperty().not())
         );
 
-        // 6. (*** SỬA ĐỔI: Binding Gallery (Lắng nghe danh sách ImageInfo) ***)
+        // 7. Binding Gallery (Lắng nghe danh sách ImageInfo)
         viewModel.getBackdropImages().addListener((ListChangeListener<ImageInfo>) c -> {
             updateImageGallery();
         });
         updateImageGallery(); // Cập nhật lần đầu
-        // (*** KẾT THÚC SỬA ĐỔI ***)
 
-        // (7, 8 - Binding UI linh hoạt, Path... giữ nguyên)
+        // 8. Binding UI linh hoạt, Path...
         fileOnlyContainer.visibleProperty().bind(viewModel.isFolderProperty().not());
         fileOnlyContainer.managedProperty().bind(viewModel.isFolderProperty().not());
         if (pathContainer != null) {
@@ -190,17 +218,17 @@ public class ItemDetailController {
             actionStatusLabel.textProperty().bind(viewModel.actionStatusMessageProperty());
         }
 
-        // 9. (Binding (v/x) giữ nguyên)
+        // 9. Binding Review Containers
         bindReviewContainer(reviewTitleContainer, viewModel.showTitleReviewProperty());
         bindReviewContainer(reviewOverviewContainer, viewModel.showOverviewReviewProperty());
         bindReviewContainer(reviewReleaseDateContainer, viewModel.showReleaseDateReviewProperty());
         bindReviewContainer(reviewStudiosContainer, viewModel.showStudiosReviewProperty());
         bindReviewContainer(reviewPeopleContainer, viewModel.showPeopleReviewProperty());
 
-        // 10. (Binding nút Save giữ nguyên)
+        // 10. Binding nút Save
         saveButton.disableProperty().bind(viewModel.isDirtyProperty().not());
 
-        // 11. (*** THÊM MỚI: Binding nút Lưu ảnh Primary ***)
+        // 11. Binding nút Lưu ảnh Primary
         savePrimaryImageButton.visibleProperty().bind(viewModel.primaryImageDirtyProperty());
         savePrimaryImageButton.managedProperty().bind(viewModel.primaryImageDirtyProperty());
     }
@@ -214,7 +242,7 @@ public class ItemDetailController {
     }
 
     /**
-     * (*** SỬA ĐỔI: Helper: Cập nhật FlowPane gallery ***)
+     * Helper: Cập nhật FlowPane gallery
      */
     private void updateImageGallery() {
         Platform.runLater(() -> {
@@ -238,7 +266,9 @@ public class ItemDetailController {
         });
     }
 
-    // (Hàm updateTagsFlowPane giữ nguyên)
+    /**
+     * Helper: Cập nhật FlowPane cho Tags.
+     */
     private void updateTagsFlowPane() {
         if (viewModel == null || tagsFlowPane == null) return;
         tagsFlowPane.getChildren().clear();
@@ -249,7 +279,32 @@ public class ItemDetailController {
     }
 
     /**
-     * (*** SỬA ĐỔI: Thêm logic requestPopOut ***)
+     * Helper: Cập nhật FlowPane cho Studios (MỚI).
+     */
+    private void updateStudiosFlowPane() {
+        if (viewModel == null || studiosFlowPane == null) return;
+        studiosFlowPane.getChildren().clear();
+        for (TagModel studio : viewModel.getStudioItems()) {
+            TagView studioChip = new TagView(studio, viewModel::removeStudio);
+            studiosFlowPane.getChildren().add(studioChip);
+        }
+    }
+
+    /**
+     * Helper: Cập nhật FlowPane cho People (MỚI).
+     */
+    private void updatePeopleFlowPane() {
+        if (viewModel == null || peopleFlowPane == null) return;
+        peopleFlowPane.getChildren().clear();
+        for (TagModel person : viewModel.getPeopleItems()) {
+            TagView personChip = new TagView(person, viewModel::removePerson);
+            peopleFlowPane.getChildren().add(personChip);
+        }
+    }
+
+
+    /**
+     * Xử lý nút Mở/Phát.
      */
     @FXML
     private void handleOpenButtonAction() {
@@ -275,7 +330,7 @@ public class ItemDetailController {
                 // 1. Mở file/folder (như cũ)
                 Desktop.getDesktop().open(fileOrDir);
 
-                // (*** THÊM MỚI: Yêu cầu Pop-out NẾU LÀ FILE ***)
+                // (*** Yêu cầu Pop-out NẾU LÀ FILE ***)
                 if (viewModel != null && !viewModel.isFolderProperty().get()) {
                     // Chạy trên luồng JavaFX
                     Platform.runLater(() -> viewModel.requestPopOut());
@@ -288,7 +343,9 @@ public class ItemDetailController {
         }).start();
     }
 
-    // (Hàm handleAddTagButtonAction giữ nguyên)
+    /**
+     * Mở dialog thêm Tag.
+     */
     @FXML
     private void handleAddTagButtonAction() {
         if (viewModel == null) return;
@@ -317,6 +374,71 @@ public class ItemDetailController {
             viewModel.reportActionError("Lỗi không xác định: " + e.getMessage());
         }
     }
+
+    /**
+     * Mở dialog thêm Studio (MỚI).
+     */
+    @FXML
+    private void handleAddStudioButtonAction() {
+        if (viewModel == null) return;
+        try {
+            FXMLLoader loader = new FXMLLoader(MainApp.class.getResource("AddTagDialog.fxml"));
+            VBox page = loader.load();
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Thêm Studio Mới");
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initOwner((Stage) rootPane.getScene().getWindow());
+            Scene scene = new Scene(page);
+            scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
+            dialogStage.setScene(scene);
+            AddTagDialogController controller = loader.getController();
+            controller.setDialogStage(dialogStage);
+            dialogStage.showAndWait();
+            TagModel newStudio = controller.getResultTag();
+            if (newStudio != null) {
+                viewModel.addStudio(newStudio);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            viewModel.reportActionError("Lỗi: Không thể mở dialog thêm studio.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            viewModel.reportActionError("Lỗi không xác định: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Mở dialog thêm People (MỚI).
+     */
+    @FXML
+    private void handleAddPeopleButtonAction() {
+        if (viewModel == null) return;
+        try {
+            FXMLLoader loader = new FXMLLoader(MainApp.class.getResource("AddTagDialog.fxml"));
+            VBox page = loader.load();
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Thêm Người Mới");
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initOwner((Stage) rootPane.getScene().getWindow());
+            Scene scene = new Scene(page);
+            scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
+            dialogStage.setScene(scene);
+            AddTagDialogController controller = loader.getController();
+            controller.setDialogStage(dialogStage);
+            dialogStage.showAndWait();
+            TagModel newPerson = controller.getResultTag();
+            if (newPerson != null) {
+                viewModel.addPerson(newPerson);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            viewModel.reportActionError("Lỗi: Không thể mở dialog thêm người.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            viewModel.reportActionError("Lỗi không xác định: " + e.getMessage());
+        }
+    }
+
 
     // (Hàm handleSaveButtonAction, handleImportButtonAction, handleExportButtonAction giữ nguyên)
     @FXML
@@ -391,7 +513,7 @@ public class ItemDetailController {
     }
 
 
-    // (*** HÀM MỚI: Cài đặt Drag-Drop ***)
+    // (*** HÀM Cài đặt Drag-Drop giữ nguyên ***)
     private void setupBackdropDragAndDrop() {
         if (imageGalleryPane == null) return;
 

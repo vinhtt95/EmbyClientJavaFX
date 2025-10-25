@@ -30,6 +30,9 @@ import java.util.stream.Collectors;
  * (CẬP NHẬT 11 - SỬA LỖI BIÊN DỊCH)
  * - Sửa lỗi BaseItemPerson constructor.
  * - Sửa lỗi org.threeten.bp.OffsetDateTime.
+ * (CẬP NHẬT 27 - THÊM STUDIOS/PEOPLE DẠNG TAG)
+ * - Cập nhật SaveRequest để dùng List<TagModel> cho Studios/People.
+ * - Cập nhật logic parse để serialize List<TagModel> cho Studios/People.
  */
 public class ItemDetailSaver {
 
@@ -89,27 +92,23 @@ public class ItemDetailSaver {
         // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
 
 
-        // Parse Studios (String -> List<NameLongIdPair>)
-        List<NameLongIdPair> studiosList = Arrays.stream(request.getStudios().split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(name -> {
+        // Parse Studios (List<TagModel> -> List<NameLongIdPair>) // MODIFIED
+        List<NameLongIdPair> studiosList = request.getStudioItems().stream()
+                .map(tagModel -> {
                     NameLongIdPair pair = new NameLongIdPair();
-                    pair.setName(name);
+                    pair.setName(tagModel.serialize()); // Serialize TagModel về chuỗi
+                    pair.setId(null);
                     return pair;
                 })
                 .collect(Collectors.toList());
         dto.setStudios(studiosList);
 
-        // (*** SỬA LỖI 1 & 2: PEOPLE ***)
-        // Parse People (String -> List<BaseItemPerson>)
-        List<BaseItemPerson> peopleList = Arrays.stream(request.getPeople().split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(name -> {
+        // Parse People (List<TagModel> -> List<BaseItemPerson>) // MODIFIED
+        List<BaseItemPerson> peopleList = request.getPeopleItems().stream()
+                .map(tagModel -> {
                     // Sửa lỗi: Sử dụng constructor rỗng và setter
                     BaseItemPerson person = new BaseItemPerson();
-                    person.setName(name);
+                    person.setName(tagModel.serialize()); // Serialize TagModel về chuỗi
                     person.setType(PersonType.ACTOR); // Gán type mặc định
                     return person;
                 })
@@ -146,20 +145,20 @@ public class ItemDetailSaver {
         private final String overview;
         private final List<TagModel> tagItems;
         private final String releaseDate;
-        private final String studios;
-        private final String people;
+        private final List<TagModel> studioItems; // MODIFIED
+        private final List<TagModel> peopleItems; // MODIFIED
 
         public SaveRequest(BaseItemDto originalDto, String itemId, String title, String overview,
                            List<TagModel> tagItems,
-                           String releaseDate, String studios, String people) {
+                           String releaseDate, List<TagModel> studioItems, List<TagModel> peopleItems) { // MODIFIED
             this.originalDto = originalDto;
             this.itemId = itemId;
             this.title = title;
             this.overview = overview;
             this.tagItems = tagItems;
             this.releaseDate = releaseDate;
-            this.studios = studios;
-            this.people = people;
+            this.studioItems = studioItems; // MODIFIED
+            this.peopleItems = peopleItems; // MODIFIED
         }
 
         // --- Getters ---
@@ -169,7 +168,7 @@ public class ItemDetailSaver {
         public String getOverview() { return overview; }
         public List<TagModel> getTagItems() { return tagItems; }
         public String getReleaseDate() { return releaseDate; }
-        public String getStudios() { return studios; }
-        public String getPeople() { return people; }
+        public List<TagModel> getStudioItems() { return studioItems; } // MODIFIED
+        public List<TagModel> getPeopleItems() { return peopleItems; } // MODIFIED
     }
 }

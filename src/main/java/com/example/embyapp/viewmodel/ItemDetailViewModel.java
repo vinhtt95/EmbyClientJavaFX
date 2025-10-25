@@ -43,6 +43,11 @@ import java.time.ZoneId;
  * - Thêm helper reloadPrimaryImage.
  * (CẬP NHẬT 22 - THÊM POP-OUT DIALOG)
  * - Thêm tín hiệu popOutRequest
+ * (CẬP NHẬT 27 - THÊM STUDIOS/PEOPLE DẠNG TAG)
+ * - Thay thế StringProperty bằng ObservableList<TagModel> cho studios và people.
+ * - Cập nhật logic lưu để serialize List<TagModel> cho Studios/People.
+ * (FIX LỖI)
+ * - Sửa lỗi incompatible types: SimpleStringProperty -> ReadOnlyStringWrapper cho actionStatusMessage.
  */
 public class ItemDetailViewModel {
 
@@ -69,8 +74,8 @@ public class ItemDetailViewModel {
     private final StringProperty overview = new SimpleStringProperty("");
     private final ObservableList<TagModel> tagItems = FXCollections.observableArrayList();
     private final StringProperty releaseDate = new SimpleStringProperty("");
-    private final StringProperty studios = new SimpleStringProperty("");
-    private final StringProperty people = new SimpleStringProperty("");
+    private final ObservableList<TagModel> studiosItems = FXCollections.observableArrayList(); // MODIFIED
+    private final ObservableList<TagModel> peopleItems = FXCollections.observableArrayList(); // MODIFIED
     private final ReadOnlyStringWrapper year = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper tagline = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper genres = new ReadOnlyStringWrapper("");
@@ -81,7 +86,7 @@ public class ItemDetailViewModel {
     private final ReadOnlyBooleanWrapper isFolder = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyStringWrapper statusMessage = new ReadOnlyStringWrapper("Vui lòng chọn một item từ danh sách...");
     private final ReadOnlyBooleanWrapper showStatusMessage = new ReadOnlyBooleanWrapper(true);
-    private final ReadOnlyStringWrapper actionStatusMessage = new ReadOnlyStringWrapper("");
+    private final ReadOnlyStringWrapper actionStatusMessage = new ReadOnlyStringWrapper(""); // FIXED: actionStatusMessage phải là ReadOnlyStringWrapper
     private final ReadOnlyBooleanWrapper primaryImageDirty = new ReadOnlyBooleanWrapper(false);
 
     // (*** THÊM MỚI: Tín hiệu yêu cầu pop-out dialog ***)
@@ -136,8 +141,8 @@ public class ItemDetailViewModel {
                     overview.set(result.getOverviewText());
                     tagItems.setAll(result.getTagItems());
                     releaseDate.set(result.getReleaseDateText());
-                    studios.set(result.getStudiosText());
-                    people.set(result.getPeopleText());
+                    studiosItems.setAll(result.getStudioItems()); // MODIFIED
+                    peopleItems.setAll(result.getPeopleItems()); // MODIFIED
                     year.set(result.getYearText());
                     tagline.set(result.getTaglineText());
                     genres.set(result.getGenresText());
@@ -193,8 +198,8 @@ public class ItemDetailViewModel {
         actionStatusMessage.set("");
         tagItems.clear();
         releaseDate.set("");
-        studios.set("");
-        people.set("");
+        studiosItems.clear(); // MODIFIED
+        peopleItems.clear(); // MODIFIED
         importHandler.clearState();
         currentItemId = null;
         originalItemDto = null;
@@ -222,7 +227,7 @@ public class ItemDetailViewModel {
                     System.out.println("Saving manual edits...");
                     ItemDetailSaver.SaveRequest manualSaveRequest = new ItemDetailSaver.SaveRequest(
                             originalItemDto, currentItemId, title.get(), overview.get(),
-                            List.copyOf(tagItems), releaseDate.get(), studios.get(), people.get()
+                            List.copyOf(tagItems), releaseDate.get(), List.copyOf(studiosItems), List.copyOf(peopleItems) // MODIFIED
                     );
                     dtoToSave = saver.parseUiToDto(manualSaveRequest);
                 }
@@ -284,26 +289,27 @@ public class ItemDetailViewModel {
                 System.err.println("Không thể parse ngày (save accepted): " + releaseDate.get() + ". Sẽ giữ giá trị gốc.");
             }
         }
+
+        // (*** SỬA LỖI STUDIOS DẠNG TAG ***)
         if (acceptedFields.contains("studios")) {
-            List<NameLongIdPair> studiosList = Arrays.stream(studios.get().split(","))
-                    .map(String::trim).filter(s -> !s.isEmpty())
-                    .map(name -> {
+            List<NameLongIdPair> studiosList = studiosItems.stream()
+                    .map(tagModel -> {
                         NameLongIdPair pair = new NameLongIdPair();
-                        pair.setName(name);
+                        pair.setName(tagModel.serialize());
+                        pair.setId(null);
                         return pair;
                     })
                     .collect(Collectors.toList());
             dtoCopy.setStudios(studiosList);
         }
 
-        // (*** SỬA LỖI PEOPLE ***)
+        // (*** SỬA LỖI PEOPLE DẠNG TAG ***)
         if (acceptedFields.contains("people")) {
-            List<BaseItemPerson> peopleList = Arrays.stream(people.get().split(","))
-                    .map(String::trim).filter(s -> !s.isEmpty())
-                    .map(name -> {
+            List<BaseItemPerson> peopleList = peopleItems.stream()
+                    .map(tagModel -> {
                         // Sửa lỗi: Dùng constructor rỗng và setter
                         BaseItemPerson person = new BaseItemPerson();
-                        person.setName(name);
+                        person.setName(tagModel.serialize());
                         person.setType(PersonType.ACTOR);
                         return person;
                     })
@@ -320,6 +326,13 @@ public class ItemDetailViewModel {
     public void markAsDirtyByAccept() { dirtyTracker.forceDirty(); }
     public void addTag(TagModel newTag) { if (newTag != null) { tagItems.add(newTag); } }
     public void removeTag(TagModel tagToRemove) { if (tagToRemove != null) { tagItems.remove(tagToRemove); } }
+
+    // MODIFIED: Thêm hàm xử lý Studio/People
+    public void addStudio(TagModel newStudio) { if (newStudio != null) { studiosItems.add(newStudio); } }
+    public void removeStudio(TagModel studioToRemove) { if (studioToRemove != null) { studiosItems.remove(studioToRemove); } }
+    public void addPerson(TagModel newPerson) { if (newPerson != null) { peopleItems.add(newPerson); } }
+    public void removePerson(TagModel personToRemove) { if (personToRemove != null) { peopleItems.remove(personToRemove); } }
+
     public BaseItemDto getItemForExport() { return this.originalItemDto; }
     public String getOriginalTitleForExport() { return this.exportFileNameTitle != null ? this.exportFileNameTitle : this.title.get(); }
     public void reportActionError(String errorMessage) { Platform.runLater(() -> this.actionStatusMessage.set(errorMessage)); }
@@ -510,8 +523,8 @@ public class ItemDetailViewModel {
     public StringProperty overviewProperty() { return overview; }
     public ObservableList<TagModel> getTagItems() { return tagItems; }
     public StringProperty releaseDateProperty() { return releaseDate; }
-    public StringProperty studiosProperty() { return studios; }
-    public StringProperty peopleProperty() { return people; }
+    public ObservableList<TagModel> getStudioItems() { return studiosItems; } // MODIFIED
+    public ObservableList<TagModel> getPeopleItems() { return peopleItems; } // MODIFIED
     public ReadOnlyBooleanProperty loadingProperty() { return loading.getReadOnlyProperty(); }
     public ReadOnlyStringProperty yearProperty() { return year.getReadOnlyProperty(); }
     public ReadOnlyStringProperty statusMessageProperty() { return statusMessage.getReadOnlyProperty(); }

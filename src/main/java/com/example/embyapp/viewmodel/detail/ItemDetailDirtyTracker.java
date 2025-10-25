@@ -18,6 +18,8 @@ import java.util.Objects;
  * - Thêm importAcceptancePending state.
  * - forceDirty() now transitions out of pending state.
  * - checkForChanges() respects pending state.
+ * (CẬP NHẬT 27 - THÊM STUDIOS/PEOPLE DẠNG TAG)
+ * - Thay đổi theo dõi Studios/People từ String sang List<TagModel>.
  */
 public class ItemDetailDirtyTracker {
 
@@ -26,12 +28,16 @@ public class ItemDetailDirtyTracker {
     private final BooleanProperty isDirty = new SimpleBooleanProperty(false);
 
     // Snapshot gốc
-    private String originalTitle, originalOverview, originalReleaseDate, originalStudios, originalPeople;
+    private String originalTitle, originalOverview, originalReleaseDate; // MODIFIED (Removed studios/people strings)
     private List<TagModel> originalTagItems;
+    private List<TagModel> originalStudioItems; // ADDED
+    private List<TagModel> originalPeopleItems; // ADDED
 
     // Listeners
     private final ChangeListener<String> dirtyFlagListener = (obs, oldVal, newVal) -> checkForChanges();
     private final ListChangeListener<TagModel> tagsListener = (c) -> checkForChanges();
+    private final ListChangeListener<TagModel> studioItemsListener = (c) -> checkForChanges(); // ADDED
+    private final ListChangeListener<TagModel> peopleItemsListener = (c) -> checkForChanges(); // ADDED
 
     // State flags
     private boolean paused = false;
@@ -48,6 +54,8 @@ public class ItemDetailDirtyTracker {
     public void startTracking(Map<String, String> originalStrings) {
         updateOriginalStrings(originalStrings);
         this.originalTagItems = new ArrayList<>(viewModel.getTagItems());
+        this.originalStudioItems = new ArrayList<>(viewModel.getStudioItems()); // ADDED
+        this.originalPeopleItems = new ArrayList<>(viewModel.getPeopleItems()); // ADDED
         addListeners();
         paused = false;
         importAcceptancePending = false; // <-- Reset cờ
@@ -112,10 +120,17 @@ public class ItemDetailDirtyTracker {
         viewModel.titleProperty().addListener(dirtyFlagListener);
         viewModel.overviewProperty().addListener(dirtyFlagListener);
         viewModel.releaseDateProperty().addListener(dirtyFlagListener);
-        viewModel.studiosProperty().addListener(dirtyFlagListener);
-        viewModel.peopleProperty().addListener(dirtyFlagListener);
+        // REMOVED: viewModel.studiosProperty().addListener(dirtyFlagListener);
+        // REMOVED: viewModel.peopleProperty().addListener(dirtyFlagListener);
+
         if (viewModel.getTagItems() != null) {
             viewModel.getTagItems().addListener(tagsListener);
+        }
+        if (viewModel.getStudioItems() != null) { // ADDED
+            viewModel.getStudioItems().addListener(studioItemsListener);
+        }
+        if (viewModel.getPeopleItems() != null) { // ADDED
+            viewModel.getPeopleItems().addListener(peopleItemsListener);
         }
     }
 
@@ -123,10 +138,17 @@ public class ItemDetailDirtyTracker {
         viewModel.titleProperty().removeListener(dirtyFlagListener);
         viewModel.overviewProperty().removeListener(dirtyFlagListener);
         viewModel.releaseDateProperty().removeListener(dirtyFlagListener);
-        viewModel.studiosProperty().removeListener(dirtyFlagListener);
-        viewModel.peopleProperty().removeListener(dirtyFlagListener);
+        // REMOVED: viewModel.studiosProperty().removeListener(dirtyFlagListener);
+        // REMOVED: viewModel.peopleProperty().removeListener(dirtyFlagListener);
+
         if (viewModel.getTagItems() != null) {
             viewModel.getTagItems().removeListener(tagsListener);
+        }
+        if (viewModel.getStudioItems() != null) { // ADDED
+            viewModel.getStudioItems().removeListener(studioItemsListener);
+        }
+        if (viewModel.getPeopleItems() != null) { // ADDED
+            viewModel.getPeopleItems().removeListener(peopleItemsListener);
         }
     }
 
@@ -153,13 +175,15 @@ public class ItemDetailDirtyTracker {
 
         boolean stringChanges = !Objects.equals(viewModel.titleProperty().get(), originalTitle) ||
                 !Objects.equals(viewModel.overviewProperty().get(), originalOverview) ||
-                !Objects.equals(viewModel.releaseDateProperty().get(), originalReleaseDate) ||
-                !Objects.equals(viewModel.studiosProperty().get(), originalStudios) ||
-                !Objects.equals(viewModel.peopleProperty().get(), originalPeople);
+                !Objects.equals(viewModel.releaseDateProperty().get(), originalReleaseDate);
+        // REMOVED studios/people string check
 
         boolean tagChanges = !Objects.equals(viewModel.getTagItems(), originalTagItems);
 
-        isDirty.set(stringChanges || tagChanges);
+        boolean studioChanges = !Objects.equals(viewModel.getStudioItems(), originalStudioItems); // ADDED
+        boolean peopleChanges = !Objects.equals(viewModel.getPeopleItems(), originalPeopleItems); // ADDED
+
+        isDirty.set(stringChanges || tagChanges || studioChanges || peopleChanges); // MODIFIED
         // System.out.println("DirtyTracker: isDirty = " + isDirty.get()); // Debug
     }
 
@@ -190,8 +214,8 @@ public class ItemDetailDirtyTracker {
         this.originalTitle = originals.get("title");
         this.originalOverview = originals.get("overview");
         this.originalReleaseDate = originals.get("releaseDate");
-        this.originalStudios = originals.get("studios");
-        this.originalPeople = originals.get("people");
+        // REMOVED: this.originalStudios = originals.get("studios");
+        // REMOVED: this.originalPeople = originals.get("people");
     }
 
     /**
@@ -203,9 +227,11 @@ public class ItemDetailDirtyTracker {
         this.originalTitle = viewModel.titleProperty().get();
         this.originalOverview = viewModel.overviewProperty().get();
         this.originalReleaseDate = viewModel.releaseDateProperty().get();
-        this.originalStudios = viewModel.studiosProperty().get();
-        this.originalPeople = viewModel.peopleProperty().get();
+        // REMOVED: this.originalStudios = viewModel.studiosProperty().get();
+        // REMOVED: this.originalPeople = viewModel.peopleProperty().get();
         this.originalTagItems = new ArrayList<>(viewModel.getTagItems());
+        this.originalStudioItems = new ArrayList<>(viewModel.getStudioItems()); // ADDED
+        this.originalPeopleItems = new ArrayList<>(viewModel.getPeopleItems()); // ADDED
 
         importAcceptancePending = false; // <-- Reset cờ sau khi lưu
 
@@ -220,9 +246,11 @@ public class ItemDetailDirtyTracker {
         this.originalTitle = null;
         this.originalOverview = null;
         this.originalReleaseDate = null;
-        this.originalStudios = null;
-        this.originalPeople = null;
+        // REMOVED: this.originalStudios = null;
+        // REMOVED: this.originalPeople = null;
         this.originalTagItems = null;
+        this.originalStudioItems = null; // ADDED
+        this.originalPeopleItems = null; // ADDED
     }
 
     // --- Getter ---

@@ -31,6 +31,9 @@ import java.time.OffsetDateTime;
  * - Thêm getAcceptedFields() và wasImportInProgress().
  * (CẬP NHẬT 22 - SỬA LỖI BIÊN DỊCH)
  * - Sửa lỗi org.threeten.bp.OffsetDateTime.
+ * (CẬP NHẬT 27 - THÊM STUDIOS/PEOPLE DẠNG TAG)
+ * - Cập nhật logic import để thao tác với List<TagModel> cho Studios/People.
+ * - Xóa các hàm helper studiosToString/peopleToString.
  */
 public class ItemDetailImportHandler {
 
@@ -104,16 +107,30 @@ public class ItemDetailImportHandler {
             viewModel.releaseDateProperty().set(dateToString(importedDto.getPremiereDate()));
             showReleaseDateReview.set(true);
 
-            // 5. Studios
-            preImportState.put("studios", viewModel.studiosProperty().get());
-            List<NameLongIdPair> importStudios = importedDto.getStudios() != null ? importedDto.getStudios() : Collections.emptyList();
-            viewModel.studiosProperty().set(studiosToString(importStudios));
+            // 5. Studios (MODIFIED)
+            preImportState.put("studios", new ArrayList<>(viewModel.getStudioItems()));
+            List<TagModel> importedStudios = new ArrayList<>();
+            if (importedDto.getStudios() != null) {
+                importedStudios = importedDto.getStudios().stream()
+                        .map(NameLongIdPair::getName)
+                        .filter(Objects::nonNull)
+                        .map(TagModel::parse)
+                        .collect(Collectors.toList());
+            }
+            viewModel.getStudioItems().setAll(importedStudios);
             showStudiosReview.set(true);
 
-            // 6. People
-            preImportState.put("people", viewModel.peopleProperty().get());
-            List<BaseItemPerson> importPeople = importedDto.getPeople() != null ? importedDto.getPeople() : Collections.emptyList();
-            viewModel.peopleProperty().set(peopleToString(importPeople));
+            // 6. People (MODIFIED)
+            preImportState.put("people", new ArrayList<>(viewModel.getPeopleItems()));
+            List<TagModel> importedPeople = new ArrayList<>();
+            if (importedDto.getPeople() != null) {
+                importedPeople = importedDto.getPeople().stream()
+                        .map(BaseItemPerson::getName)
+                        .filter(Objects::nonNull)
+                        .map(TagModel::parse)
+                        .collect(Collectors.toList());
+            }
+            viewModel.getPeopleItems().setAll(importedPeople);
             showPeopleReview.set(true);
 
         } finally {
@@ -162,11 +179,17 @@ public class ItemDetailImportHandler {
                 case "releaseDate":
                     viewModel.releaseDateProperty().set((String) preImportState.get("releaseDate"));
                     break;
-                case "studios":
-                    viewModel.studiosProperty().set((String) preImportState.get("studios"));
+                case "studios": // MODIFIED
+                    List<TagModel> originalStudios = (List<TagModel>) preImportState.get("studios");
+                    if (originalStudios != null) {
+                        viewModel.getStudioItems().setAll(originalStudios);
+                    }
                     break;
-                case "people":
-                    viewModel.peopleProperty().set((String) preImportState.get("people"));
+                case "people": // MODIFIED
+                    List<TagModel> originalPeople = (List<TagModel>) preImportState.get("people");
+                    if (originalPeople != null) {
+                        viewModel.getPeopleItems().setAll(originalPeople);
+                    }
                     break;
             }
             // Ẩn nút (v/x) sau khi revert
@@ -241,12 +264,7 @@ public class ItemDetailImportHandler {
         } catch (Exception e) { return ""; }
     }
 
-    private String studiosToString(List<NameLongIdPair> studios) {
-        return (studios != null) ? studios.stream().map(NameLongIdPair::getName).filter(Objects::nonNull).collect(Collectors.joining(", ")) : "";
-    }
-    private String peopleToString(List<BaseItemPerson> people) {
-        return (people != null) ? people.stream().map(BaseItemPerson::getName).filter(Objects::nonNull).collect(Collectors.joining(", ")) : "";
-    }
+    // REMOVED helper functions: studiosToString, peopleToString
 
 
     // --- Getters cho các BooleanProperty (v/x) ---

@@ -3,7 +3,9 @@ package com.example.embyapp.service;
 import embyclient.ApiClient;
 import embyclient.ApiException;
 import embyclient.api.ItemsServiceApi;
+import embyclient.api.StudiosServiceApi;
 import embyclient.api.TagServiceApi;
+import embyclient.model.BaseItemDto;
 import embyclient.model.QueryResultBaseItemDto;
 import embyclient.model.QueryResultUserLibraryTagItem;
 import embyclient.model.UserLibraryTagItem;
@@ -85,6 +87,28 @@ public class RequestEmby {
             QueryResultUserLibraryTagItem listTag = tagServiceApi.getTags(null, null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null);
             if (listTag != null && listTag.getItems() != null) {
                 return listTag.getItems();
+            }
+        } catch (ApiException e) {
+            System.err.println("API Error getting tags: " + e.getMessage()); // Sửa thành System.err
+        } catch (Exception e) {
+            System.err.println("Unexpected Error getting tags: " + e.getMessage()); // Thêm catch tổng quát
+            e.printStackTrace();
+        }
+
+        return Collections.emptyList(); // Trả về list rỗng thay vì null
+    }
+
+    public List<BaseItemDto> getListStudio(ApiClient apiClient){ // <-- Thêm ApiClient
+
+        // Khởi tạo TagServiceApi với ApiClient được cung cấp
+        StudiosServiceApi studiosServiceApi = new StudiosServiceApi(apiClient);
+        try {
+            // Gọi API getTags (không cần truyền nhiều tham số null như vậy)
+            // Hầu hết các tham số có giá trị mặc định là null trong hàm gọi
+            embyclient.model.QueryResultBaseItemDto resultBaseItemDto = studiosServiceApi.getStudios(null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null);
+
+            if (resultBaseItemDto != null && resultBaseItemDto.getItems() != null) {
+                return resultBaseItemDto.getItems();
             }
         } catch (ApiException e) {
             System.err.println("API Error getting tags: " + e.getMessage()); // Sửa thành System.err

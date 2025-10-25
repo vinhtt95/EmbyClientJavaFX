@@ -1,14 +1,15 @@
 package com.example.embyapp.controller;
 
 import com.example.embyapp.service.EmbyService;
+import com.example.embyapp.service.ItemRepository;
 import com.example.embyapp.service.RequestEmby;
+import com.example.embyapp.viewmodel.detail.SuggestionItemModel;
 import com.example.embyapp.viewmodel.detail.TagModel;
 import embyclient.model.UserLibraryTagItem;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
-// (*** XÓA IMPORT Separator ***)
 import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
@@ -24,16 +25,19 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 
 /**
- * (CẬP NHẬT 19)
- * - Trả lại layout Tag Đơn Giản về 1 dòng.
- * - Xóa simpleKeySuggestionGroup.
- * - Cập nhật logic listener cho 2 group (JSONKey và Value/Simple).
+ * (CẬP NHẬT 29) Hợp nhất logic gợi ý cho Tag, Studio, People.
+ * - Cho phép Studio/People hiển thị và nhập JSON Key-Value.
  */
 public class AddTagDialogController {
+
+    public enum SuggestionContext {
+        TAG, STUDIO, PEOPLE
+    }
 
     @FXML private ToggleGroup tagTypeGroup;
     @FXML private RadioButton simpleTagRadio;
@@ -46,22 +50,22 @@ public class AddTagDialogController {
     @FXML private TextField keyField;
     @FXML private TextField valueField;
 
-    // (*** THAY ĐỔI FXML ***)
     @FXML private VBox suggestionJsonContainer;
     @FXML private FlowPane suggestionKeysPane;
     @FXML private FlowPane suggestionValuesPane;
 
     @FXML private VBox suggestionSimpleContainer;
-    // (*** SỬA: Quay về FXML gốc cho Simple ***)
     @FXML private FlowPane suggestionSimplePane;
-    // (*** KẾT THÚC THAY ĐỔI FXML ***)
 
-    // (*** SỬA: Chỉ 2 ToggleGroup ***)
     private final ToggleGroup keySuggestionGroup = new ToggleGroup();
-    private final ToggleGroup valueSuggestionGroup = new ToggleGroup(); // Dùng chung cho JSON Value và Simple
+    private final ToggleGroup valueSuggestionGroup = new ToggleGroup();
 
     private Stage dialogStage;
     private TagModel resultTag = null;
+
+    private ItemRepository itemRepository;
+    private SuggestionContext currentContext = SuggestionContext.TAG;
+    // Xóa generalSuggestions, dùng rawNames/jsonGroups/simpleTags đã parse
 
     private static class ParsedTag {
         final String rawString;
@@ -78,7 +82,7 @@ public class AddTagDialogController {
 
     @FXML
     public void initialize() {
-        // Listener chuyển đổi pane nhập liệu
+        // Listener chuyển đổi pane nhập liệu (Giữ nguyên)
         simpleTagRadio.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
             simpleTagPane.setVisible(isSelected);
             simpleTagPane.setManaged(isSelected);
@@ -93,34 +97,99 @@ public class AddTagDialogController {
         jsonTagPane.setManaged(true);
         jsonTagRadio.setSelected(true);
 
-        // (*** SỬA: Cập nhật Listeners cho 2 Group ***)
-
-        // 1. Listener cho JSON Key
+        // 1. Listener cho JSON Key (Giữ nguyên)
         keySuggestionGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
             if (newToggle != null) {
-                // Hủy chọn các tag trong nhóm Value/Simple
                 valueSuggestionGroup.selectToggle(null);
             }
-            // Điền value cho JSON
             populateValues(newToggle);
         });
-
-        // 2. Listener cho Value/Simple (Không cần, vì đã gán trên từng chip)
-
-        // Tải tag gợi ý (chạy nền)
-        loadSuggestedTags();
     }
 
+    /**
+     * Thiết lập context và repository trước khi hiển thị.
+     */
+    public void setContext(SuggestionContext context, ItemRepository itemRepository) {
+        this.currentContext = context;
+        this.itemRepository = itemRepository;
+
+        // Cập nhật UI theo context (Chỉ thay đổi tiêu đề, không ẩn JSON inputs)
+        Platform.runLater(() -> {
+            Stage stage = (Stage) dialogStage.getScene().getWindow();
+            String title = context == SuggestionContext.STUDIO ? "Thêm Studio Mới" :
+                    context == SuggestionContext.PEOPLE ? "Thêm Người Mới" :
+                            "Thêm Tag Mới";
+            stage.setTitle(title);
+
+            // Đặt lại label cho Simple Tags (dù là Tag, Studio hay People)
+            simpleTagRadio.setText(context == SuggestionContext.TAG ? "Tag Đơn giản" :
+                    context == SuggestionContext.STUDIO ? "Tên Studio" :
+                            "Tên Người");
+
+            // Cập nhật label cho Simple Suggestions
+            Label suggestionLabel = (Label) suggestionSimpleContainer.getChildren().get(0);
+            suggestionLabel.setText("Gợi ý " + (context == SuggestionContext.TAG ? "Tag Đơn giản" :
+                    context == SuggestionContext.STUDIO ? "Studios" :
+                            "People"));
+
+            // Luôn hiển thị cả hai radio buttons và containers
+            jsonTagRadio.setVisible(true);
+            jsonTagRadio.setManaged(true);
+            simpleTagRadio.setVisible(true);
+            simpleTagRadio.setManaged(true);
+
+            // Tải gợi ý
+            loadSuggestedTags();
+        });
+    }
+
+
     private void loadSuggestedTags() {
-        // (Logic hàm này giữ nguyên)
         new Thread(() -> {
-            List<String> suggestedNames = fetchTagsFromServer();
-            Platform.runLater(() -> populateSuggestedTags(suggestedNames));
+            final List<String> rawNames = new ArrayList<>();
+
+            try {
+                EmbyService embyService = EmbyService.getInstance();
+                if (!embyService.isLoggedIn() || embyService.getApiClient() == null) {
+                    System.err.println("Chưa đăng nhập, không thể lấy gợi ý.");
+                    return;
+                }
+
+                switch (currentContext) {
+                    case TAG:
+                        rawNames.addAll(fetchTagsFromServer());
+                        break;
+                    case STUDIO:
+                        rawNames.addAll(itemRepository.getStudioSuggestions(embyService.getApiClient())
+                                .stream().map(SuggestionItemModel::getName).collect(Collectors.toList()));
+                        break;
+                    case PEOPLE:
+                        rawNames.addAll(itemRepository.getPeopleSuggestions(embyService.getApiClient())
+                                .stream().map(SuggestionItemModel::getName).collect(Collectors.toList()));
+                        break;
+                }
+
+            } catch (Exception e) {
+                System.err.println("Lỗi khi lấy gợi ý từ server: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            // Cập nhật UI
+            Platform.runLater(() -> {
+                populateSuggestedTags(rawNames);
+
+                // Hiển thị/ẩn container JSON
+                suggestionJsonContainer.setVisible(!jsonGroups.isEmpty());
+                suggestionJsonContainer.setManaged(!jsonGroups.isEmpty());
+
+                // Hiển thị/ẩn container Simple (dù là Tag, Studio hay People)
+                suggestionSimpleContainer.setVisible(!suggestionSimplePane.getChildren().isEmpty());
+                suggestionSimpleContainer.setManaged(!suggestionSimplePane.getChildren().isEmpty());
+            });
         }).start();
     }
 
     private List<String> fetchTagsFromServer() {
-        // (Logic hàm này giữ nguyên)
         try {
             EmbyService embyService = EmbyService.getInstance();
             if (embyService.isLoggedIn() && embyService.getApiClient() != null) {
@@ -133,45 +202,45 @@ public class AddTagDialogController {
                             .distinct()
                             .collect(Collectors.toList());
                 }
-            } else {
-                System.err.println("Chưa đăng nhập, không thể lấy tag gợi ý.");
             }
         } catch (Exception e) {
-            System.err.println("Lỗi khi lấy tag gợi ý từ server: " + e.getMessage());
-            e.printStackTrace();
+            // Lỗi đã được log ở loadSuggestedTags
         }
         return Collections.emptyList();
     }
 
-    private void populateSuggestedTags(List<String> tagNames) {
-        // (Logic hàm này giữ nguyên)
-        if (tagNames == null || tagNames.isEmpty()) {
+    /**
+     * (HỢP NHẤT LOGIC) Phân tích danh sách tên thô thành JSON Groups và Simple Tags.
+     */
+    private void populateSuggestedTags(List<String> rawNames) {
+        if (rawNames == null || rawNames.isEmpty()) {
+            jsonGroups.clear();
+            populateKeys(); // Xóa keys
+            populateSimpleTags(Collections.emptyList()); // Xóa simple tags
             return;
         }
 
-        List<ParsedTag> parsedTags = tagNames.stream()
+        // 1. Parse tất cả tên thô thành TagModel
+        List<ParsedTag> parsedTags = rawNames.stream()
                 .map(raw -> new ParsedTag(raw, TagModel.parse(raw)))
                 .collect(Collectors.toList());
 
+        // 2. Chia nhóm JSON
         jsonGroups = parsedTags.stream()
                 .filter(pt -> pt.model.isJson())
                 .collect(Collectors.groupingBy(pt -> pt.model.getKey()));
 
+        // 3. Lấy danh sách Simple Tags
         List<ParsedTag> simpleTags = parsedTags.stream()
                 .filter(pt -> !pt.model.isJson())
                 .collect(Collectors.toList());
 
+        // 4. Populate UI
         populateKeys(); // JSON Keys
-        populateSimpleTags(simpleTags); // Simple Tags
-
-        suggestionJsonContainer.setVisible(!jsonGroups.isEmpty());
-        suggestionJsonContainer.setManaged(!jsonGroups.isEmpty());
-        suggestionSimpleContainer.setVisible(!simpleTags.isEmpty());
-        suggestionSimpleContainer.setManaged(!simpleTags.isEmpty());
+        populateSimpleTags(simpleTags); // Simple Tags (hoặc Studio/People đơn giản)
     }
 
     private void populateKeys() {
-        // (Logic hàm này giữ nguyên - có auto-select)
         suggestionKeysPane.getChildren().clear();
         keySuggestionGroup.getToggles().clear();
 
@@ -192,13 +261,9 @@ public class AddTagDialogController {
     }
 
     private void populateValues(Toggle selectedKeyToggle) {
-        // (Logic hàm này giữ nguyên)
         suggestionValuesPane.getChildren().clear();
-        // (*** KHÔNG XÓA Toggles khỏi valueSuggestionGroup ở đây ***)
-        // valueSuggestionGroup.getToggles().clear(); // <--- XÓA DÒNG NÀY
 
         if (selectedKeyToggle == null) {
-            // Nếu không chọn Key, thì xóa Value
             suggestionValuesPane.getChildren().clear();
             return;
         }
@@ -208,15 +273,15 @@ public class AddTagDialogController {
 
         if (tagsInGroup == null) return;
 
+        // Sắp xếp theo Value
         tagsInGroup.sort((pt1, pt2) -> pt1.model.getValue().compareToIgnoreCase(pt2.model.getValue()));
 
         for (ParsedTag pt : tagsInGroup) {
             ToggleButton chip = new ToggleButton(pt.model.getValue());
-            chip.setToggleGroup(valueSuggestionGroup); // Thêm vào group chung
+            chip.setToggleGroup(valueSuggestionGroup);
             chip.getStyleClass().addAll("suggested-tag-button", "tag-view-json");
             chip.setUserData(pt.rawString);
 
-            // Listener này chỉ fill, không cần hủy chọn
             chip.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
                 if (isSelected) {
                     fillFormFromSuggestion((String) chip.getUserData());
@@ -227,25 +292,23 @@ public class AddTagDialogController {
     }
 
     /**
-     * (*** SỬA: Trả lại logic 1 dòng cho Tag Đơn Giản ***)
+     * Dùng cho Tag Đơn Giản, Studio Đơn giản, People Đơn giản.
      */
     private void populateSimpleTags(List<ParsedTag> simpleTags) {
         suggestionSimplePane.getChildren().clear();
-        // (*** KHÔNG XÓA Toggles khỏi valueSuggestionGroup ở đây ***)
-        // valueSuggestionGroup.getToggles().clear(); // <--- XÓA DÒNG NÀY
 
+        // Sắp xếp theo DisplayName (tên)
         simpleTags.sort((pt1, pt2) -> pt1.model.getDisplayName().compareToIgnoreCase(pt2.model.getDisplayName()));
 
         for (ParsedTag pt : simpleTags) {
             ToggleButton chip = new ToggleButton(pt.model.getDisplayName());
-            chip.setToggleGroup(valueSuggestionGroup); // Dùng chung group Value
-            chip.getStyleClass().add("suggested-tag-button"); // Style Xám
+            chip.setToggleGroup(valueSuggestionGroup);
+            chip.getStyleClass().add("suggested-tag-button");
             chip.setUserData(pt.rawString);
 
-            // (*** SỬA: Listener hủy chọn JSON Key ***)
             chip.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
                 if (isSelected) {
-                    keySuggestionGroup.selectToggle(null); // Hủy chọn JSON Key
+                    keySuggestionGroup.selectToggle(null);
                     fillFormFromSuggestion((String) chip.getUserData());
                 }
             });
@@ -255,25 +318,12 @@ public class AddTagDialogController {
 
 
     private void fillFormFromSuggestion(String selectedTagName) {
-        // (Logic hàm này giữ nguyên)
         TagModel selectedTag = TagModel.parse(selectedTagName);
         if (selectedTag.isJson()) {
             jsonTagRadio.setSelected(true);
-            try {
-                com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(selectedTagName).getAsJsonObject();
-                Map.Entry<String, com.google.gson.JsonElement> firstEntry = jsonObject.entrySet().stream().findFirst().orElse(null);
-                if(firstEntry != null) {
-                    keyField.setText(firstEntry.getKey());
-                    valueField.setText(firstEntry.getValue().getAsString());
-                } else {
-                    keyField.setText("Lỗi Key");
-                    valueField.setText("Lỗi Value");
-                }
-            } catch (Exception e) {
-                System.err.println("Lỗi parse JSON khi điền form gợi ý: " + selectedTagName + " - " + e.getMessage());
-                keyField.setText("Lỗi Key");
-                valueField.setText("Lỗi Value");
-            }
+            // Dùng TagModel getters thay vì parse lại JSON thô
+            keyField.setText(selectedTag.getKey() != null ? selectedTag.getKey() : "");
+            valueField.setText(selectedTag.getValue() != null ? selectedTag.getValue() : "");
             simpleNameField.clear();
         } else {
             simpleTagRadio.setSelected(true);
@@ -283,26 +333,34 @@ public class AddTagDialogController {
         }
     }
 
+    /**
+     * Không cần hàm fillSimpleFormFromSuggestion riêng nữa.
+     */
+    // private void fillSimpleFormFromSuggestion(String name) { ... }
+
+
     public void setDialogStage(Stage dialogStage) {
-        // (Logic hàm này giữ nguyên)
         this.dialogStage = dialogStage;
     }
 
     public TagModel getResultTag() {
-        // (Logic hàm này giữ nguyên)
         return resultTag;
     }
 
+    /**
+     * Logic handleOk không đổi: nó tạo TagModel.
+     */
     @FXML
     private void handleOk() {
-        // (Logic hàm này giữ nguyên)
         resultTag = null;
         if (simpleTagRadio.isSelected()) {
             String simpleName = simpleNameField.getText();
             if (simpleName != null && !simpleName.trim().isEmpty()) {
+                // Studio/People/Simple Tag đều được lưu dưới dạng TagModel đơn giản
                 resultTag = new TagModel(simpleName.trim());
             }
         } else {
+            // Luôn cho phép tạo JSON cho mọi Context
             String key = keyField.getText();
             String value = valueField.getText();
             if (key != null && !key.trim().isEmpty() && value != null && !value.trim().isEmpty()) {
@@ -319,7 +377,6 @@ public class AddTagDialogController {
 
     @FXML
     private void handleCancel() {
-        // (Logic hàm này giữ nguyên)
         dialogStage.close();
     }
 }

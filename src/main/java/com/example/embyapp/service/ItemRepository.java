@@ -1,5 +1,6 @@
 package com.example.embyapp.service;
 
+import com.example.embyapp.viewmodel.detail.SuggestionItemModel;
 import embyclient.ApiException;
 import embyclient.api.ImageServiceApi; // (CẬP NHẬT) Thêm import
 import embyclient.api.ItemsServiceApi;
@@ -205,5 +206,38 @@ public class ItemRepository {
         }
         // Trả về danh sách rỗng an toàn
         return Collections.emptyList();
+    }
+
+    /**
+     * (MỚI) Lấy danh sách Genres dưới dạng Model đơn giản cho UI.
+     * @param apiClient ApiClient đã được cấu hình.
+     * @return Danh sách SuggestionItemModel (Type=Genre).
+     * @throws ApiException Nếu API call thất bại.
+     */
+    public List<SuggestionItemModel> getGenreSuggestions(embyclient.ApiClient apiClient) throws ApiException {
+        List<BaseItemDto> dtoList = new RequestEmby().getListGenres(apiClient);
+        return SuggestionItemModel.fromBaseItemDtoList(dtoList);
+    }
+
+    /**
+     * (MỚI) Lấy danh sách Studios dưới dạng Model đơn giản cho UI.
+     * @param apiClient ApiClient đã được cấu hình.
+     * @return Danh sách SuggestionItemModel (Type=Studio).
+     * @throws ApiException Nếu API call thất bại.
+     */
+    public List<SuggestionItemModel> getStudioSuggestions(embyclient.ApiClient apiClient) throws ApiException {
+        List<BaseItemDto> dtoList = new RequestEmby().getListStudio(apiClient);
+        return SuggestionItemModel.fromBaseItemDtoList(dtoList);
+    }
+
+    /**
+     * (MỚI) Lấy danh sách Peoples dưới dạng Model đơn giản cho UI.
+     * @param apiClient ApiClient đã được cấu hình.
+     * @return Danh sách SuggestionItemModel (Type=Person).
+     * @throws ApiException Nếu API call thất bại.
+     */
+    public List<SuggestionItemModel> getPeopleSuggestions(embyclient.ApiClient apiClient) throws ApiException {
+        List<BaseItemDto> dtoList = new RequestEmby().getListPeoples(apiClient);
+        return SuggestionItemModel.fromBaseItemDtoList(dtoList);
     }
 }

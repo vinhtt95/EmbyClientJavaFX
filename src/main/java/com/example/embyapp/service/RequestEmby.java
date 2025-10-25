@@ -7,6 +7,7 @@ import embyclient.model.BaseItemDto;
 import embyclient.model.QueryResultBaseItemDto;
 import embyclient.model.QueryResultUserLibraryTagItem;
 import embyclient.model.UserLibraryTagItem;
+import com.example.embyapp.viewmodel.detail.SuggestionItemModel;
 
 import java.util.Collections;
 import java.util.List;

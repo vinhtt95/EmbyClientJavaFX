@@ -1,9 +1,10 @@
 package com.example.embyapp.controller;
 
 import embyclient.model.BaseItemDto;
-import embyclient.model.ImageInfo; // <-- THÊM IMPORT
+import embyclient.model.ImageInfo;
 import com.example.embyapp.MainApp;
-import com.example.embyapp.service.EmbyService; // <-- THÊM IMPORT
+import com.example.embyapp.service.EmbyService;
+import com.example.embyapp.service.ItemRepository; // THÊM IMPORT
 import com.example.embyapp.service.JsonFileHandler;
 import com.example.embyapp.viewmodel.ItemDetailViewModel;
 import com.example.embyapp.viewmodel.detail.TagModel;
@@ -22,36 +23,31 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.Dragboard; // <-- THÊM IMPORT
-import javafx.scene.input.TransferMode; // <-- THÊM IMPORT
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.VBox; // <--- ĐÃ THÊM DÒNG NÀY
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
-import java.util.List; // <-- THÊM IMPORT
-import java.util.stream.Collectors; // <-- THÊM IMPORT
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * (CẬP NHẬT 18)
- * - Thêm FXML cho các nút ảnh mới.
- * - Sửa updateImageGallery để dùng BackdropView.
- * - Thêm handler cho click/drag-drop ảnh.
- * (CẬP NHẬT 22 - THÊM POP-OUT DIALOG)
- * - Sửa handleOpenButtonAction để gọi requestPopOut()
- * (CẬP NHẬT 27 - THÊM STUDIOS/PEOPLE DẠNG TAG)
- * - Xóa TextField cho Studios/People. Thêm FlowPane và Button cho Studios/People.
- * - Thêm logic update/handle cho Studios/People.
+ * (CẬP NHẬT 28)
+ * - Cập nhật handleAddStudioButtonAction và handleAddPeopleButtonAction để truyền Context.
+ * (FIX LỖI)
+ * - Thêm import javafx.scene.layout.VBox để khắc phục lỗi "cannot find symbol".
  */
 public class ItemDetailController {
 
     // --- FXML Components ---
-    @FXML private StackPane rootPane;
+    @FXML private StackPane rootPane; // Đã kiểm tra: Field này tồn tại
     @FXML private ProgressIndicator loadingIndicator;
     @FXML private Label statusLabel;
     @FXML private ScrollPane mainScrollPane;
@@ -75,7 +71,7 @@ public class ItemDetailController {
 
     // (*** CÁC TRƯỜNG DỮ LIỆU CŨ ***)
     @FXML private VBox pathContainer;
-    @FXML private TextField pathTextField;
+    @FXML private TextField pathTextField; // Đã kiểm tra: Field này tồn tại
     @FXML private Button openButton;
     @FXML private Label actionStatusLabel;
 
@@ -88,12 +84,10 @@ public class ItemDetailController {
     @FXML private TextField releaseDateTextField;
 
     // (*** STUDIOS/PEOPLE DẠNG CHIP ***)
-    // REMOVED: @FXML private TextField studiosTextField;
-    // REMOVED: @FXML private TextField peopleTextField;
-    @FXML private FlowPane studiosFlowPane; // ADDED
-    @FXML private Button addStudioButton; // ADDED
-    @FXML private FlowPane peopleFlowPane; // ADDED
-    @FXML private Button addPeopleButton; // ADDED
+    @FXML private FlowPane studiosFlowPane;
+    @FXML private Button addStudioButton;
+    @FXML private FlowPane peopleFlowPane;
+    @FXML private Button addPeopleButton;
 
     // (*** IMPORT/EXPORT ***)
     @FXML private Button importButton;
@@ -117,6 +111,9 @@ public class ItemDetailController {
     @FXML private Button rejectPeopleButton;
 
     private ItemDetailViewModel viewModel;
+
+    // (*** THÊM FIELD MỚI ***)
+    private final ItemRepository itemRepository = new ItemRepository();
 
     @FXML
     public void initialize() {
@@ -259,7 +256,7 @@ public class ItemDetailController {
                         imageInfo,
                         serverUrl,
                         itemId,
-                        viewModel::deleteBackdrop // Truyền hàm delete
+                        viewModel::deleteBackdrop
                 );
                 imageGalleryPane.getChildren().add(backdropView);
             }
@@ -304,13 +301,64 @@ public class ItemDetailController {
 
 
     /**
+     * Helper chung để mở dialog thêm Studio/People/Tag.
+     */
+    private void showAddTagDialog(AddTagDialogController.SuggestionContext context) {
+        if (viewModel == null) return;
+        try {
+            FXMLLoader loader = new FXMLLoader(MainApp.class.getResource("AddTagDialog.fxml"));
+            VBox page = loader.load();
+            Stage dialogStage = new Stage();
+
+            // Lấy controller và thiết lập context (thao tác quan trọng)
+            AddTagDialogController controller = loader.getController();
+            controller.setDialogStage(dialogStage);
+            controller.setContext(context, itemRepository); // TRUYỀN CONTEXT VÀ REPOSITORY
+
+            // Cấu hình Stage
+            dialogStage.setTitle(context == AddTagDialogController.SuggestionContext.STUDIO ? "Thêm Studio Mới" :
+                    context == AddTagDialogController.SuggestionContext.PEOPLE ? "Thêm Người Mới" :
+                            "Thêm Tag Mới");
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initOwner((Stage) rootPane.getScene().getWindow());
+            Scene scene = new Scene(page);
+            scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
+            dialogStage.setScene(scene);
+
+            dialogStage.showAndWait();
+
+            TagModel newModel = controller.getResultTag();
+            if (newModel != null) {
+                switch (context) {
+                    case STUDIO:
+                        viewModel.addStudio(newModel);
+                        break;
+                    case PEOPLE:
+                        viewModel.addPerson(newModel);
+                        break;
+                    case TAG:
+                        viewModel.addTag(newModel);
+                        break;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            viewModel.reportActionError("Lỗi: Không thể mở dialog thêm " + context.name().toLowerCase() + ".");
+        } catch (Exception e) {
+            e.printStackTrace();
+            viewModel.reportActionError("Lỗi không xác định: " + e.getMessage());
+        }
+    }
+
+
+    /**
      * Xử lý nút Mở/Phát.
      */
     @FXML
     private void handleOpenButtonAction() {
         if (viewModel == null) return;
         viewModel.clearActionError();
-        String path = pathTextField.getText();
+        String path = pathTextField.getText(); // Đã kiểm tra: pathTextField tồn tại
         if (path == null || path.isEmpty() || path.equals("Không có đường dẫn")) {
             viewModel.reportActionError("Lỗi: Đường dẫn không hợp lệ.");
             return;
@@ -343,100 +391,29 @@ public class ItemDetailController {
         }).start();
     }
 
+
     /**
-     * Mở dialog thêm Tag.
+     * Mở dialog thêm Tag. (SỬA ĐỔI: Dùng helper mới)
      */
     @FXML
     private void handleAddTagButtonAction() {
-        if (viewModel == null) return;
-        try {
-            FXMLLoader loader = new FXMLLoader(MainApp.class.getResource("AddTagDialog.fxml"));
-            VBox page = loader.load();
-            Stage dialogStage = new Stage();
-            dialogStage.setTitle("Thêm Tag Mới");
-            dialogStage.initModality(Modality.WINDOW_MODAL);
-            dialogStage.initOwner((Stage) rootPane.getScene().getWindow());
-            Scene scene = new Scene(page);
-            scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
-            dialogStage.setScene(scene);
-            AddTagDialogController controller = loader.getController();
-            controller.setDialogStage(dialogStage);
-            dialogStage.showAndWait();
-            TagModel newTag = controller.getResultTag();
-            if (newTag != null) {
-                viewModel.addTag(newTag);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            viewModel.reportActionError("Lỗi: Không thể mở dialog thêm tag.");
-        } catch (Exception e) {
-            e.printStackTrace();
-            viewModel.reportActionError("Lỗi không xác định: " + e.getMessage());
-        }
+        showAddTagDialog(AddTagDialogController.SuggestionContext.TAG);
     }
 
     /**
-     * Mở dialog thêm Studio (MỚI).
+     * Mở dialog thêm Studio. (SỬA ĐỔI: Dùng helper mới)
      */
     @FXML
     private void handleAddStudioButtonAction() {
-        if (viewModel == null) return;
-        try {
-            FXMLLoader loader = new FXMLLoader(MainApp.class.getResource("AddTagDialog.fxml"));
-            VBox page = loader.load();
-            Stage dialogStage = new Stage();
-            dialogStage.setTitle("Thêm Studio Mới");
-            dialogStage.initModality(Modality.WINDOW_MODAL);
-            dialogStage.initOwner((Stage) rootPane.getScene().getWindow());
-            Scene scene = new Scene(page);
-            scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
-            dialogStage.setScene(scene);
-            AddTagDialogController controller = loader.getController();
-            controller.setDialogStage(dialogStage);
-            dialogStage.showAndWait();
-            TagModel newStudio = controller.getResultTag();
-            if (newStudio != null) {
-                viewModel.addStudio(newStudio);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            viewModel.reportActionError("Lỗi: Không thể mở dialog thêm studio.");
-        } catch (Exception e) {
-            e.printStackTrace();
-            viewModel.reportActionError("Lỗi không xác định: " + e.getMessage());
-        }
+        showAddTagDialog(AddTagDialogController.SuggestionContext.STUDIO);
     }
 
     /**
-     * Mở dialog thêm People (MỚI).
+     * Mở dialog thêm People. (SỬA ĐỔI: Dùng helper mới)
      */
     @FXML
     private void handleAddPeopleButtonAction() {
-        if (viewModel == null) return;
-        try {
-            FXMLLoader loader = new FXMLLoader(MainApp.class.getResource("AddTagDialog.fxml"));
-            VBox page = loader.load();
-            Stage dialogStage = new Stage();
-            dialogStage.setTitle("Thêm Người Mới");
-            dialogStage.initModality(Modality.WINDOW_MODAL);
-            dialogStage.initOwner((Stage) rootPane.getScene().getWindow());
-            Scene scene = new Scene(page);
-            scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
-            dialogStage.setScene(scene);
-            AddTagDialogController controller = loader.getController();
-            controller.setDialogStage(dialogStage);
-            dialogStage.showAndWait();
-            TagModel newPerson = controller.getResultTag();
-            if (newPerson != null) {
-                viewModel.addPerson(newPerson);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            viewModel.reportActionError("Lỗi: Không thể mở dialog thêm người.");
-        } catch (Exception e) {
-            e.printStackTrace();
-            viewModel.reportActionError("Lỗi không xác định: " + e.getMessage());
-        }
+        showAddTagDialog(AddTagDialogController.SuggestionContext.PEOPLE);
     }
 
 

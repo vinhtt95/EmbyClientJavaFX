@@ -1,4 +1,3 @@
-// Đặt tại: src/main/java/com/example/embyapp/viewmodel/detail/ItemDetailImportHandler.java
 package com.example.embyapp.viewmodel.detail;
 
 import com.example.emby.modelEmby.BaseItemDto;
@@ -9,6 +8,7 @@ import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -19,8 +19,9 @@ import org.threeten.bp.OffsetDateTime;
 
 
 /**
- * Lớp phụ trợ (Helper class) cho ItemDetailViewModel.
- * Chuyên trách việc xử lý logic Import JSON và Preview (các nút v/x).
+ * (CẬP NHẬT 7)
+ * - Sửa logic import/preview cho tags để đọc TagItems và cập nhật ObservableList<TagModel>.
+ * - Xóa (v/x) cho tags.
  */
 public class ItemDetailImportHandler {
 
@@ -34,7 +35,7 @@ public class ItemDetailImportHandler {
     // Các BooleanProperty cho 6 cặp nút (v/x)
     private final ReadOnlyBooleanWrapper showTitleReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showOverviewReview = new ReadOnlyBooleanWrapper(false);
-    private final ReadOnlyBooleanWrapper showTagsReview = new ReadOnlyBooleanWrapper(false);
+    // private final ReadOnlyBooleanWrapper showTagsReview = new ReadOnlyBooleanWrapper(false); // (ĐÃ XÓA)
     private final ReadOnlyBooleanWrapper showReleaseDateReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showStudiosReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showPeopleReview = new ReadOnlyBooleanWrapper(false);
@@ -44,6 +45,7 @@ public class ItemDetailImportHandler {
     }
 
     /**
+     * (*** SỬA ĐỔI TAGS ***)
      * Nhận DTO từ file import và cập nhật UI để review.
      */
     public void importAndPreview(BaseItemDto importedDto) {
@@ -62,11 +64,26 @@ public class ItemDetailImportHandler {
         viewModel.overviewProperty().set(importedDto.getOverview() != null ? importedDto.getOverview() : "");
         showOverviewReview.set(true);
 
+        // (*** SỬA ĐỔI TAGS ***)
         // 3. Tags
-        preImportState.put("tags", viewModel.tagsProperty().get());
-        List<String> importTags = importedDto.getTags() != null ? importedDto.getTags() : Collections.emptyList();
-        viewModel.tagsProperty().set(listToString(importTags));
-        showTagsReview.set(true);
+        // Lưu trạng thái List<TagModel> HIỆN TẠI
+        preImportState.put("tags", new ArrayList<>(viewModel.getTagItems()));
+
+        // Phân tích TagItems từ DTO đã import
+        List<TagModel> importedTags = new ArrayList<>();
+        if (importedDto.getTagItems() != null) {
+            for (NameLongIdPair tagPair : importedDto.getTagItems()) {
+                if (tagPair.getName() != null) {
+                    importedTags.add(TagModel.parse(tagPair.getName()));
+                }
+            }
+        }
+        // Cập nhật ViewModel
+        viewModel.getTagItems().setAll(importedTags);
+        // (Không còn nút review (v/x) cho tags)
+        // showTagsReview.set(true); // (ĐÃ XÓA)
+        // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
+
 
         // 4. Release Date
         preImportState.put("releaseDate", viewModel.releaseDateProperty().get());
@@ -97,7 +114,7 @@ public class ItemDetailImportHandler {
         switch (fieldName) {
             case "title": showTitleReview.set(false); break;
             case "overview": showOverviewReview.set(false); break;
-            case "tags": showTagsReview.set(false); break;
+            // case "tags": showTagsReview.set(false); break; // (ĐÃ XÓA)
             case "releaseDate": showReleaseDateReview.set(false); break;
             case "studios": showStudiosReview.set(false); break;
             case "people": showPeopleReview.set(false); break;
@@ -105,8 +122,10 @@ public class ItemDetailImportHandler {
     }
 
     /**
+     * (*** SỬA ĐỔI TAGS ***)
      * Người dùng nhấn (x) - Hủy bỏ thay đổi.
      */
+    @SuppressWarnings("unchecked")
     public void rejectImportField(String fieldName) {
         // Khôi phục giá trị UI từ preImportState
         switch (fieldName) {
@@ -115,13 +134,21 @@ public class ItemDetailImportHandler {
                 showTitleReview.set(false);
                 break;
             case "overview":
+                // (*** ĐÂY LÀ DÒNG ĐÃ SỬA LỖI ***)
                 viewModel.overviewProperty().set((String) preImportState.get("overview"));
                 showOverviewReview.set(false);
                 break;
+
+            // (*** MỚI: Logic Hủy bỏ cho Tags ***)
             case "tags":
-                viewModel.tagsProperty().set((String) preImportState.get("tags"));
-                showTagsReview.set(false);
+                // Khôi phục List<TagModel>
+                List<TagModel> originalTags = (List<TagModel>) preImportState.get("tags");
+                if (originalTags != null) {
+                    viewModel.getTagItems().setAll(originalTags);
+                }
+                // showTagsReview.set(false); // (Đã xóa)
                 break;
+
             case "releaseDate":
                 viewModel.releaseDateProperty().set((String) preImportState.get("releaseDate"));
                 showReleaseDateReview.set(false);
@@ -140,7 +167,7 @@ public class ItemDetailImportHandler {
     public void hideAllReviewButtons() {
         showTitleReview.set(false);
         showOverviewReview.set(false);
-        showTagsReview.set(false);
+        // showTagsReview.set(false); // (ĐÃ XÓA)
         showReleaseDateReview.set(false);
         showStudiosReview.set(false);
         showPeopleReview.set(false);
@@ -172,7 +199,7 @@ public class ItemDetailImportHandler {
     // --- Getters cho các BooleanProperty (v/x) ---
     public ReadOnlyBooleanProperty showTitleReviewProperty() { return showTitleReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showOverviewReviewProperty() { return showOverviewReview.getReadOnlyProperty(); }
-    public ReadOnlyBooleanProperty showTagsReviewProperty() { return showTagsReview.getReadOnlyProperty(); }
+    // public ReadOnlyBooleanProperty showTagsReviewProperty() { return showTagsReview.getReadOnlyProperty(); } // (ĐÃ XÓA)
     public ReadOnlyBooleanProperty showReleaseDateReviewProperty() { return showReleaseDateReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showStudiosReviewProperty() { return showStudiosReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showPeopleReviewProperty() { return showPeopleReview.getReadOnlyProperty(); }

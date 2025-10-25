@@ -1,13 +1,17 @@
 package com.example.embyapp.controller;
 
-import com.example.emby.modelEmby.BaseItemDto; // (MỚI)
-import com.example.embyapp.service.JsonFileHandler; // (MỚI)
+import com.example.emby.modelEmby.BaseItemDto;
+import com.example.embyapp.MainApp; // (*** MỚI IMPORT ***)
+import com.example.embyapp.service.JsonFileHandler;
 import com.example.embyapp.viewmodel.ItemDetailViewModel;
+import com.example.embyapp.viewmodel.detail.TagModel; // (*** MỚI IMPORT ***)
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
-import javafx.beans.property.ReadOnlyBooleanProperty; // (MỚI)
-import javafx.collections.ListChangeListener;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.collections.ListChangeListener; // (*** MỚI IMPORT ***)
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader; // (*** MỚI IMPORT ***)
+import javafx.scene.Scene; // (*** MỚI IMPORT ***)
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
@@ -16,25 +20,23 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.HBox; // (MỚI)
+import javafx.scene.layout.FlowPane; // (*** MỚI IMPORT ***)
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage; // (MỚI)
+import javafx.stage.Modality; // (*** MỚI IMPORT ***)
+import javafx.stage.Stage;
 
 import java.awt.Desktop;
 import java.io.File;
+import java.io.IOException; // (*** MỚI IMPORT ***)
 
 /**
- * (CẬP NHẬT 3)
- * Cập nhật để bind với Form UI mới (TextFields, TextArea).
- * Thêm logic ẩn/hiện fileOnlyContainer.
- * (CẬP NHẬT 4)
- * Thêm logic Import/Export/Review.
- * (CẬP NHẬT 5)
- * Thay đổi binding sang 2-way và bind nút Save.
- * (CẬP NHẬT 6)
- * Sửa logic export filename để dùng original title.
+ * (CẬP NHẬT 7)
+ * - Xóa TextField tagsTextField.
+ * - Thêm FlowPane tagsFlowPane và Button addTagButton.
+ * - Thêm logic lắng nghe ListChangeListener để cập nhật UI chip.
+ * - Thêm logic mở Dialog "Thêm Tag".
  */
 public class ItemDetailController {
 
@@ -61,8 +63,12 @@ public class ItemDetailController {
     @FXML private Button openButton;
     @FXML private Label actionStatusLabel;
 
-    // (MỚI) Fields cho UI linh hoạt
-    @FXML private TextField tagsTextField;
+    // (*** SỬA ĐỔI TAGS ***)
+    // @FXML private TextField tagsTextField; // (ĐÃ XÓA)
+    @FXML private FlowPane tagsFlowPane; // (MỚI)
+    @FXML private Button addTagButton; // (MỚI)
+    // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
+
     @FXML private VBox fileOnlyContainer;
     @FXML private TextField releaseDateTextField;
     @FXML private TextField studiosTextField;
@@ -81,9 +87,13 @@ public class ItemDetailController {
     @FXML private Button acceptOverviewButton;
     @FXML private Button rejectOverviewButton;
 
-    @FXML private HBox reviewTagsContainer;
-    @FXML private Button acceptTagsButton;
-    @FXML private Button rejectTagsButton;
+    // (*** SỬA ĐỔI TAGS ***)
+    // (FXML này không còn tồn tại trong FXML mới, nhưng để an toàn,
+    // ta sẽ không binding nó nữa)
+    // @FXML private HBox reviewTagsContainer;
+    // @FXML private Button acceptTagsButton;
+    // @FXML private Button rejectTagsButton;
+    // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
 
     @FXML private HBox reviewReleaseDateContainer;
     @FXML private Button acceptReleaseDateButton;
@@ -112,8 +122,11 @@ public class ItemDetailController {
         acceptOverviewButton.setOnAction(e -> viewModel.acceptImportField("overview"));
         rejectOverviewButton.setOnAction(e -> viewModel.rejectImportField("overview"));
 
-        acceptTagsButton.setOnAction(e -> viewModel.acceptImportField("tags"));
-        rejectTagsButton.setOnAction(e -> viewModel.rejectImportField("tags"));
+        // (*** SỬA ĐỔI TAGS ***)
+        // (XÓA 2 DÒNG NÀY VÌ reviewTagsContainer KHÔNG CÒN Ý NGHĨA)
+        // acceptTagsButton.setOnAction(e -> viewModel.acceptImportField("tags"));
+        // rejectTagsButton.setOnAction(e -> viewModel.rejectImportField("tags"));
+        // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
 
         acceptReleaseDateButton.setOnAction(e -> viewModel.acceptImportField("releaseDate"));
         rejectReleaseDateButton.setOnAction(e -> viewModel.rejectImportField("releaseDate"));
@@ -142,7 +155,18 @@ public class ItemDetailController {
         // 2. (SỬA ĐỔI) Binding 2 CHIỀU cho TẤT CẢ các trường edit
         titleTextField.textProperty().bindBidirectional(viewModel.titleProperty());
         overviewTextArea.textProperty().bindBidirectional(viewModel.overviewProperty());
-        tagsTextField.textProperty().bindBidirectional(viewModel.tagsProperty());
+
+        // (*** SỬA ĐỔI TAGS ***)
+        // (XÓA DÒNG NÀY)
+        // tagsTextField.textProperty().bindBidirectional(viewModel.tagsProperty());
+
+        // (MỚI) Lắng nghe danh sách TagModel
+        viewModel.getTagItems().addListener((ListChangeListener<TagModel>) c -> {
+            Platform.runLater(this::updateTagsFlowPane);
+        });
+        updateTagsFlowPane(); // Cập nhật lần đầu
+        // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
+
         releaseDateTextField.textProperty().bindBidirectional(viewModel.releaseDateProperty());
         studiosTextField.textProperty().bindBidirectional(viewModel.studiosProperty());
         peopleTextField.textProperty().bindBidirectional(viewModel.peopleProperty());
@@ -187,7 +211,12 @@ public class ItemDetailController {
         // 9. (MỚI) Binding hiển thị cho các nút (v/x)
         bindReviewContainer(reviewTitleContainer, viewModel.showTitleReviewProperty());
         bindReviewContainer(reviewOverviewContainer, viewModel.showOverviewReviewProperty());
-        bindReviewContainer(reviewTagsContainer, viewModel.showTagsReviewProperty());
+
+        // (*** SỬA ĐỔI TAGS ***)
+        // (XÓA DÒNG NÀY)
+        // bindReviewContainer(reviewTagsContainer, viewModel.showTagsReviewProperty());
+        // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
+
         bindReviewContainer(reviewReleaseDateContainer, viewModel.showReleaseDateReviewProperty());
         bindReviewContainer(reviewStudiosContainer, viewModel.showStudiosReviewProperty());
         bindReviewContainer(reviewPeopleContainer, viewModel.showPeopleReviewProperty());
@@ -204,7 +233,7 @@ public class ItemDetailController {
             container.visibleProperty().bind(visibilityProperty);
             container.managedProperty().bind(visibilityProperty);
         } else {
-            System.err.println("Lỗi binding: container hoặc property bị null.");
+            // System.err.println("Lỗi binding: container hoặc property bị null.");
         }
     }
 
@@ -229,6 +258,24 @@ public class ItemDetailController {
                 imageGalleryPane.getChildren().add(backdropView);
             }
         });
+    }
+
+    // (*** MỚI: HÀM CẬP NHẬT UI CHO TAGS ***)
+    /**
+     * Đồng bộ hóa FlowPane (View) với danh sách TagModel (ViewModel).
+     */
+    private void updateTagsFlowPane() {
+        if (viewModel == null || tagsFlowPane == null) return;
+
+        tagsFlowPane.getChildren().clear(); // Xóa tất cả chip cũ
+        for (TagModel tag : viewModel.getTagItems()) {
+            // Tạo một TagView (chip) mới
+            TagView tagChip = new TagView(tag, (tagToDelete) -> {
+                // Định nghĩa hành động cho nút Xóa
+                viewModel.removeTag(tagToDelete);
+            });
+            tagsFlowPane.getChildren().add(tagChip);
+        }
     }
 
     /**
@@ -262,6 +309,51 @@ public class ItemDetailController {
         }).start();
     }
 
+    // (*** MỚI: HÀM XỬ LÝ NÚT "THÊM TAG" ***)
+    @FXML
+    private void handleAddTagButtonAction() {
+        if (viewModel == null) return;
+
+        try {
+            // 1. Tải FXML của Dialog
+            // Dùng getResource() từ class MainApp (vì nó ở root)
+            FXMLLoader loader = new FXMLLoader(MainApp.class.getResource("AddTagDialog.fxml"));
+            VBox page = loader.load();
+
+            // 2. Tạo Stage (cửa sổ) cho Dialog
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Thêm Tag Mới");
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initOwner((Stage) rootPane.getScene().getWindow());
+            Scene scene = new Scene(page);
+
+            // 3. Lấy CSS từ cửa sổ chính
+            scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
+            dialogStage.setScene(scene);
+
+            // 4. Inject Stage vào Controller của Dialog
+            AddTagDialogController controller = loader.getController();
+            controller.setDialogStage(dialogStage);
+
+            // 5. Hiển thị Dialog và chờ
+            dialogStage.showAndWait();
+
+            // 6. Lấy kết quả
+            TagModel newTag = controller.getResultTag();
+            if (newTag != null) {
+                // Thêm tag mới vào ViewModel
+                viewModel.addTag(newTag);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            viewModel.reportActionError("Lỗi: Không thể mở dialog thêm tag.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            viewModel.reportActionError("Lỗi không xác định: " + e.getMessage());
+        }
+    }
+
     /**
      * (SỬA ĐỔI) Được gọi khi nhấn nút Lưu.
      * Giờ đây nó gọi hàm saveChanges() trong ViewModel.
@@ -270,10 +362,7 @@ public class ItemDetailController {
     private void handleSaveButtonAction() {
         System.out.println("Nút Lưu đã được nhấn. Gọi ViewModel.saveChanges().");
         if (viewModel != null) {
-            System.out.println("viewModel note null.");
             viewModel.saveChanges();
-        } else{
-            System.out.println("viewModel is null.");
         }
     }
 

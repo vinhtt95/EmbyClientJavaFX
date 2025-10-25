@@ -1,4 +1,3 @@
-// Đặt tại: src/main/java/com/example/embyapp/viewmodel/ItemDetailViewModel.java
 package com.example.embyapp.viewmodel;
 
 import com.example.emby.modelEmby.BaseItemDto;
@@ -8,22 +7,20 @@ import com.example.embyapp.viewmodel.detail.ItemDetailDirtyTracker;
 import com.example.embyapp.viewmodel.detail.ItemDetailImportHandler;
 import com.example.embyapp.viewmodel.detail.ItemDetailLoader;
 import com.example.embyapp.viewmodel.detail.ItemDetailSaver;
+import com.example.embyapp.viewmodel.detail.TagModel; // (*** MỚI IMPORT ***)
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import javafx.collections.ObservableList; // (*** MỚI IMPORT ***)
 import javafx.scene.image.Image;
 
+import java.util.List; // (*** MỚI IMPORT ***)
+
 /**
- * (ĐÃ REFACTOR)
- * Lớp ViewModel chính cho ItemDetailView (Cột phải).
- * Lớp này hiện đóng vai trò là Lớp Điều phối (Coordinator), sở hữu các JavaFX Properties
- * và ủy thác logic phức tạp cho các lớp phụ trợ chuyên biệt.
- *
- * - ItemDetailLoader: Tải và định dạng dữ liệu từ API.
- * - ItemDetailSaver: Phân tích (parse) và lưu dữ liệu về API.
- * - ItemDetailDirtyTracker: Theo dõi trạng thái "dirty" (thay đổi).
- * - ItemDetailImportHandler: Xử lý logic Import/Preview JSON.
+ * (CẬP NHẬT 7)
+ * - Thay thế StringProperty tags bằng ObservableList<TagModel> tagItems.
+ * - Thêm 2 phương thức addTag và removeTag.
+ * - Sửa lỗi logic clearAllDetails và setItemToDisplay để đảm bảo saveChanges() hoạt động.
  */
 public class ItemDetailViewModel {
 
@@ -42,13 +39,14 @@ public class ItemDetailViewModel {
     private String currentItemId;
     private String exportFileNameTitle; // Tên file gốc (OriginalTitle) để export
 
-    // --- Properties cho UI Binding (Giữ lại) ---
+    // --- Properties cho UI Binding (*** SỬA ĐỔI TAGS ***) ---
     private final ReadOnlyBooleanWrapper loading = new ReadOnlyBooleanWrapper(false);
 
     // Các trường Form (Editable)
     private final StringProperty title = new SimpleStringProperty("");
     private final StringProperty overview = new SimpleStringProperty("");
-    private final StringProperty tags = new SimpleStringProperty("");
+    // private final StringProperty tags = new SimpleStringProperty(""); // (ĐÃ XÓA)
+    private final ObservableList<TagModel> tagItems = FXCollections.observableArrayList(); // (*** MỚI ***)
     private final StringProperty releaseDate = new SimpleStringProperty("");
     private final StringProperty studios = new SimpleStringProperty("");
     private final StringProperty people = new SimpleStringProperty("");
@@ -82,12 +80,11 @@ public class ItemDetailViewModel {
         this.importHandler = new ItemDetailImportHandler(this);
     }
 
-    // --- Phương thức chính (ĐÃ SỬA ĐỔI) ---
+    // --- Phương thức chính (*** SỬA LỖI LOGIC LƯU ***) ---
 
     /**
      * Phương thức chính được gọi khi item được chọn.
      * Ủy thác việc tải dữ liệu cho ItemDetailLoader.
-     * (*** ĐÃ SỬA LỖI LOGIC ***)
      */
     public void setItemToDisplay(BaseItemDto item) {
 
@@ -141,7 +138,11 @@ public class ItemDetailViewModel {
                     // Cập nhật các trường editable
                     title.set(result.getTitleText());
                     overview.set(result.getOverviewText());
-                    tags.set(result.getTagsText());
+
+                    // (*** SỬA ĐỔI TAGS ***)
+                    tagItems.setAll(result.getTagItems()); // (*** MỚI ***)
+                    // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
+
                     releaseDate.set(result.getReleaseDateText());
                     studios.set(result.getStudiosText());
                     people.set(result.getPeopleText());
@@ -215,7 +216,11 @@ public class ItemDetailViewModel {
         itemPath.set("");
         isFolder.set(false);
         actionStatusMessage.set("");
-        tags.set("");
+
+        // (*** SỬA ĐỔI TAGS ***)
+        tagItems.clear(); // (*** MỚI ***)
+        // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
+
         releaseDate.set("");
         studios.set("");
         people.set("");
@@ -227,14 +232,13 @@ public class ItemDetailViewModel {
     }
 
 
-    // --- Ủy thác cho Lớp phụ trợ ---
+    // --- Ủy thác cho Lớp phụ trợ (*** SỬA ĐỔI TAGS ***) ---
 
     /**
-     * (MỚI) Ủy thác việc Lưu cho ItemDetailSaver.
-     * (*** Logic này giờ đã ĐÚNG ***)
+     * Ủy thác việc Lưu cho ItemDetailSaver.
      */
     public void saveChanges() {
-        // Check này giờ sẽ pass (vì ID và DTO được set cùng nhau)
+        // Check này giờ sẽ pass
         if (originalItemDto == null || currentItemId == null) {
             reportActionError("Lỗi: Không có item nào đang được chọn để lưu.");
             return;
@@ -243,17 +247,19 @@ public class ItemDetailViewModel {
         reportActionError("Đang lưu thay đổi lên server...");
         importHandler.hideAllReviewButtons();
 
-        // 1. Tạo một "SaveRequest" chứa các chuỗi hiện tại từ UI
+        // 1. Tạo một "SaveRequest"
+        // (*** SỬA ĐỔI TAGS ***)
         ItemDetailSaver.SaveRequest request = new ItemDetailSaver.SaveRequest(
                 originalItemDto, // DTO gốc để cập nhật
                 currentItemId,
                 title.get(),
                 overview.get(),
-                tags.get(),
+                List.copyOf(tagItems), // (*** MỚI: Gửi bản sao của List<TagModel> ***)
                 releaseDate.get(),
                 studios.get(),
                 people.get()
         );
+        // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
 
         // 2. Chạy lưu nền, sử dụng lớp Saver
         new Thread(() -> {
@@ -277,7 +283,7 @@ public class ItemDetailViewModel {
     }
 
     /**
-     * (MỚI) Ủy thác việc Import cho ItemDetailImportHandler.
+     * Ủy thác việc Import cho ItemDetailImportHandler.
      */
     public void importAndPreview(BaseItemDto importedDto) {
         if (originalItemDto == null) return;
@@ -285,8 +291,8 @@ public class ItemDetailViewModel {
     }
 
     /**
-     * (MỚI) Ủy thác việc Chấp nhận (v) cho ItemDetailImportHandler.
-     * (Đã sửa lỗi ở lần trước - Giữ nguyên)
+     * Ủy thác việc Chấp nhận (v) cho ItemDetailImportHandler.
+     * (Đã sửa lỗi ở lần trước)
      */
     public void acceptImportField(String fieldName) {
         importHandler.acceptImportField(fieldName);
@@ -294,11 +300,33 @@ public class ItemDetailViewModel {
     }
 
     /**
-     * (MỚI) Ủy thác việc Hủy bỏ (x) cho ItemDetailImportHandler.
+     * Ủy thác việc Hủy bỏ (x) cho ItemDetailImportHandler.
      */
     public void rejectImportField(String fieldName) {
         importHandler.rejectImportField(fieldName);
     }
+
+    // (*** MỚI: HÀM QUẢN LÝ TAGS ***)
+    /**
+     * Thêm một tag vào danh sách (được gọi từ Dialog).
+     */
+    public void addTag(TagModel newTag) {
+        if (newTag != null) {
+            tagItems.add(newTag);
+            // ListChangeListener trong DirtyTracker sẽ tự động phát hiện thay đổi này.
+        }
+    }
+
+    /**
+     * Xóa một tag khỏi danh sách (được gọi từ TagView chip).
+     */
+    public void removeTag(TagModel tagToRemove) {
+        if (tagToRemove != null) {
+            tagItems.remove(tagToRemove);
+            // ListChangeListener trong DirtyTracker sẽ tự động phát hiện thay đổi này.
+        }
+    }
+
 
     // --- Getters cho Export (Giữ lại) ---
     public BaseItemDto getItemForExport() {
@@ -323,7 +351,8 @@ public class ItemDetailViewModel {
     // Dùng bởi các lớp phụ trợ
     public StringProperty titleProperty() { return title; }
     public StringProperty overviewProperty() { return overview; }
-    public StringProperty tagsProperty() { return tags; }
+    // public StringProperty tagsProperty() { return tags; } // (ĐÃ XÓA)
+    public ObservableList<TagModel> getTagItems() { return tagItems; } // (*** MỚI ***)
     public StringProperty releaseDateProperty() { return releaseDate; }
     public StringProperty studiosProperty() { return studios; }
     public StringProperty peopleProperty() { return people; }
@@ -348,7 +377,7 @@ public class ItemDetailViewModel {
     // Review properties (từ import handler)
     public ReadOnlyBooleanProperty showTitleReviewProperty() { return importHandler.showTitleReviewProperty(); }
     public ReadOnlyBooleanProperty showOverviewReviewProperty() { return importHandler.showOverviewReviewProperty(); }
-    public ReadOnlyBooleanProperty showTagsReviewProperty() { return importHandler.showTagsReviewProperty(); }
+    // public ReadOnlyBooleanProperty showTagsReviewProperty() { return importHandler.showTagsReviewProperty(); } // (ĐÃ XÓA)
     public ReadOnlyBooleanProperty showReleaseDateReviewProperty() { return importHandler.showReleaseDateReviewProperty(); }
     public ReadOnlyBooleanProperty showStudiosReviewProperty() { return importHandler.showStudiosReviewProperty(); }
     public ReadOnlyBooleanProperty showPeopleReviewProperty() { return importHandler.showPeopleReviewProperty(); }

@@ -1,5 +1,8 @@
 /* * CSS cho Ứng dụng EmbyClientJavaFX
  * (CẬP NHẬT 5): Fix nền TextArea trắng, ẩn thanh cuộn (Scrollbar Policy).
+ * (CẬP NHẬT 7): Thêm style cho Tag (chip)
+ * (CẬP NHẬT 8): Thêm style cho Separator và Label (Key/Value) trong chip JSON.
+ * (CẬP NHẬT 9): Sửa lỗi hiển thị 3 vạch của Separator.
  */
 
 /* --- DARK MODE GLOBAL STYLES --- */
@@ -122,7 +125,6 @@
 }
 
 /* --- ITEM GRID CELL STYLES (Giữ nguyên) --- */
-/* ... (Giữ nguyên các style cell item ở đây) */
 .item-cell {
     -fx-background-radius: 10px;
     -fx-border-radius: 10px;
@@ -151,4 +153,90 @@
 }
 .item-cell:hover .item-title-overlay {
     -fx-opacity: 0.5;
+}
+
+
+/* --- (CẬP NHẬT 9) TAG STYLES --- */
+
+/* Cái "chip" bo tròn */
+.tag-view {
+    -fx-background-color: #383838; /* Màu nền chip */
+    -fx-background-radius: 15px; /* Bo tròn */
+    -fx-border-color: #555555;
+    -fx-border-radius: 15px;
+    -fx-padding: 4px 6px 4px 10px; /* Căn lề bên trong */
+}
+
+/* Chip cho JSON (để phân biệt) */
+.tag-view-json {
+    -fx-background-color: #004d80; /* Màu khác cho JSON */
+    -fx-border-color: #007acc;
+}
+
+/* Chữ bên trong chip (cho tag thường) */
+.tag-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+}
+
+/* (*** ĐÂY LÀ PHẦN ĐÃ SỬA LỖI ***)
+ * Dấu gạch dọc UI
+ */
+.tag-separator {
+    -fx-background-color: transparent; /* 1. Ẩn nền mặc định */
+    -fx-border-color: #99cfff;      /* 2. Vẽ đường viền (border) thay thế */
+    -fx-border-width: 0 0 0 1px;    /* 3. Chỉ vẽ đường viền bên trái, 1px */
+    -fx-padding: 0;                 /* 4. Xóa padding */
+    -fx-max-height: 15px;           /* 5. Giới hạn chiều cao dấu gạch */
+    -fx-translate-y: 1px;           /* (Tùy chọn) Căn chỉnh dọc nếu cần */
+}
+
+/* (MỚI) Label cho Key (trong chip JSON) */
+.tag-label-key {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold; /* In đậm Key */
+}
+
+/* (MỚI) Label cho Value (trong chip JSON) */
+.tag-label-value {
+    -fx-text-fill: #e0e0e0;
+    -fx-font-size: 14px;
+    -fx-font-style: italic; /* In nghiêng Value */
+}
+
+
+/* Nút xóa (✕) bên trong chip */
+.tag-delete-button {
+    -fx-background-color: #555555;
+    -fx-text-fill: #e0e0e0;
+    -fx-background-radius: 100px; /* Làm nó tròn */
+    -fx-padding: 0px 6px 0px 6px; /* Căn lề nút */
+    -fx-font-size: 12px;
+    -fx-min-width: 20px;
+    -fx-min-height: 20px;
+    -fx-border-width: 0;
+}
+.tag-view-json .tag-delete-button {
+    -fx-background-color: #007acc; /* Màu nút xóa hợp với nền JSON */
+}
+
+.tag-delete-button:hover {
+    -fx-background-color: #dc3545; /* Màu đỏ khi hover */
+    -fx-text-fill: #ffffff;
+}
+
+/* Nút "Thêm Tag (+)" */
+#addTagButton {
+    -fx-background-color: #333;
+    -fx-border-color: #555;
+    -fx-font-weight: normal;
+    -fx-text-fill: #b0b0b0;
+    -fx-font-size: 14px;
+    -fx-background-radius: 15px;
+}
+#addTagButton:hover {
+    -fx-background-color: #28a745; /* Màu xanh lá khi hover */
+    -fx-border-color: #28a745;
+    -fx-text-fill: #ffffff;
 }

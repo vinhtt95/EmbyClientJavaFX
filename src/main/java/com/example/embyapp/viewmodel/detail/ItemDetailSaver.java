@@ -1,11 +1,10 @@
-// Đặt tại: src/main/java/com/example/embyapp/viewmodel/detail/ItemDetailSaver.java
 package com.example.embyapp.viewmodel.detail;
 
 import com.example.emby.EmbyClient.ApiException;
 import com.example.emby.EmbyClient.Java.ItemUpdateServiceApi;
 import com.example.emby.modelEmby.BaseItemDto;
 import com.example.emby.modelEmby.BaseItemPerson;
-import com.example.emby.modelEmby.NameLongIdPair;
+import com.example.emby.modelEmby.NameLongIdPair; // (*** QUAN TRỌNG ***)
 import com.example.emby.modelEmby.PersonType;
 import com.example.embyapp.service.EmbyService;
 import org.threeten.bp.OffsetDateTime;
@@ -18,9 +17,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Lớp phụ trợ (Helper class) cho ItemDetailViewModel.
- * Chuyên trách việc Phân tích (Parse) dữ liệu từ UI (String)
- * và Lưu (Save) thay đổi về server.
+ * (CẬP NHẬT 7)
+ * - Sửa logic parse để đọc List<TagModel> và serialize nó thành List<String>.
+ * - Ghi List<String> này vào dto.setTags(...).
+ * (CẬP NHẬT 10)
+ * - Sửa logic parse để tạo List<NameLongIdPair> và ghi vào dto.setTagItems(...).
  */
 public class ItemDetailSaver {
 
@@ -40,7 +41,7 @@ public class ItemDetailSaver {
      */
     public void saveChanges(SaveRequest request) throws ApiException {
         // 1. Parse dữ liệu từ String (UI) vào DTO
-        BaseItemDto dtoToSave = parseUiStringsToDto(request);
+        BaseItemDto dtoToSave = parseUiToDto(request); // Đổi tên hàm
 
         // 2. Gọi API
         ItemUpdateServiceApi itemUpdateServiceApi = embyService.getItemUpdateServiceApi();
@@ -52,20 +53,33 @@ public class ItemDetailSaver {
     }
 
     /**
+     * (*** SỬA ĐỔI LOGIC LƯU TAGS ***)
      * Logic phân tích (parse) các chuỗi từ UI về lại DTO.
      */
-    private BaseItemDto parseUiStringsToDto(SaveRequest request) {
+    private BaseItemDto parseUiToDto(SaveRequest request) { // Đổi tên hàm
         BaseItemDto dto = request.getOriginalDto();
 
         dto.setName(request.getTitle());
         dto.setOverview(request.getOverview());
 
-        // Parse Tags (String -> List<String>)
-        List<String> tagsList = Arrays.stream(request.getTags().split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
+        // (*** SỬA ĐỔI TAGS ***)
+        // Parse Tags (List<TagModel> -> List<NameLongIdPair>)
+        List<NameLongIdPair> tagItemsToSave = request.getTagItems().stream()
+                .map(tagModel -> {
+                    NameLongIdPair pair = new NameLongIdPair();
+                    // Lấy chuỗi đã serialize (JSON hoặc thường) làm Name
+                    pair.setName(tagModel.serialize());
+                    // ID có thể để null, server sẽ tự xử lý
+                    pair.setId(null);
+                    return pair;
+                })
                 .collect(Collectors.toList());
-        dto.setTags(tagsList);
+        // Ghi vào trường "TagItems" thay vì "Tags"
+        dto.setTagItems(tagItemsToSave);
+        // Có thể xóa trường Tags cũ để tránh xung đột (tùy chọn, tùy server xử lý)
+        // dto.setTags(null);
+        // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
+
 
         // Parse Studios (String -> List<NameLongIdPair>)
         List<NameLongIdPair> studiosList = Arrays.stream(request.getStudios().split(","))
@@ -104,23 +118,26 @@ public class ItemDetailSaver {
 
     /**
      * Lớp POJO nội bộ để chứa yêu cầu lưu (SaveRequest).
+     * (Đã sửa ở lần trước, giữ nguyên)
      */
     public static class SaveRequest {
         private final BaseItemDto originalDto;
         private final String itemId;
         private final String title;
         private final String overview;
-        private final String tags;
+        private final List<TagModel> tagItems;
         private final String releaseDate;
         private final String studios;
         private final String people;
 
-        public SaveRequest(BaseItemDto originalDto, String itemId, String title, String overview, String tags, String releaseDate, String studios, String people) {
+        public SaveRequest(BaseItemDto originalDto, String itemId, String title, String overview,
+                           List<TagModel> tagItems,
+                           String releaseDate, String studios, String people) {
             this.originalDto = originalDto;
             this.itemId = itemId;
             this.title = title;
             this.overview = overview;
-            this.tags = tags;
+            this.tagItems = tagItems;
             this.releaseDate = releaseDate;
             this.studios = studios;
             this.people = people;
@@ -131,7 +148,7 @@ public class ItemDetailSaver {
         public String getItemId() { return itemId; }
         public String getTitle() { return title; }
         public String getOverview() { return overview; }
-        public String getTags() { return tags; }
+        public List<TagModel> getTagItems() { return tagItems; }
         public String getReleaseDate() { return releaseDate; }
         public String getStudios() { return studios; }
         public String getPeople() { return people; }

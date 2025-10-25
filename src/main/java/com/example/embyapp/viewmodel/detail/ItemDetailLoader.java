@@ -1,11 +1,10 @@
-// Đặt tại: src/main/java/com/example/embyapp/viewmodel/detail/ItemDetailLoader.java
 package com.example.embyapp.viewmodel.detail;
 
 import com.example.emby.EmbyClient.ApiException;
 import com.example.emby.modelEmby.BaseItemDto;
 import com.example.emby.modelEmby.BaseItemPerson;
 import com.example.emby.modelEmby.ImageInfo;
-import com.example.emby.modelEmby.NameLongIdPair;
+import com.example.emby.modelEmby.NameLongIdPair; // (*** IMPORT NÀY RẤT QUAN TRỌNG ***)
 import com.example.embyapp.service.EmbyService;
 import com.example.embyapp.service.ItemRepository;
 import org.threeten.bp.OffsetDateTime;
@@ -20,9 +19,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * Lớp phụ trợ (Helper class) cho ItemDetailViewModel.
- * Chuyên trách việc Tải (Load) và Định dạng (Format) dữ liệu từ Repository
- * để chuẩn bị cho UI binding.
+ * (CẬP NHẬT 7)
+ * - Sửa loadItemData để đọc từ getTagItems() thay vì getTags().
+ * - Phân tích (parse) NameLongIdPair thành List<TagModel>.
+ * - LoadResult giờ chứa List<TagModel> thay vì String.
  */
 public class ItemDetailLoader {
 
@@ -63,8 +63,23 @@ public class ItemDetailLoader {
         result.setPathText(fullDetails.getPath() != null ? fullDetails.getPath() : "Không có đường dẫn");
         result.setFolder(fullDetails.isIsFolder() != null && fullDetails.isIsFolder());
 
+        // (*** SỬA ĐỔI TAGS ***)
         // Định dạng các trường editable
-        result.setTagsText(listToString(fullDetails.getTags()));
+        // result.setTagsText(listToString(fullDetails.getTags())); // (ĐÃ XÓA)
+
+        // (*** MỚI: Phân tích TagItems ***)
+        List<TagModel> parsedTags = new ArrayList<>();
+        // Đọc từ "TagItems" (danh sách NameLongIdPair)
+        if (fullDetails.getTagItems() != null) {
+            for (NameLongIdPair tagPair : fullDetails.getTagItems()) {
+                if (tagPair.getName() != null) {
+                    parsedTags.add(TagModel.parse(tagPair.getName()));
+                }
+            }
+        }
+        result.setTagItems(parsedTags);
+        // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
+
         result.setReleaseDateText(dateToString(fullDetails.getPremiereDate()));
         result.setStudiosText(studiosToString(fullDetails.getStudios()));
         result.setPeopleText(peopleToString(fullDetails.getPeople()));
@@ -149,10 +164,12 @@ public class ItemDetailLoader {
 
     /**
      * Lớp POJO nội bộ để chứa kết quả tải và định dạng.
+     * (*** SỬA ĐỔI TAGS ***)
      */
     public static class LoadResult {
         private final BaseItemDto fullDetails;
-        private String titleText, overviewText, tagsText, releaseDateText, studiosText, peopleText;
+        private String titleText, overviewText, releaseDateText, studiosText, peopleText; // (tagsText đã bị xóa)
+        private List<TagModel> tagItems; // (*** MỚI ***)
         private String yearText, taglineText, genresText, runtimeText, pathText;
         private String primaryImageUrl, originalTitleForExport;
         private boolean isFolder;
@@ -169,7 +186,7 @@ public class ItemDetailLoader {
             Map<String, String> originals = new HashMap<>();
             originals.put("title", titleText);
             originals.put("overview", overviewText);
-            originals.put("tags", tagsText);
+            // (Không cần 'tags' ở đây nữa, DirtyTracker sẽ lấy List<TagModel> riêng)
             originals.put("releaseDate", releaseDateText);
             originals.put("studios", studiosText);
             originals.put("people", peopleText);
@@ -182,8 +199,12 @@ public class ItemDetailLoader {
         public void setTitleText(String titleText) { this.titleText = titleText; }
         public String getOverviewText() { return overviewText; }
         public void setOverviewText(String overviewText) { this.overviewText = overviewText; }
-        public String getTagsText() { return tagsText; }
-        public void setTagsText(String tagsText) { this.tagsText = tagsText; }
+
+        // (*** SỬA ĐỔI TAGS ***)
+        public List<TagModel> getTagItems() { return tagItems; }
+        public void setTagItems(List<TagModel> tagItems) { this.tagItems = tagItems; }
+        // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
+
         public String getReleaseDateText() { return releaseDateText; }
         public void setReleaseDateText(String releaseDateText) { this.releaseDateText = releaseDateText; }
         public String getStudiosText() { return studiosText; }

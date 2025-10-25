@@ -25,7 +25,8 @@
             </font>
         </Label>
         <ScrollPane fx:id="mainScrollPane" fitToWidth="true" hbarPolicy="NEVER"
-                    style="-fx-background-color: transparent; -fx-background: transparent;" visible="false" StackPane.alignment="TOP_LEFT">
+                    style="-fx-background-color: transparent; -fx-background: transparent;"
+                    visible="false" StackPane.alignment="TOP_LEFT">
             <content>
                 <VBox fx:id="detailContentPane" spacing="10.0">
                     <padding>
@@ -40,7 +41,8 @@
                         </ImageView>
 
                         <HBox alignment="CENTER_LEFT" spacing="10.0">
-                            <TextField fx:id="titleTextField" promptText="Tiêu đề" style="-fx-font-size: 24px; -fx-font-weight: bold;" HBox.hgrow="ALWAYS"/>
+                            <TextField fx:id="titleTextField" promptText="Tiêu đề" style="-fx-font-size: 24px; -fx-font-weight: bold;"
+                                       HBox.hgrow="ALWAYS"/>
                             <HBox fx:id="reviewTitleContainer" alignment="CENTER" spacing="5.0" visible="false" managed="false">
                                 <children>
                                     <Button fx:id="acceptTitleButton" text="✓" style="-fx-font-size: 14px; -fx-background-color: #28a745; -fx-text-fill: white;"/>
@@ -73,22 +75,21 @@
                         </VBox>
 
                         <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <VBox.margin>
+                                <Insets top="10.0" />
+                            </VBox.margin>
                             <children>
-                                <Label text="Tags" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;">
-                                    <VBox.margin>
-                                        <Insets top="10.0" />
-                                    </VBox.margin>
-                                </Label>
-                                <HBox fx:id="reviewTagsContainer" alignment="CENTER" spacing="5.0" visible="false" managed="false">
-                                    <children>
-                                        <Button fx:id="acceptTagsButton" text="✓" style="-fx-font-size: 12px; -fx-background-color: #28a745; -fx-text-fill: white;"/>
-                                        <Button fx:id="rejectTagsButton" text="✕" style="-fx-font-size: 12px; -fx-background-color: #dc3545; -fx-text-fill: white;"/>
-                                    </children>
-                                </HBox>
+                                <Label text="Tags" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
                             </children>
                         </HBox>
-                        <TextField fx:id="tagsTextField" promptText="Chưa có tags (phân cách bởi dấu phẩy ,)" />
 
+                        <FlowPane fx:id="tagsFlowPane" hgap="8.0" vgap="8.0" prefWrapLength="200.0" />
+
+                        <Button fx:id="addTagButton" onAction="#handleAddTagButtonAction" maxWidth="Infinity" style="-fx-font-size: 14px; -fx-background-color: #333; -fx-border-color: #555;" text="Thêm Tag (+)">
+                            <VBox.margin>
+                                <Insets top="5.0" />
+                            </VBox.margin>
+                        </Button>
                         <VBox fx:id="fileOnlyContainer" managed="false" spacing="10.0" visible="false">
                             <children>
                                 <Label fx:id="taglineLabel" text="Tagline goes here..." textFill="#b3b3b3" wrapText="true">

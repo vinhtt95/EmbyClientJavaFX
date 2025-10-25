@@ -25,155 +25,218 @@
             </font>
         </Label>
         <ScrollPane fx:id="mainScrollPane" fitToWidth="true" hbarPolicy="NEVER"
+
                     style="-fx-background-color: transparent; -fx-background: transparent;"
                     visible="false" StackPane.alignment="TOP_LEFT">
             <content>
                 <VBox fx:id="detailContentPane" spacing="10.0">
                     <padding>
                         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+
                     </padding>
                     <children>
 
-                        <ImageView fx:id="primaryImageView" fitHeight="450.0" pickOnBounds="true" preserveRatio="true">
+                        <StackPane fx:id="primaryImageContainer" alignment="BOTTOM_RIGHT" style="-fx-cursor: hand;">
+                            <children>
+                                <ImageView fx:id="primaryImageView" fitHeight="450.0" pickOnBounds="true" preserveRatio="true" mouseTransparent="true" />
+                                <Button fx:id="savePrimaryImageButton" text="Lưu ảnh" visible="false" styleClass="image-save-button" StackPane.alignment="BOTTOM_RIGHT">
+                                    <StackPane.margin>
+                                        <Insets bottom="10.0" right="10.0" />
+                                    </StackPane.margin>
+                                </Button>
+                            </children>
                             <VBox.margin>
                                 <Insets bottom="10.0" />
                             </VBox.margin>
-                        </ImageView>
-
+                        </StackPane>
                         <HBox alignment="CENTER_LEFT" spacing="10.0">
+
                             <TextField fx:id="titleTextField" promptText="Tiêu đề" style="-fx-font-size: 24px; -fx-font-weight: bold;"
                                        HBox.hgrow="ALWAYS"/>
                             <HBox fx:id="reviewTitleContainer" alignment="CENTER" spacing="5.0" visible="false" managed="false">
                                 <children>
+
                                     <Button fx:id="acceptTitleButton" text="✓" style="-fx-font-size: 14px; -fx-background-color: #28a745; -fx-text-fill: white;"/>
                                     <Button fx:id="rejectTitleButton" text="✕" style="-fx-font-size: 14px; -fx-background-color: #dc3545; -fx-text-fill: white;"/>
                                 </children>
+
                             </HBox>
                         </HBox>
 
                         <HBox spacing="10.0" alignment="CENTER_LEFT">
                             <children>
+
                                 <Button fx:id="saveButton" onAction="#handleSaveButtonAction" text="Lưu thay đổi" HBox.hgrow="ALWAYS" maxWidth="Infinity" disable="true"/>
                                 <Button fx:id="importButton" onAction="#handleImportButtonAction" text="Import JSON"/>
-                                <Button fx:id="exportButton" onAction="#handleExportButtonAction" text="Export JSON"/>
+                                <Button
+                                        fx:id="exportButton" onAction="#handleExportButtonAction" text="Export JSON"/>
                             </children>
                             <VBox.margin>
                                 <Insets top="5.0" />
+
                             </VBox.margin>
                         </HBox>
 
                         <VBox fx:id="pathContainer" spacing="5.0" visible="false">
+
                             <VBox.margin>
                                 <Insets top="10.0" />
                             </VBox.margin>
                             <children>
-                                <Label text="Đường dẫn trên máy" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
+
+                                <Label text="Đường dẫn trên máy" textFill="WHITE" style="-fx-font-weight: bold;
+-fx-font-size: 14px;" />
                                 <TextField fx:id="pathTextField" editable="false" />
                                 <Button fx:id="openButton" maxWidth="Infinity" onAction="#handleOpenButtonAction" text="Mở" />
+
                                 <Label fx:id="actionStatusLabel" textFill="RED" wrapText="true" />
                             </children>
                         </VBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+
+                            <VBox.margin>
+                                <Insets top="10.0" />
+                            </VBox.margin>
+
+                            <children>
+                                <Label text="Tags" textFill="WHITE" style="-fx-font-weight: bold;
+-fx-font-size: 14px;"/>
+                            </children>
+                        </HBox>
+
+                        <FlowPane fx:id="tagsFlowPane" hgap="8.0" vgap="8.0" prefWrapLength="200.0" />
+
+
+                        <Button fx:id="addTagButton" onAction="#handleAddTagButtonAction" maxWidth="Infinity" style="-fx-font-size: 14px; -fx-background-color: #333;
+-fx-border-color: #555;" text="Thêm Tag (+)">
+                            <VBox.margin>
+                                <Insets top="5.0" />
+                            </VBox.margin>
+
+                        </Button>
+                        <VBox fx:id="fileOnlyContainer" managed="false" spacing="10.0" visible="false">
+                            <children>
+
+                                <Label fx:id="taglineLabel" text="Tagline goes here..." textFill="#b3b3b3" wrapText="true">
+                                    <font>
+                                        <Font name="System Italic" size="16.0" />
+
+                                    </font>
+                                </Label>
+                                <Label fx:id="genresLabel" text="Genres: Action, Sci-Fi, Thriller" textFill="#b3b3b3" wrapText="true"
+                                />
+
+                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                    <children>
+
+                                        <Label text="Ngày phát hành" textFill="WHITE" style="-fx-font-weight: bold;
+-fx-font-size: 14px;" />
+                                        <HBox fx:id="reviewReleaseDateContainer" alignment="CENTER" spacing="5.0" visible="false" managed="false">
+                                            <children>
+
+                                                <Button fx:id="acceptReleaseDateButton" text="✓" style="-fx-font-size: 12px;
+-fx-background-color: #28a745; -fx-text-fill: white;"/>
+                                                <Button fx:id="rejectReleaseDateButton" text="✕" style="-fx-font-size: 12px;
+-fx-background-color: #dc3545; -fx-text-fill: white;"/>
+                                            </children>
+                                        </HBox>
+
+                                    </children>
+                                </HBox>
+                                <TextField fx:id="releaseDateTextField" promptText="Định dạng dd/MM/yyyy" />
+
+
+                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                    <children>
+
+                                        <Label text="Studios" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
+                                        <HBox fx:id="reviewStudiosContainer" alignment="CENTER" spacing="5.0" visible="false" managed="false">
+                                            <children>
+
+                                                <Button fx:id="acceptStudiosButton" text="✓" style="-fx-font-size: 12px;
+-fx-background-color: #28a745; -fx-text-fill: white;"/>
+                                                <Button fx:id="rejectStudiosButton" text="✕" style="-fx-font-size: 12px;
+-fx-background-color: #dc3545; -fx-text-fill: white;"/>
+                                            </children>
+                                        </HBox>
+
+                                    </children>
+                                </HBox>
+                                <TextField fx:id="studiosTextField" promptText="Tên studio (phân cách bởi dấu phẩy ,)" />
+
+
+                                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                    <children>
+
+                                        <Label text="People" textFill="WHITE" style="-fx-font-weight: bold;
+-fx-font-size: 14px;" />
+                                        <HBox fx:id="reviewPeopleContainer" alignment="CENTER" spacing="5.0" visible="false" managed="false">
+                                            <children>
+
+                                                <Button fx:id="acceptPeopleButton" text="✓" style="-fx-font-size: 12px;
+-fx-background-color: #28a745; -fx-text-fill: white;"/>
+                                                <Button fx:id="rejectPeopleButton" text="✕" style="-fx-font-size: 12px;
+-fx-background-color: #dc3545; -fx-text-fill: white;"/>
+                                            </children>
+                                        </HBox>
+
+                                    </children>
+                                </HBox>
+                                <TextField fx:id="peopleTextField" promptText="Tên người (phân cách bởi dấu phẩy ,)" />
+
+
+                                <HBox alignment="CENTER_LEFT" spacing="10.0" VBox.vgrow="NEVER">
+                                    <children>
+
+                                        <Label text="Mô tả" textFill="WHITE" style="-fx-font-weight: bold;
+-fx-font-size: 16px;">
+                                            <VBox.margin>
+                                                <Insets top="10.0" />
+
+                                            </VBox.margin>
+                                        </Label>
+
+                                        <HBox fx:id="reviewOverviewContainer" alignment="CENTER" spacing="5.0" visible="false" managed="false">
+                                            <children>
+
+                                                <Button fx:id="acceptOverviewButton" text="✓" style="-fx-font-size: 12px;
+-fx-background-color: #28a745; -fx-text-fill: white;"/>
+                                                <Button fx:id="rejectOverviewButton" text="✕" style="-fx-font-size: 12px;
+-fx-background-color: #dc3545; -fx-text-fill: white;"/>
+                                            </children>
+                                        </HBox>
+
+                                    </children>
+                                </HBox>
+                                <TextArea fx:id="overviewTextArea" prefHeight="200.0" promptText="Mô tả chi tiết..." wrapText="true" />
+
+
+                            </children>
+                        </VBox>
+
+                        <Separator prefWidth="200.0">
+
+                            <VBox.margin>
+                                <Insets top="10.0" />
+                            </VBox.margin>
+                        </Separator>
 
                         <HBox alignment="CENTER_LEFT" spacing="10.0">
                             <VBox.margin>
                                 <Insets top="10.0" />
                             </VBox.margin>
                             <children>
-                                <Label text="Tags" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+                                <Label text="Gallery Ảnh Nền (Backdrops)" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 16px;" HBox.hgrow="ALWAYS" />
+                                <Button fx:id="addBackdropButton" text="+" styleClass="add-backdrop-button" />
                             </children>
                         </HBox>
-
-                        <FlowPane fx:id="tagsFlowPane" hgap="8.0" vgap="8.0" prefWrapLength="200.0" />
-
-                        <Button fx:id="addTagButton" onAction="#handleAddTagButtonAction" maxWidth="Infinity" style="-fx-font-size: 14px; -fx-background-color: #333; -fx-border-color: #555;" text="Thêm Tag (+)">
-                            <VBox.margin>
-                                <Insets top="5.0" />
-                            </VBox.margin>
-                        </Button>
-                        <VBox fx:id="fileOnlyContainer" managed="false" spacing="10.0" visible="false">
-                            <children>
-                                <Label fx:id="taglineLabel" text="Tagline goes here..." textFill="#b3b3b3" wrapText="true">
-                                    <font>
-                                        <Font name="System Italic" size="16.0" />
-                                    </font>
-                                </Label>
-                                <Label fx:id="genresLabel" text="Genres: Action, Sci-Fi, Thriller" textFill="#b3b3b3" wrapText="true" />
-
-                                <HBox alignment="CENTER_LEFT" spacing="10.0">
-                                    <children>
-                                        <Label text="Ngày phát hành" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
-                                        <HBox fx:id="reviewReleaseDateContainer" alignment="CENTER" spacing="5.0" visible="false" managed="false">
-                                            <children>
-                                                <Button fx:id="acceptReleaseDateButton" text="✓" style="-fx-font-size: 12px; -fx-background-color: #28a745; -fx-text-fill: white;"/>
-                                                <Button fx:id="rejectReleaseDateButton" text="✕" style="-fx-font-size: 12px; -fx-background-color: #dc3545; -fx-text-fill: white;"/>
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </HBox>
-                                <TextField fx:id="releaseDateTextField" promptText="Định dạng dd/MM/yyyy" />
-
-                                <HBox alignment="CENTER_LEFT" spacing="10.0">
-                                    <children>
-                                        <Label text="Studios" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
-                                        <HBox fx:id="reviewStudiosContainer" alignment="CENTER" spacing="5.0" visible="false" managed="false">
-                                            <children>
-                                                <Button fx:id="acceptStudiosButton" text="✓" style="-fx-font-size: 12px; -fx-background-color: #28a745; -fx-text-fill: white;"/>
-                                                <Button fx:id="rejectStudiosButton" text="✕" style="-fx-font-size: 12px; -fx-background-color: #dc3545; -fx-text-fill: white;"/>
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </HBox>
-                                <TextField fx:id="studiosTextField" promptText="Tên studio (phân cách bởi dấu phẩy ,)" />
-
-                                <HBox alignment="CENTER_LEFT" spacing="10.0">
-                                    <children>
-                                        <Label text="People" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
-                                        <HBox fx:id="reviewPeopleContainer" alignment="CENTER" spacing="5.0" visible="false" managed="false">
-                                            <children>
-                                                <Button fx:id="acceptPeopleButton" text="✓" style="-fx-font-size: 12px; -fx-background-color: #28a745; -fx-text-fill: white;"/>
-                                                <Button fx:id="rejectPeopleButton" text="✕" style="-fx-font-size: 12px; -fx-background-color: #dc3545; -fx-text-fill: white;"/>
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </HBox>
-                                <TextField fx:id="peopleTextField" promptText="Tên người (phân cách bởi dấu phẩy ,)" />
-
-                                <HBox alignment="CENTER_LEFT" spacing="10.0" VBox.vgrow="NEVER">
-                                    <children>
-                                        <Label text="Mô tả" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 16px;">
-                                            <VBox.margin>
-                                                <Insets top="10.0" />
-                                            </VBox.margin>
-                                        </Label>
-                                        <HBox fx:id="reviewOverviewContainer" alignment="CENTER" spacing="5.0" visible="false" managed="false">
-                                            <children>
-                                                <Button fx:id="acceptOverviewButton" text="✓" style="-fx-font-size: 12px; -fx-background-color: #28a745; -fx-text-fill: white;"/>
-                                                <Button fx:id="rejectOverviewButton" text="✕" style="-fx-font-size: 12px; -fx-background-color: #dc3545; -fx-text-fill: white;"/>
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </HBox>
-                                <TextArea fx:id="overviewTextArea" prefHeight="200.0" promptText="Mô tả chi tiết..." wrapText="true" />
-
-                            </children>
-                        </VBox>
-
-                        <Separator prefWidth="200.0">
-                            <VBox.margin>
-                                <Insets top="10.0" />
-                            </VBox.margin>
-                        </Separator>
-
-                        <Label text="Gallery Ảnh Nền (Backdrops)" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 16px;">
-                            <VBox.margin>
-                                <Insets top="10.0" />
-                            </VBox.margin>
-                        </Label>
                         <FlowPane fx:id="imageGalleryPane" hgap="10.0" prefHeight="100.0" vgap="10.0" />
 
                     </children>
                 </VBox>
             </content>
+
         </ScrollPane>
     </children>
 </StackPane>

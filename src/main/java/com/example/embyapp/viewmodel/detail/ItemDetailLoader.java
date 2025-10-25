@@ -4,7 +4,8 @@ import com.example.emby.EmbyClient.ApiException;
 import com.example.emby.modelEmby.BaseItemDto;
 import com.example.emby.modelEmby.BaseItemPerson;
 import com.example.emby.modelEmby.ImageInfo;
-import com.example.emby.modelEmby.NameLongIdPair; // (*** IMPORT NÀY RẤT QUAN TRỌNG ***)
+import com.example.emby.modelEmby.ImageType; // <-- THÊM IMPORT
+import com.example.emby.modelEmby.NameLongIdPair;
 import com.example.embyapp.service.EmbyService;
 import com.example.embyapp.service.ItemRepository;
 import org.threeten.bp.OffsetDateTime;
@@ -19,10 +20,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * (CẬP NHẬT 7)
- * - Sửa loadItemData để đọc từ getTagItems() thay vì getTags().
- * - Phân tích (parse) NameLongIdPair thành List<TagModel>.
- * - LoadResult giờ chứa List<TagModel> thay vì String.
+ * (CẬP NHẬT 19)
+ * - Sửa lỗi: Lấy URL ảnh Primary từ BaseItemDto.getImageTags() thay vì ImageInfo.
+ * - Sửa LoadResult để chỉ chứa List<ImageInfo> cho backdrops.
  */
 public class ItemDetailLoader {
 
@@ -35,25 +35,17 @@ public class ItemDetailLoader {
         this.embyService = embyService;
     }
 
-    /**
-     * Tải tất cả dữ liệu cần thiết cho một item.
-     * Hàm này được gọi từ luồng nền (background thread).
-     *
-     * @param userId ID người dùng
-     * @param itemId ID item
-     * @return một đối tượng LoadResult chứa tất cả dữ liệu đã định dạng.
-     * @throws ApiException nếu API call thất bại
-     */
     public LoadResult loadItemData(String userId, String itemId) throws ApiException {
         String serverUrl = embyService.getApiClient().getBasePath();
 
         // 1. Tải dữ liệu thô
         BaseItemDto fullDetails = itemRepository.getFullItemDetails(userId, itemId);
-        List<ImageInfo> images = itemRepository.getItemImages(itemId);
+        List<ImageInfo> images = itemRepository.getItemImages(itemId); // Tải tất cả info ảnh (chủ yếu cho backdrop)
 
         // 2. Định dạng dữ liệu
-        LoadResult result = new LoadResult(fullDetails);
+        LoadResult result = new LoadResult(fullDetails); // <-- Sửa constructor
 
+        // ... (setText, setOverview, ... giữ nguyên) ...
         result.setTitleText(fullDetails.getName() != null ? fullDetails.getName() : "");
         result.setYearText(fullDetails.getProductionYear() != null ? String.valueOf(fullDetails.getProductionYear()) : "");
         result.setOverviewText(fullDetails.getOverview() != null ? fullDetails.getOverview() : "");
@@ -63,13 +55,8 @@ public class ItemDetailLoader {
         result.setPathText(fullDetails.getPath() != null ? fullDetails.getPath() : "Không có đường dẫn");
         result.setFolder(fullDetails.isIsFolder() != null && fullDetails.isIsFolder());
 
-        // (*** SỬA ĐỔI TAGS ***)
-        // Định dạng các trường editable
-        // result.setTagsText(listToString(fullDetails.getTags())); // (ĐÃ XÓA)
-
-        // (*** MỚI: Phân tích TagItems ***)
+        // (*** LOGIC TAGS (giữ nguyên) ***)
         List<TagModel> parsedTags = new ArrayList<>();
-        // Đọc từ "TagItems" (danh sách NameLongIdPair)
         if (fullDetails.getTagItems() != null) {
             for (NameLongIdPair tagPair : fullDetails.getTagItems()) {
                 if (tagPair.getName() != null) {
@@ -78,15 +65,30 @@ public class ItemDetailLoader {
             }
         }
         result.setTagItems(parsedTags);
-        // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
 
         result.setReleaseDateText(dateToString(fullDetails.getPremiereDate()));
         result.setStudiosText(studiosToString(fullDetails.getStudios()));
         result.setPeopleText(peopleToString(fullDetails.getPeople()));
 
-        // Định dạng ảnh
-        result.setPrimaryImageUrl(findImageUrl(images, "Primary", serverUrl, itemId));
-        result.setBackdropUrls(buildBackdropUrls(images, serverUrl, itemId));
+        // (*** SỬA LỖI LOGIC ẢNH ***)
+
+        // 1. Lấy ảnh Primary (từ BaseItemDto)
+        String primaryImageUrl = null;
+        if (fullDetails.getImageTags() != null && fullDetails.getImageTags().containsKey("Primary")) {
+            String tag = fullDetails.getImageTags().get("Primary");
+            primaryImageUrl = String.format("%s/Items/%s/Images/Primary?tag=%s&maxWidth=%d&quality=90",
+                    serverUrl, itemId, tag, 600);
+        }
+        result.setPrimaryImageUrl(primaryImageUrl);
+
+        // 2. Lấy Backdrops (từ List<ImageInfo>)
+        List<ImageInfo> backdrops = images.stream()
+                .filter(img -> ImageType.BACKDROP.equals(img.getImageType()))
+                .collect(Collectors.toList());
+        result.setBackdropImages(backdrops); // <-- Dùng setter mới
+
+        // (*** KẾT THÚC SỬA LỖI ẢNH ***)
+
 
         // Lấy tên file export
         if (fullDetails.getOriginalTitle() != null && !fullDetails.getOriginalTitle().isEmpty()) {
@@ -98,12 +100,10 @@ public class ItemDetailLoader {
         return result;
     }
 
-    // --- Các hàm helper định dạng (Đã chuyển từ ViewModel cũ) ---
-
+    // --- Các hàm helper định dạng (Giữ nguyên) ---
     private String listToString(List<String> list) {
         return (list != null) ? String.join(", ", list) : "";
     }
-
     private String dateToString(OffsetDateTime date) {
         if (date == null) return "";
         try {
@@ -113,15 +113,12 @@ public class ItemDetailLoader {
             return "";
         }
     }
-
     private String studiosToString(List<NameLongIdPair> studios) {
         return (studios != null) ? studios.stream().map(NameLongIdPair::getName).filter(Objects::nonNull).collect(Collectors.joining(", ")) : "";
     }
-
     private String peopleToString(List<BaseItemPerson> people) {
         return (people != null) ? people.stream().map(BaseItemPerson::getName).filter(Objects::nonNull).collect(Collectors.joining(", ")) : "";
     }
-
     private String formatRuntime(Long runTimeTicks) {
         if (runTimeTicks == null || runTimeTicks == 0) return "";
         try {
@@ -139,54 +136,31 @@ public class ItemDetailLoader {
         }
     }
 
-    private String findImageUrl(List<ImageInfo> images, String imageType, String serverUrl, String itemId) {
-        if (images == null) return null;
-        for (ImageInfo image : images) {
-            if (imageType.equals(image.getImageType().getValue())) {
-                return String.format("%s/Items/%s/Images/%s/%d", serverUrl, itemId, imageType, 0);
-            }
-        }
-        return null;
-    }
+    // (Hàm findImageUrl và buildBackdropUrls đã bị XÓA/Thay thế)
 
-    private List<String> buildBackdropUrls(List<ImageInfo> images, String serverUrl, String itemId) {
-        List<String> urls = new ArrayList<>();
-        if (images == null) return urls;
-        for (ImageInfo imgInfo : images) {
-            if ("Backdrop".equals(imgInfo.getImageType().getValue()) && imgInfo.getImageIndex() != null) {
-                String url = String.format("%s/Items/%s/Images/Backdrop/%d?maxWidth=400",
-                        serverUrl, itemId, imgInfo.getImageIndex());
-                urls.add(url);
-            }
-        }
-        return urls;
-    }
 
     /**
-     * Lớp POJO nội bộ để chứa kết quả tải và định dạng.
-     * (*** SỬA ĐỔI TAGS ***)
+     * Lớp POJO nội bộ.
+     * (*** SỬA ĐỔI: Chứa List<ImageInfo> cho backdrops ***)
      */
     public static class LoadResult {
         private final BaseItemDto fullDetails;
-        private String titleText, overviewText, releaseDateText, studiosText, peopleText; // (tagsText đã bị xóa)
-        private List<TagModel> tagItems; // (*** MỚI ***)
+        // private final List<ImageInfo> allImages; // <-- XÓA
+        private String titleText, overviewText, releaseDateText, studiosText, peopleText;
+        private List<TagModel> tagItems;
         private String yearText, taglineText, genresText, runtimeText, pathText;
         private String primaryImageUrl, originalTitleForExport;
         private boolean isFolder;
-        private List<String> backdropUrls;
+        private List<ImageInfo> backdropImages; // <-- THAY ĐỔI
 
-        public LoadResult(BaseItemDto fullDetails) {
+        public LoadResult(BaseItemDto fullDetails) { // <-- SỬA CONSTRUCTOR
             this.fullDetails = fullDetails;
         }
 
-        /**
-         * Lấy snapshot các giá trị gốc để dùng cho DirtyTracker.
-         */
         public Map<String, String> getOriginalStrings() {
             Map<String, String> originals = new HashMap<>();
             originals.put("title", titleText);
             originals.put("overview", overviewText);
-            // (Không cần 'tags' ở đây nữa, DirtyTracker sẽ lấy List<TagModel> riêng)
             originals.put("releaseDate", releaseDateText);
             originals.put("studios", studiosText);
             originals.put("people", peopleText);
@@ -195,16 +169,13 @@ public class ItemDetailLoader {
 
         // --- Getters & Setters ---
         public BaseItemDto getFullDetails() { return fullDetails; }
+        // public List<ImageInfo> getAllImages() { return allImages; } // <-- XÓA
         public String getTitleText() { return titleText; }
         public void setTitleText(String titleText) { this.titleText = titleText; }
         public String getOverviewText() { return overviewText; }
         public void setOverviewText(String overviewText) { this.overviewText = overviewText; }
-
-        // (*** SỬA ĐỔI TAGS ***)
         public List<TagModel> getTagItems() { return tagItems; }
         public void setTagItems(List<TagModel> tagItems) { this.tagItems = tagItems; }
-        // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
-
         public String getReleaseDateText() { return releaseDateText; }
         public void setReleaseDateText(String releaseDateText) { this.releaseDateText = releaseDateText; }
         public String getStudiosText() { return studiosText; }
@@ -227,7 +198,9 @@ public class ItemDetailLoader {
         public void setOriginalTitleForExport(String originalTitleForExport) { this.originalTitleForExport = originalTitleForExport; }
         public boolean isFolder() { return isFolder; }
         public void setFolder(boolean folder) { isFolder = folder; }
-        public List<String> getBackdropUrls() { return backdropUrls; }
-        public void setBackdropUrls(List<String> backdropUrls) { this.backdropUrls = backdropUrls; }
+
+        // (*** SỬA ĐỔI GETTER/SETTER CHO BACKDROP ***)
+        public List<ImageInfo> getBackdropImages() { return backdropImages; }
+        public void setBackdropImages(List<ImageInfo> backdropImages) { this.backdropImages = backdropImages; }
     }
 }

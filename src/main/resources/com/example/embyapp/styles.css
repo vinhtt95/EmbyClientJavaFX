@@ -5,6 +5,7 @@
  * (CẬP NHẬT 9): Sửa lỗi hiển thị 3 vạch của Separator.
  * (CẬP NHẬT 14): Sửa style cho nút gợi ý tag (suggested-tag-button) giống chip.
  * (CẬP NHẬT 15): Sửa nền trắng cho ScrollPane trong dialog gợi ý tag.
+ * (CẬP NHẬT 18): Thêm style cho các nút/view cập nhật ảnh.
  */
 
 /* --- DARK MODE GLOBAL STYLES --- */
@@ -292,4 +293,67 @@
     -fx-background-color: #007acc; /* Giữ nguyên màu xanh dương đậm khi chọn */
     -fx-border-color: #009cff;    /* Viền sáng hơn chút */
     -fx-text-fill: white;
+}
+
+/* --- (CẬP NHẬT 18) IMAGE UPDATE STYLES --- */
+
+/* Nút Lưu ảnh Primary (Góc dưới phải) */
+.image-save-button {
+    -fx-background-color: #28a745; /* Màu xanh lá */
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-background-radius: 5px;
+    -fx-border-color: rgba(0,0,0,0.2);
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 10, 0.2, 0, 3);
+}
+.image-save-button:hover {
+    -fx-background-color: #218838;
+}
+
+/* Nút Thêm Backdrop (+) */
+.add-backdrop-button {
+    -fx-background-color: #28a745;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 100px; /* Tròn */
+    -fx-padding: 0px 10px 0px 10px;
+    -fx-min-width: 30px;
+    -fx-min-height: 30px;
+    -fx-border-width: 0;
+}
+.add-backdrop-button:hover {
+    -fx-background-color: #218838;
+}
+
+/* Container cho mỗi ảnh backdrop (để set relative cho nút xóa) */
+.backdrop-view {
+    -fx-background-color: #222;
+    -fx-background-radius: 5px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0.1, 0, 2);
+}
+
+/* Nút Xóa Backdrop (x) (Góc trên phải) */
+.backdrop-delete-button {
+    -fx-background-color: rgba(220, 53, 69, 0.8); /* Màu đỏ (dc3545) với opacity */
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 100px; /* Tròn */
+    -fx-padding: 0px 6px 0px 6px;
+    -fx-min-width: 20px;
+    -fx-min-height: 20px;
+    -fx-border-width: 0;
+    -fx-translate-x: 5px; /* Đẩy ra góc */
+    -fx-translate-y: -5px;
+    -fx-opacity: 0.0; /* Ẩn đi mặc định */
+}
+/* Hiện nút xóa khi hover vào container .backdrop-view */
+.backdrop-view:hover .backdrop-delete-button {
+    -fx-opacity: 1.0;
+}
+.backdrop-delete-button:hover {
+    -fx-background-color: rgba(200, 33, 49, 1.0); /* Đậm hơn khi hover */
 }

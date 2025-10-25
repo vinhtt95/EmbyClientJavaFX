@@ -20,6 +20,12 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 
+// (*** THÊM CÁC IMPORT NÀY ***)
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.prefs.Preferences;
@@ -30,6 +36,12 @@ import java.util.prefs.Preferences;
  * (CẬP NHẬT) Thêm logic lưu/tải vị trí SplitPane.
  * (CẬP NHẬT) Sửa constructor cho ItemDetailViewModel.
  * (CẬP NHẬT 2) Inject ItemDetailViewModel vào ItemGridController.
+ * (CẬP NHẬT 22 - THÊM POP-OUT DIALOG)
+ * - Thêm logic tạo và quản lý dialog pop-out.
+ * (CẬP NHẬT 23 - SỬA LỖI)
+ * - Sửa lỗi "Location is not set" khi tải FXML cho dialog.
+ * (CẬP NHẬT 24 - SỬA LỖI)
+ * - Xóa initOwner() để dialog hoạt động độc lập.
  */
 public class MainController {
 
@@ -74,6 +86,11 @@ public class MainController {
     private static final String KEY_DIVIDER_1 = "dividerPos1";
     private static final String KEY_DIVIDER_2 = "dividerPos2";
 
+    // (*** THÊM MỚI: Các trường để quản lý dialog pop-out ***)
+    private Stage detailDialog;
+    private Parent detailDialogRoot;
+    private ItemDetailController detailDialogController;
+
 
     public void setMainApp(MainApp mainApp) {
         this.mainApp = mainApp;
@@ -94,6 +111,7 @@ public class MainController {
         this.itemGridViewModel = new ItemGridViewModel(itemRepository);
 
         // (CẬP NHẬT) Sửa constructor
+        // (*** QUAN TRỌNG ***) ViewModel này sẽ được chia sẻ cho cả 2 Controller
         this.itemDetailViewModel = new ItemDetailViewModel(itemRepository, embyService);
 
         // 4. Tải FXML lồng
@@ -211,6 +229,7 @@ public class MainController {
         // --- Flow 2: Grid -> Detail ---
         itemGridViewModel.selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             // Bất kể newVal là null hay không, cứ đẩy nó sang ItemDetailViewModel
+            // (ViewModel này được chia sẻ bởi cả main-pane và dialog)
             itemDetailViewModel.setItemToDisplay(newVal);
         });
 
@@ -241,6 +260,18 @@ public class MainController {
             if (itemDetailViewModel.showStatusMessageProperty().get() && !newStatus.isEmpty()) {
                 // Nếu Detail VM muốn hiển thị status, hãy ưu tiên nó
                 viewModel.statusMessageProperty().set(newStatus);
+            }
+        });
+
+        // (*** THÊM MỚI: Flow 4 ***)
+        // --- Flow 4: Xử lý yêu cầu Pop-out Dialog từ Detail VM ---
+        itemDetailViewModel.popOutRequestProperty().addListener((obs, oldV, newV) -> {
+            // Nếu tín hiệu là 'true'
+            if (newV != null && newV) {
+                // Gọi hàm hiển thị dialog
+                showDetailDialog();
+                // Reset cờ request về null (hoặc false) để tránh lặp lại
+                Platform.runLater(() -> itemDetailViewModel.popOutRequestProperty().set(null));
             }
         });
     }
@@ -319,6 +350,85 @@ public class MainController {
             Platform.runLater(() -> {
                 mainSplitPane.setDividerPositions(pos1, pos2);
             });
+        }
+    }
+
+
+    /**
+     * (*** HÀM MỚI HOÀN TOÀN ***)
+     *
+     * Hiển thị một cửa sổ (Stage) pop-out không-modal,
+     * hiển thị cùng một ItemDetailView và binding vào cùng một ItemDetailViewModel.
+     * Cửa sổ này được tạo một lần và ẩn/hiện khi cần (để giữ state).
+     */
+    private void showDetailDialog() {
+        try {
+            // 1. Nếu dialog chưa được tạo (lần đầu tiên), hãy tạo nó
+            if (detailDialog == null) {
+                System.out.println("Đang tạo Pop-out Detail Dialog lần đầu...");
+
+                // (*** SỬA LỖI: Dùng đường dẫn tuyệt đối /com/example/embyapp/ ***)
+                URL fxmlUrl = getClass().getResource("/com/example/embyapp/ItemDetailView.fxml");
+                if (fxmlUrl == null) {
+                    throw new IOException("Không thể tìm thấy /com/example/embyapp/ItemDetailView.fxml");
+                }
+
+                FXMLLoader loader = new FXMLLoader(fxmlUrl);
+                detailDialogRoot = loader.load(); // Tải FXML
+
+                // Lấy controller của dialog
+                detailDialogController = loader.getController();
+
+                // (*** SIÊU QUAN TRỌNG ***) Inject CÙNG MỘT ViewModel
+                // Điều này làm cho dialog và main-pane luôn đồng bộ
+                detailDialogController.setViewModel(this.itemDetailViewModel);
+
+                // Tạo Scene
+                Scene scene = new Scene(detailDialogRoot);
+                if (rootPane.getScene() != null && rootPane.getScene().getStylesheets() != null) {
+                    scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
+                }
+
+                // Tạo Stage (Dialog)
+                detailDialog = new Stage();
+                detailDialog.setTitle("Chi tiết Item (Pop-out)");
+
+                if (rootPane.getScene() != null && rootPane.getScene().getWindow() != null) {
+                    // (*** SỬA ĐỔI: XÓA DÒNG NÀY ĐỂ HOẠT ĐỘNG ĐỘC LẬP ***)
+                    // detailDialog.initOwner(rootPane.getScene().getWindow());
+
+                    // Đặt kích thước theo yêu cầu (tương đương cửa sổ chính)
+                    // Chúng ta sẽ đặt nhỏ hơn một chút (80%)
+                    detailDialog.setWidth(rootPane.getScene().getWindow().getWidth() * 0.8);
+                    detailDialog.setHeight(rootPane.getScene().getWindow().getHeight() * 0.8);
+                } else {
+                    detailDialog.setWidth(1000); // Kích thước dự phòng
+                    detailDialog.setHeight(800);  // Kích thước dự phòng
+                }
+
+                // (*** QUAN TRỌNG ***) Không khóa cửa sổ chính
+                detailDialog.initModality(Modality.NONE);
+                detailDialog.setScene(scene);
+
+                // (*** QUAN TRỌNG ***) Khi user đóng dialog (nhấn 'x')
+                // chỉ ẩn (hide) nó đi, không hủy (destroy).
+                detailDialog.setOnCloseRequest(e -> {
+                    if (detailDialog != null) {
+                        detailDialog.hide();
+                    }
+                    e.consume(); // Ngăn dialog bị destroy
+                });
+            }
+
+            // 2. Hiển thị dialog (cho dù nó mới được tạo hay đã bị ẩn)
+            if (!detailDialog.isShowing()) {
+                detailDialog.show();
+            }
+            detailDialog.toFront(); // Luôn đưa lên trước
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            statusLabel.setText("Lỗi: Không thể mở dialog chi tiết. " + e.getMessage());
         }
     }
 }

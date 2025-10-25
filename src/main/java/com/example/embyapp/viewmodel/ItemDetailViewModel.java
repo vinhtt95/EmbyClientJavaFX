@@ -14,6 +14,9 @@ import javafx.collections.ObservableList;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
+// (*** THÊM IMPORT NÀY ***)
+import javafx.beans.property.ObjectProperty;
+
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -38,6 +41,8 @@ import java.time.ZoneId;
  * (CẬP NHẬT 21 - HOÀN THIỆN UPLOAD)
  * - Thêm logic upload cho saveNewPrimaryImage và uploadDroppedBackdropFiles.
  * - Thêm helper reloadPrimaryImage.
+ * (CẬP NHẬT 22 - THÊM POP-OUT DIALOG)
+ * - Thêm tín hiệu popOutRequest
  */
 public class ItemDetailViewModel {
 
@@ -78,6 +83,9 @@ public class ItemDetailViewModel {
     private final ReadOnlyBooleanWrapper showStatusMessage = new ReadOnlyBooleanWrapper(true);
     private final ReadOnlyStringWrapper actionStatusMessage = new ReadOnlyStringWrapper("");
     private final ReadOnlyBooleanWrapper primaryImageDirty = new ReadOnlyBooleanWrapper(false);
+
+    // (*** THÊM MỚI: Tín hiệu yêu cầu pop-out dialog ***)
+    private final ObjectProperty<Boolean> popOutRequest = new SimpleObjectProperty<>(null);
 
 
     // --- Constructor ---
@@ -479,6 +487,21 @@ public class ItemDetailViewModel {
             }
         }).start();
     }
+
+    // (*** THÊM MỚI: Hàm để Controller gọi ***)
+    /**
+     * Gửi tín hiệu yêu cầu MainController mở dialog pop-out.
+     */
+    public void requestPopOut() {
+        // Set giá trị thành true để kích hoạt listener trong MainController
+        popOutRequest.set(true);
+    }
+
+    // (*** THÊM MỚI: Hàm để MainController lắng nghe ***)
+    public ObjectProperty<Boolean> popOutRequestProperty() {
+        return popOutRequest;
+    }
+
 
     // (Getters cho Controller/Properties giữ nguyên)
     public String getCurrentItemId() { return currentItemId; }

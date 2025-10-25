@@ -42,6 +42,8 @@ import java.util.stream.Collectors; // <-- THÊM IMPORT
  * - Thêm FXML cho các nút ảnh mới.
  * - Sửa updateImageGallery để dùng BackdropView.
  * - Thêm handler cho click/drag-drop ảnh.
+ * (CẬP NHẬT 22 - THÊM POP-OUT DIALOG)
+ * - Sửa handleOpenButtonAction để gọi requestPopOut()
  */
 public class ItemDetailController {
 
@@ -246,7 +248,9 @@ public class ItemDetailController {
         }
     }
 
-    // (Hàm handleOpenButtonAction giữ nguyên)
+    /**
+     * (*** SỬA ĐỔI: Thêm logic requestPopOut ***)
+     */
     @FXML
     private void handleOpenButtonAction() {
         if (viewModel == null) return;
@@ -267,7 +271,16 @@ public class ItemDetailController {
                     viewModel.reportActionError("Lỗi: Đường dẫn không tồn tại.");
                     return;
                 }
+
+                // 1. Mở file/folder (như cũ)
                 Desktop.getDesktop().open(fileOrDir);
+
+                // (*** THÊM MỚI: Yêu cầu Pop-out NẾU LÀ FILE ***)
+                if (viewModel != null && !viewModel.isFolderProperty().get()) {
+                    // Chạy trên luồng JavaFX
+                    Platform.runLater(() -> viewModel.requestPopOut());
+                }
+
             } catch (Exception e) {
                 System.err.println("Lỗi khi mở đường dẫn: " + path + " | " + e.getMessage());
                 viewModel.reportActionError("Lỗi: " + e.getMessage());

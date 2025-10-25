@@ -56,7 +56,7 @@ public class ItemDetailSaver {
      * (*** SỬA ĐỔI LOGIC LƯU TAGS ***)
      * Logic phân tích (parse) các chuỗi từ UI về lại DTO.
      */
-    private BaseItemDto parseUiToDto(SaveRequest request) { // Đổi tên hàm
+    public BaseItemDto parseUiToDto(SaveRequest request) { // Đổi tên hàm
         BaseItemDto dto = request.getOriginalDto();
 
         dto.setName(request.getTitle());

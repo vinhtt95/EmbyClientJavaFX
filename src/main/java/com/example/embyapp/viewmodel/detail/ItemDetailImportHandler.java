@@ -11,158 +11,174 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet; // <-- MỚI
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set; // <-- MỚI
 import java.util.stream.Collectors;
 import org.threeten.bp.OffsetDateTime;
 
 
 /**
- * (CẬP NHẬT 7)
- * - Sửa logic import/preview cho tags để đọc TagItems và cập nhật ObservableList<TagModel>.
- * - Xóa (v/x) cho tags.
- * (CẬP NHẬT 11)
- * - Tách biệt logic dirty: Import không tự động bật isDirty.
- * - Chỉ bật isDirty khi người dùng nhấn Accept (✓) lần đầu tiên.
+ * (CẬP NHẬT 17)
+ * - Gọi startImport/endImport của DirtyTracker.
+ * - Lưu importedDto.
+ * - Theo dõi acceptedFields.
+ * - Thêm getAcceptedFields() và wasImportInProgress().
  */
 public class ItemDetailImportHandler {
 
-    private final ItemDetailViewModel viewModel; // Tham chiếu đến VM chính
+    private final ItemDetailViewModel viewModel;
+    private final ItemDetailDirtyTracker dirtyTracker; // Giữ tham chiếu
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
 
-    // Lưu trạng thái ngay trước khi import
+    // Lưu trạng thái trước import
     private final Map<String, Object> preImportState = new HashMap<>();
 
-    // (*** MỚI: Cờ quản lý trạng thái Import ***)
-    private boolean importInProgress = false;
-    private boolean anyFieldAccepted = false; // Đã nhấn Accept ít nhất 1 lần chưa?
+    // (*** MỚI: Lưu DTO đã import và các trường đã accept ***)
+    private BaseItemDto importedDto = null; // DTO gốc từ file JSON
+    private final Set<String> acceptedFields = new HashSet<>(); // Tên các trường đã nhấn (✓)
 
-    // Các BooleanProperty cho nút (v/x)
+    // Nút (v/x)
     private final ReadOnlyBooleanWrapper showTitleReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showOverviewReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showReleaseDateReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showStudiosReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showPeopleReview = new ReadOnlyBooleanWrapper(false);
 
-    public ItemDetailImportHandler(ItemDetailViewModel viewModel) {
+    public ItemDetailImportHandler(ItemDetailViewModel viewModel, ItemDetailDirtyTracker dirtyTracker) {
         this.viewModel = viewModel;
+        this.dirtyTracker = dirtyTracker;
     }
 
     /**
-     * Nhận DTO từ file import và cập nhật UI để review.
-     * (*** KHÔNG TỰ ĐỘNG BẬT isDirty NỮA ***)
+     * Nhận DTO, cập nhật UI, báo cho DirtyTracker.
      */
     public void importAndPreview(BaseItemDto importedDto) {
         if (importedDto == null) return;
 
-        clearState(); // Xóa state cũ (sẽ reset cờ importInProgress)
-        hideAllReviewButtons(); // Ẩn tất cả nút
+        this.importedDto = importedDto; // <-- Lưu DTO đã import
 
-        // (*** MỚI: Bắt đầu trạng thái import ***)
-        this.importInProgress = true;
-        this.anyFieldAccepted = false;
+        dirtyTracker.startImport(); // <-- Báo cho Tracker bắt đầu import state
 
-        // 1. Title
-        preImportState.put("title", viewModel.titleProperty().get());
-        viewModel.titleProperty().set(importedDto.getName() != null ? importedDto.getName() : "");
-        showTitleReview.set(true);
+        try {
+            clearStateExceptImportedDto(); // Xóa state cũ (trừ importedDto)
+            hideAllReviewButtons();
 
-        // 2. Overview
-        preImportState.put("overview", viewModel.overviewProperty().get());
-        viewModel.overviewProperty().set(importedDto.getOverview() != null ? importedDto.getOverview() : "");
-        showOverviewReview.set(true);
+            // acceptedFields đã được clear trong clearState
 
-        // 3. Tags
-        preImportState.put("tags", new ArrayList<>(viewModel.getTagItems()));
-        List<TagModel> importedTags = new ArrayList<>();
-        if (importedDto.getTagItems() != null) {
-            for (NameLongIdPair tagPair : importedDto.getTagItems()) {
-                if (tagPair.getName() != null) {
-                    importedTags.add(TagModel.parse(tagPair.getName()));
+            // 1. Title
+            preImportState.put("title", viewModel.titleProperty().get());
+            viewModel.titleProperty().set(importedDto.getName() != null ? importedDto.getName() : "");
+            showTitleReview.set(true);
+
+            // 2. Overview
+            preImportState.put("overview", viewModel.overviewProperty().get());
+            viewModel.overviewProperty().set(importedDto.getOverview() != null ? importedDto.getOverview() : "");
+            showOverviewReview.set(true);
+
+            // 3. Tags
+            preImportState.put("tags", new ArrayList<>(viewModel.getTagItems()));
+            List<TagModel> importedTags = new ArrayList<>();
+            if (importedDto.getTagItems() != null) {
+                for (NameLongIdPair tagPair : importedDto.getTagItems()) {
+                    if (tagPair.getName() != null) {
+                        importedTags.add(TagModel.parse(tagPair.getName()));
+                    }
                 }
             }
+            viewModel.getTagItems().setAll(importedTags);
+            // Tags không có nút accept riêng, coi như được accept ngầm khi import
+            acceptedFields.add("tags"); // <-- Tự động accept tags
+
+            // 4. Release Date
+            preImportState.put("releaseDate", viewModel.releaseDateProperty().get());
+            viewModel.releaseDateProperty().set(dateToString(importedDto.getPremiereDate()));
+            showReleaseDateReview.set(true);
+
+            // 5. Studios
+            preImportState.put("studios", viewModel.studiosProperty().get());
+            List<NameLongIdPair> importStudios = importedDto.getStudios() != null ? importedDto.getStudios() : Collections.emptyList();
+            viewModel.studiosProperty().set(studiosToString(importStudios));
+            showStudiosReview.set(true);
+
+            // 6. People
+            preImportState.put("people", viewModel.peopleProperty().get());
+            List<BaseItemPerson> importPeople = importedDto.getPeople() != null ? importedDto.getPeople() : Collections.emptyList();
+            viewModel.peopleProperty().set(peopleToString(importPeople));
+            showPeopleReview.set(true);
+
+        } finally {
+            dirtyTracker.endImport(); // <-- Báo cho Tracker kết thúc cập nhật UI
         }
-        viewModel.getTagItems().setAll(importedTags);
-
-        // 4. Release Date
-        preImportState.put("releaseDate", viewModel.releaseDateProperty().get());
-        viewModel.releaseDateProperty().set(dateToString(importedDto.getPremiereDate()));
-        showReleaseDateReview.set(true);
-
-        // 5. Studios
-        preImportState.put("studios", viewModel.studiosProperty().get());
-        List<NameLongIdPair> importStudios = importedDto.getStudios() != null ? importedDto.getStudios() : Collections.emptyList();
-        viewModel.studiosProperty().set(studiosToString(importStudios));
-        showStudiosReview.set(true);
-
-        // 6. People
-        preImportState.put("people", viewModel.peopleProperty().get());
-        List<BaseItemPerson> importPeople = importedDto.getPeople() != null ? importedDto.getPeople() : Collections.emptyList();
-        viewModel.peopleProperty().set(peopleToString(importPeople));
-        showPeopleReview.set(true);
-
-        // (*** DÒNG NÀY ĐÃ BỊ XÓA ***)
-        // viewModel.isDirtyProperty().set(true);
     }
 
     /**
-     * Người dùng nhấn (v) - Chấp nhận thay đổi.
-     * (*** SẼ BÁO CHO VIEWMODEL NẾU ĐÂY LÀ LẦN ACCEPT ĐẦU TIÊN ***)
+     * Nhấn (v) - Chấp nhận.
      */
     public void acceptImportField(String fieldName) {
-        // Ẩn nút (v/x) tương ứng
+        // Ẩn nút (v/x)
+        hideReviewButton(fieldName);
+
+        // (*** MỚI: Thêm vào set acceptedFields ***)
+        acceptedFields.add(fieldName);
+
+        // Báo cho ViewModel (ViewModel sẽ gọi forceDirty của Tracker)
+        viewModel.markAsDirtyByAccept();
+    }
+
+    /**
+     * Nhấn (x) - Hủy bỏ.
+     */
+    @SuppressWarnings("unchecked")
+    public void rejectImportField(String fieldName) {
+        // (*** MỚI: Xóa khỏi set acceptedFields ***)
+        acceptedFields.remove(fieldName);
+
+        dirtyTracker.pauseTracking(); // Tạm dừng tracker khi revert UI
+        try {
+            // Khôi phục giá trị UI
+            switch (fieldName) {
+                case "title":
+                    viewModel.titleProperty().set((String) preImportState.get("title"));
+                    break;
+                case "overview":
+                    viewModel.overviewProperty().set((String) preImportState.get("overview"));
+                    break;
+                case "tags": // Tags không có nút reject riêng, nhưng logic vẫn cần
+                    List<TagModel> originalTags = (List<TagModel>) preImportState.get("tags");
+                    if (originalTags != null) {
+                        viewModel.getTagItems().setAll(originalTags);
+                    }
+                    break;
+                case "releaseDate":
+                    viewModel.releaseDateProperty().set((String) preImportState.get("releaseDate"));
+                    break;
+                case "studios":
+                    viewModel.studiosProperty().set((String) preImportState.get("studios"));
+                    break;
+                case "people":
+                    viewModel.peopleProperty().set((String) preImportState.get("people"));
+                    break;
+            }
+            // Ẩn nút (v/x) sau khi revert
+            hideReviewButton(fieldName);
+        } finally {
+            dirtyTracker.resumeTracking(); // Bật lại tracker
+            // Tracker sẽ tự kiểm tra lại isDirty
+        }
+    }
+
+    private void hideReviewButton(String fieldName) {
         switch (fieldName) {
             case "title": showTitleReview.set(false); break;
             case "overview": showOverviewReview.set(false); break;
+            // Tags không có nút
             case "releaseDate": showReleaseDateReview.set(false); break;
             case "studios": showStudiosReview.set(false); break;
             case "people": showPeopleReview.set(false); break;
         }
-
-        // (*** MỚI: Bật isDirty nếu là lần Accept đầu tiên sau Import ***)
-        if (importInProgress && !anyFieldAccepted) {
-            anyFieldAccepted = true;
-            viewModel.markAsDirtyByAccept(); // Báo cho ViewModel
-        }
-    }
-
-    /**
-     * Người dùng nhấn (x) - Hủy bỏ thay đổi.
-     * (Logic không đổi, DirtyTracker sẽ tự xử lý)
-     */
-    @SuppressWarnings("unchecked")
-    public void rejectImportField(String fieldName) {
-        // Khôi phục giá trị UI từ preImportState
-        switch (fieldName) {
-            case "title":
-                viewModel.titleProperty().set((String) preImportState.get("title"));
-                showTitleReview.set(false);
-                break;
-            case "overview":
-                viewModel.overviewProperty().set((String) preImportState.get("overview"));
-                showOverviewReview.set(false);
-                break;
-            case "tags":
-                List<TagModel> originalTags = (List<TagModel>) preImportState.get("tags");
-                if (originalTags != null) {
-                    viewModel.getTagItems().setAll(originalTags);
-                }
-                break; // Tags không có nút (v/x) riêng nhưng vẫn cần logic revert
-            case "releaseDate":
-                viewModel.releaseDateProperty().set((String) preImportState.get("releaseDate"));
-                showReleaseDateReview.set(false);
-                break;
-            case "studios":
-                viewModel.studiosProperty().set((String) preImportState.get("studios"));
-                showStudiosReview.set(false);
-                break;
-            case "people":
-                viewModel.peopleProperty().set((String) preImportState.get("people"));
-                showPeopleReview.set(false);
-                break;
-        }
-        // Listener của DirtyTracker sẽ tự động kiểm tra lại isDirty
     }
 
     public void hideAllReviewButtons() {
@@ -174,18 +190,40 @@ public class ItemDetailImportHandler {
     }
 
     /**
-     * Xóa trạng thái và reset cờ import.
+     * Xóa state, reset cờ import, xóa accepted fields.
      */
     public void clearState() {
         preImportState.clear();
         hideAllReviewButtons();
-        // (*** MỚI: Reset cờ ***)
-        importInProgress = false;
-        anyFieldAccepted = false;
+        importedDto = null; // <-- Reset DTO đã import
+        acceptedFields.clear(); // <-- Reset accepted fields
     }
 
+    /**
+     * Xóa state nhưng giữ lại importedDto (dùng trong importAndPreview).
+     */
+    private void clearStateExceptImportedDto() {
+        preImportState.clear();
+        hideAllReviewButtons();
+        // Không reset importedDto
+        acceptedFields.clear();
+    }
+
+    // --- (*** MỚI: Getters cho ViewModel ***) ---
+    public boolean wasImportInProgress() {
+        return importedDto != null; // Có DTO import nghĩa là đang trong quá trình import
+    }
+
+    public Set<String> getAcceptedFields() {
+        return acceptedFields;
+    }
+
+    public BaseItemDto getImportedDto() {
+        return importedDto;
+    }
+
+
     // --- Hàm helper định dạng ---
-    // ... (dateToString, studiosToString, peopleToString) ...
     private String dateToString(OffsetDateTime date) {
         if (date == null) return "";
         try {

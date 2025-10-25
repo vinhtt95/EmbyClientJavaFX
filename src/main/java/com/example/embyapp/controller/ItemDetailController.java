@@ -270,7 +270,10 @@ public class ItemDetailController {
     private void handleSaveButtonAction() {
         System.out.println("Nút Lưu đã được nhấn. Gọi ViewModel.saveChanges().");
         if (viewModel != null) {
+            System.out.println("viewModel note null.");
             viewModel.saveChanges();
+        } else{
+            System.out.println("viewModel is null.");
         }
     }
 

@@ -1,12 +1,12 @@
 package com.example.embyapp.service;
 
-import com.example.emby.EmbyClient.ApiClient;
-import com.example.emby.EmbyClient.ApiException;
-import com.example.emby.EmbyClient.Java.ItemsServiceApi;
-import com.example.emby.EmbyClient.Java.TagServiceApi;
-import com.example.emby.modelEmby.QueryResultBaseItemDto;
-import com.example.emby.modelEmby.QueryResultUserLibraryTagItem;
-import com.example.emby.modelEmby.UserLibraryTagItem;
+import embyclient.ApiClient;
+import embyclient.ApiException;
+import embyclient.api.ItemsServiceApi;
+import embyclient.api.TagServiceApi;
+import embyclient.model.QueryResultBaseItemDto;
+import embyclient.model.QueryResultUserLibraryTagItem;
+import embyclient.model.UserLibraryTagItem;
 
 import java.util.Collections;
 import java.util.List;

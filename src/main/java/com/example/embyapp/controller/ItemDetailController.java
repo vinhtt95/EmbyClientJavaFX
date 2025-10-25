@@ -1,7 +1,7 @@
 package com.example.embyapp.controller;
 
-import com.example.emby.modelEmby.BaseItemDto;
-import com.example.emby.modelEmby.ImageInfo; // <-- THÊM IMPORT
+import embyclient.model.BaseItemDto;
+import embyclient.model.ImageInfo; // <-- THÊM IMPORT
 import com.example.embyapp.MainApp;
 import com.example.embyapp.service.EmbyService; // <-- THÊM IMPORT
 import com.example.embyapp.service.JsonFileHandler;

@@ -1,6 +1,6 @@
 package com.example.embyapp.controller;
 
-import com.example.emby.modelEmby.ImageInfo;
+import embyclient.model.ImageInfo;
 import com.example.embyapp.viewmodel.detail.ImageUrlHelper;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;

@@ -1,8 +1,8 @@
 package com.example.embyapp.service;
 
-import com.example.emby.EmbyClient.ApiException;
-import com.example.emby.EmbyClient.Java.UserServiceApi;
-import com.example.emby.modelEmby.UserDto;
+import embyclient.api.UserServiceApi;
+import embyclient.model.UserDto;
+import embyclient.ApiException;
 
 /**
  * Repository (Kho chứa) chuyên xử lý các tác vụ liên quan đến dữ liệu User.

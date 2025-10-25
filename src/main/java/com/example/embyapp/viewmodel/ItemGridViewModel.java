@@ -1,8 +1,8 @@
 package com.example.embyapp.viewmodel;
 
-import com.example.emby.EmbyClient.ApiException;
-import com.example.emby.modelEmby.BaseItemDto;
-import com.example.emby.modelEmby.QueryResultBaseItemDto;
+import embyclient.ApiException;
+import embyclient.model.BaseItemDto;
+import embyclient.model.QueryResultBaseItemDto;
 import com.example.embyapp.service.ItemRepository;
 import javafx.application.Platform;
 import javafx.beans.property.*;

@@ -1,17 +1,17 @@
 package com.example.embyapp.service;
 
-import com.example.emby.EmbyClient.ApiClient;
-import com.example.emby.EmbyClient.ApiException;
+import embyclient.ApiClient;
+import embyclient.ApiException;
 // *** THÊM CÁC IMPORT BỊ THIẾU ***
-import com.example.emby.modelEmby.AuthenticationAuthenticationResult;
-import com.example.emby.modelEmby.SystemInfo;
-import com.example.emby.modelEmby.UserDto;
+import embyclient.model.AuthenticationAuthenticationResult;
+import embyclient.model.SystemInfo;
+import embyclient.model.UserDto;
 // *** KẾT THÚC THÊM IMPORT ***
-import com.example.emby.EmbyClient.Java.ImageServiceApi;
-import com.example.emby.EmbyClient.Java.ItemUpdateServiceApi;
-import com.example.emby.EmbyClient.Java.ItemsServiceApi;
-import com.example.emby.EmbyClient.Java.SystemServiceApi;
-import com.example.emby.EmbyClient.Java.UserServiceApi;
+import embyclient.api.ImageServiceApi;
+import embyclient.api.ItemUpdateServiceApi;
+import embyclient.api.ItemsServiceApi;
+import embyclient.api.SystemServiceApi;
+import embyclient.api.UserServiceApi;
 import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;

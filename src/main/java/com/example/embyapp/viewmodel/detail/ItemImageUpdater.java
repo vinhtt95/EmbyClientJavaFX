@@ -1,8 +1,8 @@
 package com.example.embyapp.viewmodel.detail;
 
-import com.example.emby.EmbyClient.Java.ImageServiceApi;
-import com.example.emby.modelEmby.ImageInfo;
-import com.example.emby.modelEmby.ImageType;
+import embyclient.api.ImageServiceApi;
+import embyclient.model.ImageInfo;
+import embyclient.model.ImageType;
 import com.example.embyapp.service.EmbyService; // Correct import
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;

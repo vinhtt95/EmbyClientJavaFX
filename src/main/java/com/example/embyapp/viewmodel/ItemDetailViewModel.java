@@ -1,8 +1,8 @@
 package com.example.embyapp.viewmodel;
 
-import com.example.emby.EmbyClient.ApiException;
-import com.example.emby.EmbyClient.Java.ItemUpdateServiceApi;
-import com.example.emby.modelEmby.*; // <-- Import tổng quát
+import embyclient.ApiException;
+import embyclient.api.ItemUpdateServiceApi;
+import embyclient.model.*; // <-- Import tổng quát
 import com.example.embyapp.service.EmbyService;
 import com.example.embyapp.service.ItemRepository;
 import com.example.embyapp.viewmodel.detail.*; // <-- Import tổng quát

@@ -1,11 +1,11 @@
 package com.example.embyapp.viewmodel.detail;
 
-import com.example.emby.EmbyClient.ApiException;
-import com.example.emby.EmbyClient.Java.ItemUpdateServiceApi;
-import com.example.emby.modelEmby.BaseItemDto;
-import com.example.emby.modelEmby.BaseItemPerson;
-import com.example.emby.modelEmby.NameLongIdPair; // (*** QUAN TRỌNG ***)
-import com.example.emby.modelEmby.PersonType;
+import embyclient.ApiException;
+import embyclient.api.ItemUpdateServiceApi;
+import embyclient.model.BaseItemDto;
+import embyclient.model.BaseItemPerson;
+import embyclient.model.NameLongIdPair; // (*** QUAN TRỌNG ***)
+import embyclient.model.PersonType;
 import com.example.embyapp.service.EmbyService;
 import org.threeten.bp.OffsetDateTime;
 
@@ -97,7 +97,7 @@ public class ItemDetailSaver {
         List<BaseItemPerson> peopleList = Arrays.stream(request.getPeople().split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
-                .map(name -> new BaseItemPerson(name, PersonType.ACTOR)) // Mặc định là Actor
+                .map(name -> new BaseItemPerson()) // Mặc định là Actor
                 .collect(Collectors.toList());
         dto.setPeople(peopleList);
 

@@ -1,6 +1,6 @@
 package com.example.embyapp.service;
 
-import com.example.emby.modelEmby.BaseItemDto;
+import embyclient.model.BaseItemDto;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import javafx.stage.FileChooser;

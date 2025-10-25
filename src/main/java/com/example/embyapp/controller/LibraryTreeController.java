@@ -1,6 +1,6 @@
 package com.example.embyapp.controller;
 
-import com.example.emby.modelEmby.BaseItemDto;
+import embyclient.model.BaseItemDto;
 import com.example.embyapp.viewmodel.LibraryTreeViewModel;
 import javafx.beans.value.ChangeListener; // Thêm import
 import javafx.fxml.FXML;

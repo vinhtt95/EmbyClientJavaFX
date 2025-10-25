@@ -3,7 +3,7 @@ package com.example.embyapp.controller;
 import com.example.embyapp.service.EmbyService; // (*** MỚI IMPORT ***)
 import com.example.embyapp.service.RequestEmby; // (*** MỚI IMPORT ***)
 import com.example.embyapp.viewmodel.detail.TagModel;
-import com.example.emby.modelEmby.UserLibraryTagItem; // (*** MỚI IMPORT ***)
+import embyclient.model.UserLibraryTagItem; // (*** MỚI IMPORT ***)
 import javafx.application.Platform; // (*** MỚI IMPORT ***)
 import javafx.fxml.FXML;
 import javafx.scene.control.RadioButton;

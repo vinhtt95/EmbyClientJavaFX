@@ -11,10 +11,10 @@ module com.example.embyapp {
 
     requires java.prefs;
     requires java.sql;
-    requires emby.sdk.java;
     requires okhttp;
 
     requires java.desktop;
+    requires eemby.sdk.java;
 
     opens com.example.embyapp to javafx.fxml, javafx.graphics;
     opens com.example.embyapp.controller to javafx.fxml;

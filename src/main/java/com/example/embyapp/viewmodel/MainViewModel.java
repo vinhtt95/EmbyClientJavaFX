@@ -1,7 +1,7 @@
 package com.example.embyapp.viewmodel;
 
-import com.example.emby.modelEmby.AuthenticationAuthenticationResult;
-import com.example.emby.modelEmby.UserDto;
+import embyclient.model.AuthenticationAuthenticationResult;
+import embyclient.model.UserDto;
 import com.example.embyapp.service.EmbyService;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;

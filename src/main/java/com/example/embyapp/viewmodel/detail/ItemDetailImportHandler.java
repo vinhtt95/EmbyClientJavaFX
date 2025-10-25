@@ -1,8 +1,8 @@
 package com.example.embyapp.viewmodel.detail;
 
-import com.example.emby.modelEmby.BaseItemDto;
-import com.example.emby.modelEmby.BaseItemPerson;
-import com.example.emby.modelEmby.NameLongIdPair;
+import embyclient.model.BaseItemDto;
+import embyclient.model.BaseItemPerson;
+import embyclient.model.NameLongIdPair;
 import com.example.embyapp.viewmodel.ItemDetailViewModel;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;

@@ -1,6 +1,6 @@
 package com.example.embyapp.controller;
 
-import com.example.emby.modelEmby.BaseItemDto;
+import embyclient.model.BaseItemDto;
 import com.example.embyapp.MainApp;
 import com.example.embyapp.service.EmbyService;
 import com.example.embyapp.service.ItemRepository;

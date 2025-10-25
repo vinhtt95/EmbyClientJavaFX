@@ -1,7 +1,7 @@
 package com.example.embyapp.viewmodel.detail;
 
-import com.example.emby.modelEmby.ImageInfo;
-import com.example.emby.modelEmby.ImageType;
+import embyclient.model.ImageInfo;
+import embyclient.model.ImageType;
 
 public class ImageUrlHelper {
 

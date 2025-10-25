@@ -1,11 +1,11 @@
 package com.example.embyapp.viewmodel.detail;
 
-import com.example.emby.EmbyClient.ApiException;
-import com.example.emby.modelEmby.BaseItemDto;
-import com.example.emby.modelEmby.BaseItemPerson;
-import com.example.emby.modelEmby.ImageInfo;
-import com.example.emby.modelEmby.ImageType; // <-- THÊM IMPORT
-import com.example.emby.modelEmby.NameLongIdPair;
+import embyclient.ApiException;
+import embyclient.model.BaseItemDto;
+import embyclient.model.BaseItemPerson;
+import embyclient.model.ImageInfo;
+import embyclient.model.ImageType; // <-- THÊM IMPORT
+import embyclient.model.NameLongIdPair;
 import com.example.embyapp.service.EmbyService;
 import com.example.embyapp.service.ItemRepository;
 import org.threeten.bp.OffsetDateTime;

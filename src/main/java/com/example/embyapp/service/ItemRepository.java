@@ -1,12 +1,12 @@
 package com.example.embyapp.service;
 
-import com.example.emby.EmbyClient.ApiException;
-import com.example.emby.EmbyClient.Java.ImageServiceApi; // (CẬP NHẬT) Thêm import
-import com.example.emby.EmbyClient.Java.ItemsServiceApi;
-import com.example.emby.EmbyClient.Java.UserLibraryServiceApi; // (CẬP NHẬT) Thêm import
-import com.example.emby.modelEmby.BaseItemDto;
-import com.example.emby.modelEmby.ImageInfo; // (CẬP NHẬT) Thêm import
-import com.example.emby.modelEmby.QueryResultBaseItemDto;
+import embyclient.ApiException;
+import embyclient.api.ImageServiceApi; // (CẬP NHẬT) Thêm import
+import embyclient.api.ItemsServiceApi;
+import embyclient.api.UserLibraryServiceApi; // (CẬP NHẬT) Thêm import
+import embyclient.model.BaseItemDto;
+import embyclient.model.ImageInfo; // (CẬP NHẬT) Thêm import
+import embyclient.model.QueryResultBaseItemDto;
 
 import java.util.Collections;
 import java.util.List;

@@ -1,9 +1,9 @@
 package com.example.embyapp.viewmodel;
 
-import com.example.emby.EmbyClient.ApiException;
-import com.example.emby.EmbyClient.Java.UserServiceApi;
-import com.example.emby.modelEmby.AuthenticateUserByName;
-import com.example.emby.modelEmby.AuthenticationAuthenticationResult;
+import embyclient.ApiException;
+import embyclient.api.UserServiceApi;
+import embyclient.model.AuthenticateUserByName;
+import embyclient.model.AuthenticationAuthenticationResult;
 import com.example.embyapp.service.EmbyService;
 import javafx.application.Platform;
 import javafx.beans.property.*;

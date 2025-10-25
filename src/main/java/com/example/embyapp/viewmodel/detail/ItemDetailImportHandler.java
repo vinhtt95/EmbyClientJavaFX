@@ -22,20 +22,25 @@ import org.threeten.bp.OffsetDateTime;
  * (CẬP NHẬT 7)
  * - Sửa logic import/preview cho tags để đọc TagItems và cập nhật ObservableList<TagModel>.
  * - Xóa (v/x) cho tags.
+ * (CẬP NHẬT 11)
+ * - Tách biệt logic dirty: Import không tự động bật isDirty.
+ * - Chỉ bật isDirty khi người dùng nhấn Accept (✓) lần đầu tiên.
  */
 public class ItemDetailImportHandler {
 
-    private final ItemDetailViewModel viewModel; // Tham chiếu đến VM chính để set giá trị UI
+    private final ItemDetailViewModel viewModel; // Tham chiếu đến VM chính
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-
 
     // Lưu trạng thái ngay trước khi import
     private final Map<String, Object> preImportState = new HashMap<>();
 
-    // Các BooleanProperty cho 6 cặp nút (v/x)
+    // (*** MỚI: Cờ quản lý trạng thái Import ***)
+    private boolean importInProgress = false;
+    private boolean anyFieldAccepted = false; // Đã nhấn Accept ít nhất 1 lần chưa?
+
+    // Các BooleanProperty cho nút (v/x)
     private final ReadOnlyBooleanWrapper showTitleReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showOverviewReview = new ReadOnlyBooleanWrapper(false);
-    // private final ReadOnlyBooleanWrapper showTagsReview = new ReadOnlyBooleanWrapper(false); // (ĐÃ XÓA)
     private final ReadOnlyBooleanWrapper showReleaseDateReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showStudiosReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showPeopleReview = new ReadOnlyBooleanWrapper(false);
@@ -45,17 +50,21 @@ public class ItemDetailImportHandler {
     }
 
     /**
-     * (*** SỬA ĐỔI TAGS ***)
      * Nhận DTO từ file import và cập nhật UI để review.
+     * (*** KHÔNG TỰ ĐỘNG BẬT isDirty NỮA ***)
      */
     public void importAndPreview(BaseItemDto importedDto) {
         if (importedDto == null) return;
 
-        clearState(); // Xóa state cũ
+        clearState(); // Xóa state cũ (sẽ reset cờ importInProgress)
         hideAllReviewButtons(); // Ẩn tất cả nút
 
+        // (*** MỚI: Bắt đầu trạng thái import ***)
+        this.importInProgress = true;
+        this.anyFieldAccepted = false;
+
         // 1. Title
-        preImportState.put("title", viewModel.titleProperty().get()); // Lưu giá trị HIỆN TẠI
+        preImportState.put("title", viewModel.titleProperty().get());
         viewModel.titleProperty().set(importedDto.getName() != null ? importedDto.getName() : "");
         showTitleReview.set(true);
 
@@ -64,12 +73,8 @@ public class ItemDetailImportHandler {
         viewModel.overviewProperty().set(importedDto.getOverview() != null ? importedDto.getOverview() : "");
         showOverviewReview.set(true);
 
-        // (*** SỬA ĐỔI TAGS ***)
         // 3. Tags
-        // Lưu trạng thái List<TagModel> HIỆN TẠI
         preImportState.put("tags", new ArrayList<>(viewModel.getTagItems()));
-
-        // Phân tích TagItems từ DTO đã import
         List<TagModel> importedTags = new ArrayList<>();
         if (importedDto.getTagItems() != null) {
             for (NameLongIdPair tagPair : importedDto.getTagItems()) {
@@ -78,12 +83,7 @@ public class ItemDetailImportHandler {
                 }
             }
         }
-        // Cập nhật ViewModel
         viewModel.getTagItems().setAll(importedTags);
-        // (Không còn nút review (v/x) cho tags)
-        // showTagsReview.set(true); // (ĐÃ XÓA)
-        // (*** KẾT THÚC SỬA ĐỔI TAGS ***)
-
 
         // 4. Release Date
         preImportState.put("releaseDate", viewModel.releaseDateProperty().get());
@@ -102,28 +102,34 @@ public class ItemDetailImportHandler {
         viewModel.peopleProperty().set(peopleToString(importPeople));
         showPeopleReview.set(true);
 
-        // Import là một thay đổi, bật nút Save (thông qua dirty tracker)
-        viewModel.isDirtyProperty().set(true);
+        // (*** DÒNG NÀY ĐÃ BỊ XÓA ***)
+        // viewModel.isDirtyProperty().set(true);
     }
 
     /**
      * Người dùng nhấn (v) - Chấp nhận thay đổi.
+     * (*** SẼ BÁO CHO VIEWMODEL NẾU ĐÂY LÀ LẦN ACCEPT ĐẦU TIÊN ***)
      */
     public void acceptImportField(String fieldName) {
-        // Chỉ cần ẩn nút (v/x), dữ liệu đã ở trong textfield
+        // Ẩn nút (v/x) tương ứng
         switch (fieldName) {
             case "title": showTitleReview.set(false); break;
             case "overview": showOverviewReview.set(false); break;
-            // case "tags": showTagsReview.set(false); break; // (ĐÃ XÓA)
             case "releaseDate": showReleaseDateReview.set(false); break;
             case "studios": showStudiosReview.set(false); break;
             case "people": showPeopleReview.set(false); break;
         }
+
+        // (*** MỚI: Bật isDirty nếu là lần Accept đầu tiên sau Import ***)
+        if (importInProgress && !anyFieldAccepted) {
+            anyFieldAccepted = true;
+            viewModel.markAsDirtyByAccept(); // Báo cho ViewModel
+        }
     }
 
     /**
-     * (*** SỬA ĐỔI TAGS ***)
      * Người dùng nhấn (x) - Hủy bỏ thay đổi.
+     * (Logic không đổi, DirtyTracker sẽ tự xử lý)
      */
     @SuppressWarnings("unchecked")
     public void rejectImportField(String fieldName) {
@@ -134,21 +140,15 @@ public class ItemDetailImportHandler {
                 showTitleReview.set(false);
                 break;
             case "overview":
-                // (*** ĐÂY LÀ DÒNG ĐÃ SỬA LỖI ***)
                 viewModel.overviewProperty().set((String) preImportState.get("overview"));
                 showOverviewReview.set(false);
                 break;
-
-            // (*** MỚI: Logic Hủy bỏ cho Tags ***)
             case "tags":
-                // Khôi phục List<TagModel>
                 List<TagModel> originalTags = (List<TagModel>) preImportState.get("tags");
                 if (originalTags != null) {
                     viewModel.getTagItems().setAll(originalTags);
                 }
-                // showTagsReview.set(false); // (Đã xóa)
-                break;
-
+                break; // Tags không có nút (v/x) riêng nhưng vẫn cần logic revert
             case "releaseDate":
                 viewModel.releaseDateProperty().set((String) preImportState.get("releaseDate"));
                 showReleaseDateReview.set(false);
@@ -162,26 +162,30 @@ public class ItemDetailImportHandler {
                 showPeopleReview.set(false);
                 break;
         }
+        // Listener của DirtyTracker sẽ tự động kiểm tra lại isDirty
     }
 
     public void hideAllReviewButtons() {
         showTitleReview.set(false);
         showOverviewReview.set(false);
-        // showTagsReview.set(false); // (ĐÃ XÓA)
         showReleaseDateReview.set(false);
         showStudiosReview.set(false);
         showPeopleReview.set(false);
     }
 
+    /**
+     * Xóa trạng thái và reset cờ import.
+     */
     public void clearState() {
         preImportState.clear();
         hideAllReviewButtons();
+        // (*** MỚI: Reset cờ ***)
+        importInProgress = false;
+        anyFieldAccepted = false;
     }
 
-    // --- Hàm helper định dạng (sao chép từ Loader để dùng nội bộ) ---
-    private String listToString(List<String> list) {
-        return (list != null) ? String.join(", ", list) : "";
-    }
+    // --- Hàm helper định dạng ---
+    // ... (dateToString, studiosToString, peopleToString) ...
     private String dateToString(OffsetDateTime date) {
         if (date == null) return "";
         try {
@@ -199,7 +203,6 @@ public class ItemDetailImportHandler {
     // --- Getters cho các BooleanProperty (v/x) ---
     public ReadOnlyBooleanProperty showTitleReviewProperty() { return showTitleReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showOverviewReviewProperty() { return showOverviewReview.getReadOnlyProperty(); }
-    // public ReadOnlyBooleanProperty showTagsReviewProperty() { return showTagsReview.getReadOnlyProperty(); } // (ĐÃ XÓA)
     public ReadOnlyBooleanProperty showReleaseDateReviewProperty() { return showReleaseDateReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showStudiosReviewProperty() { return showStudiosReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showPeopleReviewProperty() { return showPeopleReview.getReadOnlyProperty(); }

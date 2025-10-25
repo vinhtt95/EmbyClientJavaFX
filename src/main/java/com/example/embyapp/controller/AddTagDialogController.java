@@ -6,34 +6,33 @@ import com.example.embyapp.viewmodel.detail.TagModel;
 import embyclient.model.UserLibraryTagItem;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.control.Label; // (*** MỚI IMPORT ***)
+import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
-import javafx.scene.control.Separator; // (*** MỚI IMPORT ***)
+import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox; // (*** MỚI IMPORT ***)
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 
 /**
- * (MỚI) Controller cho cửa sổ popup AddTagDialog.
- * (CẬP NHẬT 12):
- * - Thêm logic lấy và hiển thị tag gợi ý.
- * - Mặc định chọn JSON.
- * (CẬP NHẬT 13):
- * - Sử dụng hàm API thật để lấy tag gợi ý.
- * (CẬP NHẬT 14):
- * - Thay đổi @FXML suggestionTagsPane từ FlowPane sang VBox.
- * - Viết lại populateSuggestedTags để nhóm tag JSON theo Key.
+ * (CẬP NHẬT 16)
+ * - Thay đổi layout gợi ý sang 2 dòng (Key/Value).
+ * - Cập nhật FXML PANE.
+ * (CẬP NHẬT 17)
+ * - Tự động chọn Key đầu tiên khi mở dialog.
  */
 public class AddTagDialogController {
 
@@ -48,14 +47,19 @@ public class AddTagDialogController {
     @FXML private TextField keyField;
     @FXML private TextField valueField;
 
-    // (*** THAY ĐỔI: Giờ đây là VBox, không phải FlowPane ***)
-    @FXML private VBox suggestionTagsPane;
-    private final ToggleGroup suggestionGroup = new ToggleGroup();
+    @FXML private VBox suggestionJsonContainer;
+    @FXML private FlowPane suggestionKeysPane;
+    @FXML private FlowPane suggestionValuesPane;
+
+    @FXML private VBox suggestionSimpleContainer;
+    @FXML private FlowPane suggestionSimplePane;
+
+    private final ToggleGroup keySuggestionGroup = new ToggleGroup();
+    private final ToggleGroup valueSuggestionGroup = new ToggleGroup();
 
     private Stage dialogStage;
     private TagModel resultTag = null;
 
-    // (*** Lớp helper nội bộ để giữ cả chuỗi gốc và model đã parse ***)
     private static class ParsedTag {
         final String rawString;
         final TagModel model;
@@ -65,6 +69,8 @@ public class AddTagDialogController {
             this.model = model;
         }
     }
+
+    private Map<String, List<ParsedTag>> jsonGroups = new HashMap<>();
 
 
     @FXML
@@ -82,7 +88,12 @@ public class AddTagDialogController {
         simpleTagPane.setManaged(false);
         jsonTagPane.setVisible(true);
         jsonTagPane.setManaged(true);
-        jsonTagRadio.setSelected(true); // Đảm bảo radio JSON được chọn
+        jsonTagRadio.setSelected(true);
+
+        // Listener cho cột Key
+        keySuggestionGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
+            populateValues(newToggle);
+        });
 
         // Tải tag gợi ý (chạy nền)
         loadSuggestedTags();
@@ -95,10 +106,8 @@ public class AddTagDialogController {
         }).start();
     }
 
-    /**
-     * Lấy danh sách tên tag từ Emby Server.
-     */
     private List<String> fetchTagsFromServer() {
+        // (Logic hàm này giữ nguyên)
         try {
             EmbyService embyService = EmbyService.getInstance();
             if (embyService.isLoggedIn() && embyService.getApiClient() != null) {
@@ -121,159 +130,155 @@ public class AddTagDialogController {
         return Collections.emptyList();
     }
 
-    /**
-     * (*** HÀM NÀY ĐÃ VIẾT LẠI HOÀN TOÀN ***)
-     * Phân tích, nhóm và hiển thị các tag gợi ý.
-     */
     private void populateSuggestedTags(List<String> tagNames) {
-        suggestionTagsPane.getChildren().clear();
-        suggestionGroup.getToggles().clear();
-
+        // (Logic hàm này giữ nguyên)
         if (tagNames == null || tagNames.isEmpty()) {
             return;
         }
 
-        // 1. Phân tích tất cả tag, giữ lại chuỗi gốc
         List<ParsedTag> parsedTags = tagNames.stream()
                 .map(raw -> new ParsedTag(raw, TagModel.parse(raw)))
                 .collect(Collectors.toList());
 
-        // 2. Tách tag JSON và tag Đơn giản
-        Map<String, List<ParsedTag>> jsonGroups = parsedTags.stream()
+        jsonGroups = parsedTags.stream()
                 .filter(pt -> pt.model.isJson())
-                .collect(Collectors.groupingBy(pt -> pt.model.getKey())); // Nhóm theo Key
+                .collect(Collectors.groupingBy(pt -> pt.model.getKey()));
 
         List<ParsedTag> simpleTags = parsedTags.stream()
                 .filter(pt -> !pt.model.isJson())
                 .collect(Collectors.toList());
 
-        // 3. Hiển thị các nhóm JSON
-        // Sắp xếp các nhóm theo Key (A-Z)
-        List<Map.Entry<String, List<ParsedTag>>> sortedJsonGroups = new ArrayList<>(jsonGroups.entrySet());
-        sortedJsonGroups.sort(Map.Entry.comparingByKey());
+        populateKeys();
+        populateSimpleTags(simpleTags);
 
-        for (Map.Entry<String, List<ParsedTag>> entry : sortedJsonGroups) {
-            String key = entry.getKey();
-            List<ParsedTag> tagsInGroup = entry.getValue();
+        suggestionJsonContainer.setVisible(!jsonGroups.isEmpty());
+        suggestionJsonContainer.setManaged(!jsonGroups.isEmpty());
+        suggestionSimpleContainer.setVisible(!simpleTags.isEmpty());
+        suggestionSimpleContainer.setManaged(!simpleTags.isEmpty());
+    }
 
-            // Tạo Tiêu đề (Key)
-            Label groupTitle = new Label(key);
-            groupTitle.getStyleClass().add("suggestion-group-title");
-            suggestionTagsPane.getChildren().add(groupTitle);
+    /**
+     * (*** ĐÃ THÊM LOGIC AUTO-SELECT ***)
+     */
+    private void populateKeys() {
+        suggestionKeysPane.getChildren().clear();
+        keySuggestionGroup.getToggles().clear();
 
-            // Tạo FlowPane cho các Value
-            FlowPane valuesPane = new FlowPane();
-            valuesPane.getStyleClass().add("suggestion-value-pane");
-            valuesPane.setHgap(8.0);
-            valuesPane.setVgap(8.0);
+        List<String> sortedKeys = new ArrayList<>(jsonGroups.keySet());
+        Collections.sort(sortedKeys, String.CASE_INSENSITIVE_ORDER);
 
-            // Sắp xếp các value trong nhóm (A-Z)
-            tagsInGroup.sort((pt1, pt2) -> pt1.model.getValue().compareToIgnoreCase(pt2.model.getValue()));
-
-            for (ParsedTag pt : tagsInGroup) {
-                // Tạo chip CHỈ HIỂN THỊ VALUE
-                ToggleButton chip = new ToggleButton(pt.model.getValue());
-                chip.setToggleGroup(suggestionGroup);
-                chip.getStyleClass().addAll("suggested-tag-button", "tag-view-json");
-
-                // (QUAN TRỌNG) UserData vẫn lưu CHUỖI GỐC
-                chip.setUserData(pt.rawString);
-
-                // Listener (giống như cũ)
-                chip.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
-                    if (isSelected) {
-                        fillFormFromSuggestion((String) chip.getUserData());
-                    }
-                });
-                valuesPane.getChildren().add(chip);
-            }
-            suggestionTagsPane.getChildren().add(valuesPane); // Thêm FlowPane vào VBox
+        for (String key : sortedKeys) {
+            ToggleButton chip = new ToggleButton(key);
+            chip.setToggleGroup(keySuggestionGroup);
+            chip.getStyleClass().add("suggestion-key-button");
+            chip.setUserData(key);
+            suggestionKeysPane.getChildren().add(chip);
         }
 
-        // 4. Hiển thị các tag Đơn giản (nếu có)
-        if (!simpleTags.isEmpty()) {
-            // Thêm dấu ngăn cách
-            if (!jsonGroups.isEmpty()) {
-                suggestionTagsPane.getChildren().add(new Separator());
-            }
-
-            Label simpleTitle = new Label("Tags Đơn Giản");
-            simpleTitle.getStyleClass().add("suggestion-group-title");
-            suggestionTagsPane.getChildren().add(simpleTitle);
-
-            FlowPane simplePane = new FlowPane();
-            simplePane.getStyleClass().add("suggestion-value-pane");
-            simplePane.setHgap(8.0);
-            simplePane.setVgap(8.0);
-
-            // Sắp xếp tag đơn giản (A-Z)
-            simpleTags.sort((pt1, pt2) -> pt1.model.getDisplayName().compareToIgnoreCase(pt2.model.getDisplayName()));
-
-            for (ParsedTag pt : simpleTags) {
-                ToggleButton chip = new ToggleButton(pt.model.getDisplayName());
-                chip.setToggleGroup(suggestionGroup);
-                chip.getStyleClass().add("suggested-tag-button");
-
-                // UserData lưu CHUỖI GỐC
-                chip.setUserData(pt.rawString);
-
-                chip.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
-                    if (isSelected) {
-                        fillFormFromSuggestion((String) chip.getUserData());
-                    }
-                });
-                simplePane.getChildren().add(chip);
-            }
-            suggestionTagsPane.getChildren().add(simplePane);
+        // (*** THÊM MỚI: Tự động chọn Key đầu tiên ***)
+        if (!keySuggestionGroup.getToggles().isEmpty()) {
+            // Lấy toggle đầu tiên và chọn nó
+            keySuggestionGroup.selectToggle(keySuggestionGroup.getToggles().get(0));
+            // Listener trong initialize() sẽ tự động gọi populateValues()
         }
     }
 
+    private void populateValues(Toggle selectedKeyToggle) {
+        // (Logic hàm này giữ nguyên)
+        suggestionValuesPane.getChildren().clear();
+        valueSuggestionGroup.getToggles().clear();
 
-    /**
-     * (*** HÀM NÀY GIỮ NGUYÊN - KHÔNG THAY ĐỔI ***)
-     * Vì UserData vẫn được set là chuỗi JSON/string gốc, logic này hoạt động hoàn hảo.
-     */
+        if (selectedKeyToggle == null) {
+            return;
+        }
+
+        String selectedKey = (String) selectedKeyToggle.getUserData();
+        List<ParsedTag> tagsInGroup = jsonGroups.get(selectedKey);
+
+        if (tagsInGroup == null) return;
+
+        tagsInGroup.sort((pt1, pt2) -> pt1.model.getValue().compareToIgnoreCase(pt2.model.getValue()));
+
+        for (ParsedTag pt : tagsInGroup) {
+            ToggleButton chip = new ToggleButton(pt.model.getValue());
+            chip.setToggleGroup(valueSuggestionGroup);
+            chip.getStyleClass().addAll("suggested-tag-button", "tag-view-json");
+            chip.setUserData(pt.rawString);
+            chip.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+                if (isSelected) {
+                    fillFormFromSuggestion((String) chip.getUserData());
+                }
+            });
+            suggestionValuesPane.getChildren().add(chip);
+        }
+    }
+
+    private void populateSimpleTags(List<ParsedTag> simpleTags) {
+        // (Logic hàm này giữ nguyên)
+        suggestionSimplePane.getChildren().clear();
+        valueSuggestionGroup.getToggles().clear();
+
+        simpleTags.sort((pt1, pt2) -> pt1.model.getDisplayName().compareToIgnoreCase(pt2.model.getDisplayName()));
+
+        for (ParsedTag pt : simpleTags) {
+            ToggleButton chip = new ToggleButton(pt.model.getDisplayName());
+            chip.setToggleGroup(valueSuggestionGroup);
+            chip.getStyleClass().add("suggested-tag-button");
+            chip.setUserData(pt.rawString);
+
+            chip.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+                if (isSelected) {
+                    keySuggestionGroup.selectToggle(null);
+                    fillFormFromSuggestion((String) chip.getUserData());
+                }
+            });
+            suggestionSimplePane.getChildren().add(chip);
+        }
+    }
+
     private void fillFormFromSuggestion(String selectedTagName) {
+        // (Logic hàm này giữ nguyên)
         TagModel selectedTag = TagModel.parse(selectedTagName);
         if (selectedTag.isJson()) {
-            jsonTagRadio.setSelected(true); // Chọn radio JSON
-            // Cố gắng lấy key/value từ JSON gốc thay vì display name
+            jsonTagRadio.setSelected(true);
             try {
                 com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(selectedTagName).getAsJsonObject();
                 Map.Entry<String, com.google.gson.JsonElement> firstEntry = jsonObject.entrySet().stream().findFirst().orElse(null);
                 if(firstEntry != null) {
                     keyField.setText(firstEntry.getKey());
                     valueField.setText(firstEntry.getValue().getAsString());
-                } else { // Fallback nếu parse lỗi
+                } else {
                     keyField.setText("Lỗi Key");
                     valueField.setText("Lỗi Value");
                 }
-            } catch (Exception e) { // Fallback nếu parse lỗi
+            } catch (Exception e) {
                 System.err.println("Lỗi parse JSON khi điền form gợi ý: " + selectedTagName + " - " + e.getMessage());
                 keyField.setText("Lỗi Key");
                 valueField.setText("Lỗi Value");
             }
             simpleNameField.clear();
         } else {
-            simpleTagRadio.setSelected(true); // Chọn radio Simple
-            simpleNameField.setText(selectedTag.getDisplayName()); // Lấy tên đơn giản
+            simpleTagRadio.setSelected(true);
+            simpleNameField.setText(selectedTag.getDisplayName());
             keyField.clear();
             valueField.clear();
         }
     }
 
-
     public void setDialogStage(Stage dialogStage) {
+        // (Logic hàm này giữ nguyên)
         this.dialogStage = dialogStage;
     }
 
     public TagModel getResultTag() {
+        // (Logic hàm này giữ nguyên)
         return resultTag;
     }
 
     @FXML
     private void handleOk() {
-        resultTag = null; // Reset trước khi tạo mới
+        // (Logic hàm này giữ nguyên)
+        resultTag = null;
         if (simpleTagRadio.isSelected()) {
             String simpleName = simpleNameField.getText();
             if (simpleName != null && !simpleName.trim().isEmpty()) {
@@ -290,13 +295,13 @@ public class AddTagDialogController {
         if (resultTag != null) {
             dialogStage.close();
         } else {
-            // (Có thể thêm Label lỗi)
             System.err.println("Dữ liệu tag không hợp lệ.");
         }
     }
 
     @FXML
     private void handleCancel() {
+        // (Logic hàm này giữ nguyên)
         dialogStage.close();
     }
 }

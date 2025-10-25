@@ -6,30 +6,24 @@
  * (CẬP NHẬT 14): Sửa style cho nút gợi ý tag (suggested-tag-button) giống chip.
  * (CẬP NHẬT 15): Sửa nền trắng cho ScrollPane trong dialog gợi ý tag.
  * (CẬP NHẬT 18): Thêm style cho các nút/view cập nhật ảnh.
+ * (CẬP NHẬT 17): Sửa style nút Key cho bo tròn.
  */
 
 /* --- DARK MODE GLOBAL STYLES --- */
-/* (*** SỬA ĐỔI: Áp dụng nền tối cho .dialog-pane ***) */
 .root, .vbox, .hbox, .anchor-pane, .stack-pane, .dialog-pane {
     -fx-background-color: #121212;
     -fx-text-fill: #e0e0e0;
 }
-
-/* Tăng kích thước font mặc định cho toàn bộ ứng dụng */
 * {
     -fx-font-size: 16px;
     -fx-font-family: "System";
 }
-
-/* Label mặc định (kể cả trong dialog) */
 .label, .dialog-pane .label {
     -fx-text-fill: #e0e0e0;
 }
-/* Radio button text trong dialog */
 .dialog-pane .radio-button .text {
     -fx-fill: #e0e0e0;
 }
-
 
 /* Button mặc định */
 .button {
@@ -48,8 +42,8 @@
 }
 
 /* TextField và TextArea */
-.text-field, .text-area, .dialog-pane .text-field /* Thêm dialog-pane */ {
-    -fx-background-color: #1e1e1e; /* Nền field tối */
+.text-field, .text-area, .dialog-pane .text-field {
+    -fx-background-color: #1e1e1e;
     -fx-text-fill: #e0e0e0;
     -fx-prompt-text-fill: #888888;
     -fx-background-radius: 5px;
@@ -57,11 +51,9 @@
     -fx-border-radius: 5px;
     -fx-padding: 8px;
 }
-/* Đảm bảo TextArea không bị ghi đè */
 .text-area .content {
     -fx-background-color: #1e1e1e;
 }
-
 
 /* SplitPane */
 .split-pane {
@@ -71,7 +63,6 @@
     -fx-background-color: #2e2e2e;
     -fx-padding: 0 0.5px 0 0.5px;
 }
-
 
 /* TreeView */
 .tree-view {
@@ -93,21 +84,20 @@
     -fx-text-fill: #ffffff;
 }
 
-
 /* --- SCROLLPANE STYLES --- */
 .scroll-pane {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
 }
-/* (*** MỚI: Style riêng cho ScrollPane và nội dung bên trong dialog ***) */
 .dialog-pane .scroll-pane {
-    -fx-background-color: #1e1e1e; /* Nền ScrollPane tối hơn chút */
-    -fx-background: #1e1e1e;       /* Đảm bảo ghi đè */
+    -fx-background-color: #1e1e1e;
+    -fx-background: #1e1e1e;
     -fx-border-color: #3a3a3a;
     -fx-border-radius: 5px;
 }
-.dialog-pane .scroll-pane .flow-pane { /* Nhắm vào FlowPane bên trong ScrollPane */
-    -fx-background-color: transparent; /* Nền FlowPane trong suốt */
+.dialog-pane .scroll-pane .flow-pane,
+.dialog-pane .scroll-pane .vbox {
+    -fx-background-color: transparent;
 }
 
 /* --- Các style Scrollbar còn lại --- */
@@ -133,7 +123,6 @@
 .scroll-bar:vertical, .scroll-bar:horizontal {
     -fx-background-color: transparent;
 }
-
 
 /* --- STATUS BAR --- */
 #statusBar {
@@ -173,10 +162,7 @@
     -fx-opacity: 0.5;
 }
 
-
 /* --- (CẬP NHẬT 9) TAG STYLES --- */
-
-/* Cái "chip" bo tròn (dùng cho TagView) */
 .tag-view {
     -fx-background-color: #383838;
     -fx-background-radius: 15px;
@@ -184,20 +170,14 @@
     -fx-border-radius: 15px;
     -fx-padding: 4px 6px 4px 10px;
 }
-
-/* Chip cho JSON (dùng cho TagView) */
 .tag-view-json {
     -fx-background-color: #004d80;
     -fx-border-color: #007acc;
 }
-
-/* Chữ bên trong chip (cho tag thường trong TagView) */
 .tag-label {
     -fx-text-fill: #ffffff;
     -fx-font-size: 14px;
 }
-
-/* Dấu gạch dọc UI (trong TagView) */
 .tag-separator {
     -fx-background-color: transparent;
     -fx-border-color: #99cfff;
@@ -206,23 +186,16 @@
     -fx-max-height: 15px;
     -fx-translate-y: 1px;
 }
-
-/* Label cho Key (trong TagView) */
 .tag-label-key {
     -fx-text-fill: #ffffff;
     -fx-font-size: 14px;
     -fx-font-weight: bold;
 }
-
-/* Label cho Value (trong TagView) */
 .tag-label-value {
     -fx-text-fill: #e0e0e0;
     -fx-font-size: 14px;
     -fx-font-style: italic;
 }
-
-
-/* Nút xóa (✕) bên trong chip (dùng cho TagView) */
 .tag-delete-button {
     -fx-background-color: #555555;
     -fx-text-fill: #e0e0e0;
@@ -240,8 +213,6 @@
     -fx-background-color: #dc3545;
     -fx-text-fill: #ffffff;
 }
-
-/* Nút "Thêm Tag (+)" */
 #addTagButton {
     -fx-background-color: #333;
     -fx-border-color: #555;
@@ -256,9 +227,9 @@
     -fx-text-fill: #ffffff;
 }
 
-/* --- (CẬP NHẬT 14) POPUP & SUGGESTION TAG STYLES --- */
+/* --- (CẬP NHẬT 17) POPUP & SUGGESTION TAG STYLES (2 DÒNG) --- */
 
-/* Style cho nút gợi ý tag (dùng ToggleButton) - Giống .tag-view */
+/* Style cho nút gợi ý tag (dùng cho CỘT VALUE và TAG ĐƠN GIẢN) */
 .suggested-tag-button {
     -fx-background-color: #383838;
     -fx-text-fill: #ffffff;
@@ -269,37 +240,56 @@
     -fx-font-size: 14px;
     -fx-cursor: hand;
 }
-/* Style màu cho nút gợi ý JSON (kế thừa từ tag-view-json) */
+/* Style màu cho nút gợi ý JSON (dùng cho CỘT VALUE) */
 .suggested-tag-button.tag-view-json {
     -fx-background-color: #004d80;
     -fx-border-color: #007acc;
 }
-
-/* Hover state cho nút gợi ý */
 .suggested-tag-button:hover {
     -fx-background-color: #4a4a4a;
 }
 .suggested-tag-button.tag-view-json:hover {
     -fx-background-color: #005f9e;
 }
-
-/* Selected state cho nút gợi ý (màu sáng hơn để nổi bật) */
 .suggested-tag-button:selected {
     -fx-background-color: #5a5a5a;
     -fx-border-color: #777777;
     -fx-text-fill: white;
 }
 .suggested-tag-button.tag-view-json:selected {
-    -fx-background-color: #007acc; /* Giữ nguyên màu xanh dương đậm khi chọn */
-    -fx-border-color: #009cff;    /* Viền sáng hơn chút */
+    -fx-background-color: #007acc;
+    -fx-border-color: #009cff;
     -fx-text-fill: white;
 }
 
-/* --- (CẬP NHẬT 18) IMAGE UPDATE STYLES --- */
+/* (*** SỬA: Style cho DÒNG KEY (trên) ***) */
+/* (*** Giờ đây giống hệt .suggested-tag-button.tag-view-json ***) */
+.suggestion-key-button {
+    -fx-background-color: #004d80; /* Màu xanh */
+    -fx-border-color: #007acc;
+    -fx-text-fill: #ffffff;
+    -fx-background-radius: 15px; /* Bo tròn */
+    -fx-border-radius: 15px;
+    -fx-padding: 4px 10px 4px 10px; /* Giống value */
+    -fx-font-size: 14px; /* Giống value */
+    -fx-font-weight: bold; /* Thêm bold cho Key */
+    -fx-cursor: hand;
+}
+/* (*** SỬA: Hover cho Key ***) */
+.suggestion-key-button:hover {
+    -fx-background-color: #005f9e;
+}
+/* MÀU HỒNG KHI CHỌN KEY (Giữ nguyên) */
+.suggestion-key-button:selected {
+    -fx-background-color: #E91E63; /* Màu hồng */
+    -fx-border-color: #F06292;
+    -fx-text-fill: white;
+}
 
-/* Nút Lưu ảnh Primary (Góc dưới phải) */
+
+/* --- (CẬP NHẬT 18) IMAGE UPDATE STYLES --- */
 .image-save-button {
-    -fx-background-color: #28a745; /* Màu xanh lá */
+    -fx-background-color: #28a745;
     -fx-text-fill: white;
     -fx-font-weight: bold;
     -fx-font-size: 14px;
@@ -311,14 +301,12 @@
 .image-save-button:hover {
     -fx-background-color: #218838;
 }
-
-/* Nút Thêm Backdrop (+) */
 .add-backdrop-button {
     -fx-background-color: #28a745;
     -fx-text-fill: white;
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-background-radius: 100px; /* Tròn */
+    -fx-background-radius: 100px;
     -fx-padding: 0px 10px 0px 10px;
     -fx-min-width: 30px;
     -fx-min-height: 30px;
@@ -327,92 +315,28 @@
 .add-backdrop-button:hover {
     -fx-background-color: #218838;
 }
-
-/* Container cho mỗi ảnh backdrop (để set relative cho nút xóa) */
 .backdrop-view {
     -fx-background-color: #222;
     -fx-background-radius: 5px;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0.1, 0, 2);
 }
-
-/* Nút Xóa Backdrop (x) (Góc trên phải) */
 .backdrop-delete-button {
-    -fx-background-color: rgba(220, 53, 69, 0.8); /* Màu đỏ (dc3545) với opacity */
+    -fx-background-color: rgba(220, 53, 69, 0.8);
     -fx-text-fill: white;
     -fx-font-size: 12px;
     -fx-font-weight: bold;
-    -fx-background-radius: 100px; /* Tròn */
+    -fx-background-radius: 100px;
     -fx-padding: 0px 6px 0px 6px;
     -fx-min-width: 20px;
     -fx-min-height: 20px;
     -fx-border-width: 0;
-    -fx-translate-x: 5px; /* Đẩy ra góc */
+    -fx-translate-x: 5px;
     -fx-translate-y: -5px;
-    -fx-opacity: 0.0; /* Ẩn đi mặc định */
+    -fx-opacity: 0.0;
 }
-/* Hiện nút xóa khi hover vào container .backdrop-view */
 .backdrop-view:hover .backdrop-delete-button {
     -fx-opacity: 1.0;
 }
 .backdrop-delete-button:hover {
-    -fx-background-color: rgba(200, 33, 49, 1.0); /* Đậm hơn khi hover */
+    -fx-background-color: rgba(200, 33, 49, 1.0);
 }
-
-/* ... (Tất cả các style trước đó giữ nguyên) ... */
-
-/* --- (CẬP NHẬT 14) POPUP & SUGGESTION TAG STYLES --- */
-
-/* Style cho nút gợi ý tag (dùng ToggleButton) - Giống .tag-view */
-.suggested-tag-button {
-    -fx-background-color: #383838;
-    -fx-text-fill: #ffffff;
-    -fx-background-radius: 15px;
-    -fx-border-color: #555555;
-    -fx-border-radius: 15px;
-    -fx-padding: 4px 10px 4px 10px;
-    -fx-font-size: 14px;
-    -fx-cursor: hand;
-}
-/* Style màu cho nút gợi ý JSON (kế thừa từ tag-view-json) */
-.suggested-tag-button.tag-view-json {
-    -fx-background-color: #004d80;
-    -fx-border-color: #007acc;
-}
-
-/* Hover state cho nút gợi ý */
-.suggested-tag-button:hover {
-    -fx-background-color: #4a4a4a;
-}
-.suggested-tag-button.tag-view-json:hover {
-    -fx-background-color: #005f9e;
-}
-
-/* Selected state cho nút gợi ý (màu sáng hơn để nổi bật) */
-.suggested-tag-button:selected {
-    -fx-background-color: #5a5a5a;
-    -fx-border-color: #777777;
-    -fx-text-fill: white;
-}
-.suggested-tag-button.tag-view-json:selected {
-    -fx-background-color: #007acc; /* Giữ nguyên màu xanh dương đậm khi chọn */
-    -fx-border-color: #009cff;    /* Viền sáng hơn chút */
-    -fx-text-fill: white;
-}
-
-/* (*** THÊM MỚI: Style cho nhóm gợi ý ***) */
-.suggestion-group-title {
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #00aeff; /* Màu xanh sáng */
-    -fx-padding: 10px 0 5px 0; /* Khoảng cách trên/dưới */
-}
-
-/* (*** THÊM MỚI: Style cho FlowPane chứa các value chip ***) */
-.suggestion-value-pane {
-    -fx-padding: 0 0 5px 0; /* Một chút khoảng cách dưới */
-}
-/* (*** KẾT THÚC THÊM MỚI ***)
-
-
-/* --- (CẬP NHẬT 18) IMAGE UPDATE STYLES --- */
-/* ... (Các style ảnh giữ nguyên) ... */

@@ -5,17 +5,18 @@
 <?import javafx.scene.control.ButtonBar?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleGroup?>
-<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.GridPane?>
-<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.example.embyapp.controller.AddTagDialogController"
-      spacing="15.0" styleClass="dialog-pane" prefWidth="450.0">
+      spacing="15.0" styleClass="dialog-pane" prefWidth="550.0">
     <padding>
         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
     </padding>
@@ -34,37 +35,77 @@
         </children>
     </HBox>
 
-    <GridPane fx:id="simpleTagPane" hgap="10.0" vgap="5.0" visible="false" managed="false">
-        <Label text="Nội dung:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+    <VBox fx:id="inputContainer" spacing="5.0">
+        <GridPane fx:id="simpleTagPane" hgap="10.0" vgap="5.0" visible="false" managed="false">
+            <Label text="Nội dung:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
 
-        <TextField fx:id="simpleNameField" promptText="ví dụ: Cô gái xinh đẹp" GridPane.rowIndex="0" GridPane.columnIndex="1"
-                   GridPane.hgrow="ALWAYS"/>
-    </GridPane>
+            <TextField fx:id="simpleNameField" promptText="ví dụ: Cô gái xinh đẹp" GridPane.rowIndex="0"
+                       GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+        </GridPane>
 
-    <GridPane fx:id="jsonTagPane" hgap="10.0" vgap="5.0" visible="true" managed="true">
-        <Label text="Key:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-        <TextField fx:id="keyField" promptText="ví dụ: Body" GridPane.rowIndex="0" GridPane.columnIndex="1"
-                   GridPane.hgrow="ALWAYS"/>
+        <GridPane fx:id="jsonTagPane" hgap="10.0" vgap="5.0" visible="true" managed="true">
+            <Label text="Key:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <TextField fx:id="keyField" promptText="ví dụ: Body" GridPane.rowIndex="0" GridPane.columnIndex="1"
+                       GridPane.hgrow="ALWAYS"/>
 
-        <Label text="Value:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <Label text="Value:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
 
-        <TextField fx:id="valueField" promptText="ví dụ: Đẹp" GridPane.rowIndex="1" GridPane.columnIndex="1"
-                   GridPane.hgrow="ALWAYS"/>
-    </GridPane>
+            <TextField fx:id="valueField" promptText="ví dụ: Đẹp" GridPane.rowIndex="1" GridPane.columnIndex="1"
+                       GridPane.hgrow="ALWAYS"/>
+        </GridPane>
+    </VBox>
 
-    <Label text="Hoặc chọn từ gợi ý:" style="-fx-font-size: 14px;
--fx-font-style: italic; -fx-padding-top: 10px;"/>
 
-    <ScrollPane fitToWidth="true" prefHeight="150.0" hbarPolicy="NEVER" styleClass="scroll-pane" vbarPolicy="AS_NEEDED">
-        <content>
-            <VBox fx:id="suggestionTagsPane" spacing="5.0">
-                <padding>
-                    <Insets top="5.0" bottom="5.0" left="5.0" right="5.0"/>
-                </padding>
+    <VBox fx:id="suggestionJsonContainer" spacing="10.0" prefHeight="200.0"> <children>
+        <VBox spacing="5.0">
+            <children>
+                <Label text="Key" style="-fx-font-weight: bold;"/>
+                <ScrollPane fitToWidth="true" vbarPolicy="NEVER" hbarPolicy="AS_NEEDED" styleClass="scroll-pane"
+                            prefHeight="65.0">
+                    <content>
+                        <FlowPane fx:id="suggestionKeysPane" hgap="8.0" vgap="8.0">
+                            <padding>
+                                <Insets top="5.0" bottom="5.0" left="5.0" right="5.0"/>
+                            </padding>
+                        </FlowPane>
+                    </content>
+                </ScrollPane>
+            </children>
+        </VBox>
 
-            </VBox>
-        </content>
-    </ScrollPane>
+        <VBox spacing="5.0">
+            <children>
+                <Label text="Value" style="-fx-font-weight: bold;"/>
+                <ScrollPane fitToWidth="true" vbarPolicy="NEVER" hbarPolicy="AS_NEEDED" styleClass="scroll-pane"
+                            prefHeight="65.0">
+                    <content>
+                        <FlowPane fx:id="suggestionValuesPane" hgap="8.0" vgap="8.0">
+                            <padding>
+                                <Insets top="5.0" bottom="5.0" left="5.0" right="5.0"/>
+                            </padding>
+                        </FlowPane>
+                    </content>
+                </ScrollPane>
+            </children>
+        </VBox>
+    </children>
+    </VBox>
+
+    <VBox fx:id="suggestionSimpleContainer" spacing="5.0" visible="false" managed="false">
+        <children>
+            <Separator/>
+            <Label text="Gợi ý Tag Đơn giản" style="-fx-font-size: 14px; -fx-font-style: italic;"/>
+            <ScrollPane fitToWidth="true" vbarPolicy="NEVER" hbarPolicy="AS_NEEDED" styleClass="scroll-pane" prefHeight="65.0">
+                <content>
+                    <FlowPane fx:id="suggestionSimplePane" hgap="8.0" vgap="8.0">
+                        <padding>
+                            <Insets top="5.0" bottom="5.0" left="5.0" right="5.0"/>
+                        </padding>
+                    </FlowPane>
+                </content>
+            </ScrollPane>
+        </children>
+    </VBox>
     <ButtonBar>
         <buttons>
             <Button fx:id="cancelButton" text="Hủy" onAction="#handleCancel"/>

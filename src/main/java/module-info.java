@@ -23,7 +23,6 @@ module com.example.embyapp {
     opens com.example.embyapp.viewmodel to javafx.base; // Open viewmodel to javafx.base for properties
 
     // If using Gson to reflectively access SDK models, open them
-    // opens com.example.emby.modelEmby to com.google.gson;
     // opens com.example.emby.EmbyClient to com.google.gson;
     exports com.example.embyapp;
     exports com.example.embyapp.controller;

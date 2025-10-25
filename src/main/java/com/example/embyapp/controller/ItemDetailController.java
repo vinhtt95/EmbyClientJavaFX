@@ -1,21 +1,26 @@
 package com.example.embyapp.controller;
 
+import com.example.emby.modelEmby.BaseItemDto; // (MỚI)
+import com.example.embyapp.service.JsonFileHandler; // (MỚI)
 import com.example.embyapp.viewmodel.ItemDetailViewModel;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.ReadOnlyBooleanProperty; // (MỚI)
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextArea; // (MỚI)
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox; // (MỚI)
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage; // (MỚI)
 
 import java.awt.Desktop;
 import java.io.File;
@@ -24,6 +29,8 @@ import java.io.File;
  * (CẬP NHẬT 3)
  * Cập nhật để bind với Form UI mới (TextFields, TextArea).
  * Thêm logic ẩn/hiện fileOnlyContainer.
+ * (CẬP NHẬT 4)
+ * Thêm logic Import/Export/Review.
  */
 public class ItemDetailController {
 
@@ -57,12 +64,61 @@ public class ItemDetailController {
     @FXML private TextField studiosTextField;
     @FXML private TextField peopleTextField;
 
+    // (MỚI) Thêm @FXML cho các nút Import/Export
+    @FXML private Button importButton;
+    @FXML private Button exportButton;
+
+    // (MỚI) Thêm @FXML cho các Container và Nút (v/x)
+    @FXML private HBox reviewTitleContainer;
+    @FXML private Button acceptTitleButton;
+    @FXML private Button rejectTitleButton;
+
+    @FXML private HBox reviewOverviewContainer;
+    @FXML private Button acceptOverviewButton;
+    @FXML private Button rejectOverviewButton;
+
+    @FXML private HBox reviewTagsContainer;
+    @FXML private Button acceptTagsButton;
+    @FXML private Button rejectTagsButton;
+
+    @FXML private HBox reviewReleaseDateContainer;
+    @FXML private Button acceptReleaseDateButton;
+    @FXML private Button rejectReleaseDateButton;
+
+    @FXML private HBox reviewStudiosContainer;
+    @FXML private Button acceptStudiosButton;
+    @FXML private Button rejectStudiosButton;
+
+    @FXML private HBox reviewPeopleContainer;
+    @FXML private Button acceptPeopleButton;
+    @FXML private Button rejectPeopleButton;
+
+
     private ItemDetailViewModel viewModel;
     private static final double BACKDROP_THUMBNAIL_HEIGHT = 100;
 
     @FXML
     public void initialize() {
-        // (Sẽ được gọi trong setViewModel)
+        // (MỚI) Gán sự kiện onAction cho các nút (v/x)
+        // Dùng lambda để gọi hàm trong ViewModel
+        // Đặt ở đây vì FXML đã được inject
+        acceptTitleButton.setOnAction(e -> viewModel.acceptImportField("title"));
+        rejectTitleButton.setOnAction(e -> viewModel.rejectImportField("title"));
+
+        acceptOverviewButton.setOnAction(e -> viewModel.acceptImportField("overview"));
+        rejectOverviewButton.setOnAction(e -> viewModel.rejectImportField("overview"));
+
+        acceptTagsButton.setOnAction(e -> viewModel.acceptImportField("tags"));
+        rejectTagsButton.setOnAction(e -> viewModel.rejectImportField("tags"));
+
+        acceptReleaseDateButton.setOnAction(e -> viewModel.acceptImportField("releaseDate"));
+        rejectReleaseDateButton.setOnAction(e -> viewModel.rejectImportField("releaseDate"));
+
+        acceptStudiosButton.setOnAction(e -> viewModel.acceptImportField("studios"));
+        rejectStudiosButton.setOnAction(e -> viewModel.rejectImportField("studios"));
+
+        acceptPeopleButton.setOnAction(e -> viewModel.acceptImportField("people"));
+        rejectPeopleButton.setOnAction(e -> viewModel.rejectImportField("people"));
     }
 
     /**
@@ -124,6 +180,26 @@ public class ItemDetailController {
             );
             actionStatusLabel.textProperty().bind(viewModel.actionStatusMessageProperty());
         }
+
+        // 9. (MỚI) Binding hiển thị cho các nút (v/x)
+        bindReviewContainer(reviewTitleContainer, viewModel.showTitleReviewProperty());
+        bindReviewContainer(reviewOverviewContainer, viewModel.showOverviewReviewProperty());
+        bindReviewContainer(reviewTagsContainer, viewModel.showTagsReviewProperty());
+        bindReviewContainer(reviewReleaseDateContainer, viewModel.showReleaseDateReviewProperty());
+        bindReviewContainer(reviewStudiosContainer, viewModel.showStudiosReviewProperty());
+        bindReviewContainer(reviewPeopleContainer, viewModel.showPeopleReviewProperty());
+    }
+
+    /**
+     * (MỚI) Hàm helper để bind container (v/x)
+     */
+    private void bindReviewContainer(HBox container, ReadOnlyBooleanProperty visibilityProperty) {
+        if (container != null && visibilityProperty != null) {
+            container.visibleProperty().bind(visibilityProperty);
+            container.managedProperty().bind(visibilityProperty);
+        } else {
+            System.err.println("Lỗi binding: container hoặc property bị null.");
+        }
     }
 
     /**
@@ -181,13 +257,95 @@ public class ItemDetailController {
     }
 
     /**
-     * (MỚI) Được gọi khi nhấn nút Lưu.
-     * Sẽ được triển khai ở Phase 2.
+     * (SỬA ĐỔI) Được gọi khi nhấn nút Lưu.
+     * Giờ đây nó gọi hàm saveChanges() trong ViewModel.
      */
     @FXML
     private void handleSaveButtonAction() {
-        System.out.println("Nút Lưu đã được nhấn. Sẵn sàng để update API.");
-        // TODO: Gọi một hàm trong ViewModel, ví dụ:
-        // viewModel.saveChanges();
+        System.out.println("Nút Lưu đã được nhấn. Gọi ViewModel.saveChanges().");
+        if (viewModel != null) {
+            viewModel.saveChanges();
+        }
+    }
+
+    /**
+     * (MỚI) Xử lý sự kiện nhấn nút Import.
+     */
+    @FXML
+    private void handleImportButtonAction() {
+        if (viewModel == null) return;
+        viewModel.clearActionError(); // Xóa lỗi cũ
+
+        try {
+            // Lấy Stage hiện tại
+            Stage stage = (Stage) rootPane.getScene().getWindow();
+            File selectedFile = JsonFileHandler.showOpenJsonDialog(stage);
+
+            if (selectedFile != null) {
+                viewModel.reportActionError("Đang đọc file JSON...");
+                // Chạy đọc file trong luồng nền
+                new Thread(() -> {
+                    try {
+                        BaseItemDto importedDto = JsonFileHandler.readJsonFileToObject(selectedFile);
+                        if (importedDto != null) {
+                            // Cập nhật UI trên JavaFX Thread
+                            Platform.runLater(() -> {
+                                viewModel.importAndPreview(importedDto); // Gửi DTO sang ViewModel
+                                viewModel.reportActionError("Đã tải " + selectedFile.getName() + ". Vui lòng duyệt thay đổi.");
+                            });
+                        } else {
+                            throw new Exception("File JSON không hợp lệ hoặc rỗng.");
+                        }
+                    } catch (Exception ex) {
+                        System.err.println("Lỗi khi Import (luồng nền): " + ex.getMessage());
+                        Platform.runLater(() -> viewModel.reportActionError("Lỗi Import: " + ex.getMessage()));
+                    }
+                }).start();
+            }
+        } catch (Exception e) {
+            // Lỗi này thường là lỗi khi hiển thị dialog (hiếm)
+            System.err.println("Lỗi khi Import (hiển thị dialog): " + e.getMessage());
+            viewModel.reportActionError("Lỗi Import: " + e.getMessage());
+        }
+    }
+
+    /**
+     * (MỚI) Xử lý sự kiện nhấn nút Export.
+     */
+    @FXML
+    private void handleExportButtonAction() {
+        if (viewModel == null) return;
+        viewModel.clearActionError();
+
+        try {
+            BaseItemDto dtoToExport = viewModel.getItemForExport();
+            if (dtoToExport == null) {
+                viewModel.reportActionError("Lỗi: Không có dữ liệu item để export.");
+                return;
+            }
+
+            Stage stage = (Stage) rootPane.getScene().getWindow();
+            // Tạo tên file gợi ý (ví dụ: TenPhim.json)
+            String initialFileName = (dtoToExport.getName() != null ? dtoToExport.getName().replaceAll("[^a-zA-Z0-9.-]", "_") : "item") + ".json";
+
+            File targetFile = JsonFileHandler.showSaveJsonDialog(stage, initialFileName);
+
+            if (targetFile != null) {
+                // Chạy ghi file trong luồng nền
+                new Thread(() -> {
+                    try {
+                        JsonFileHandler.writeObjectToJsonFile(dtoToExport, targetFile);
+                        Platform.runLater(() -> viewModel.reportActionError("Đã export thành công ra " + targetFile.getName()));
+                    } catch (Exception ex) {
+                        System.err.println("Lỗi khi Export (luồng nền): " + ex.getMessage());
+                        Platform.runLater(() -> viewModel.reportActionError("Lỗi Export: " + ex.getMessage()));
+                    }
+                }).start();
+            }
+
+        } catch (Exception e) {
+            System.err.println("Lỗi khi Export (hiển thị dialog): " + e.getMessage());
+            viewModel.reportActionError("Lỗi Export: " + e.getMessage());
+        }
     }
 }

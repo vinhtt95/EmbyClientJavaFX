@@ -1,10 +1,12 @@
 package com.example.embyapp.viewmodel;
 
+import com.example.emby.EmbyClient.ApiClient;
 import com.example.emby.EmbyClient.ApiException;
+import com.example.emby.EmbyClient.Java.ItemUpdateServiceApi; // (MỚI)
 import com.example.emby.modelEmby.BaseItemDto;
 import com.example.emby.modelEmby.ImageInfo;
-import com.example.emby.modelEmby.BaseItemPerson; // Giả định SDK của bạn có class này
-import com.example.emby.modelEmby.NameLongIdPair; // (MỚI) Import chính xác
+import com.example.emby.modelEmby.BaseItemPerson;
+import com.example.emby.modelEmby.NameLongIdPair;
 import com.example.embyapp.service.EmbyService;
 import com.example.embyapp.service.ItemRepository;
 import javafx.application.Platform;
@@ -12,10 +14,14 @@ import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.image.Image;
+import org.threeten.bp.OffsetDateTime; // (MỚI)
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap; // (MỚI)
 import java.util.List;
+import java.util.Map; // (MỚI)
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -23,6 +29,9 @@ import java.util.stream.Collectors;
  * (CẬP NHẬT LỚN) ViewModel cho ItemDetailView (Cột phải).
  * (CẬP NHẬT 4) Chuyển Title/Overview sang editable, thêm các trường mới.
  * (CẬP NHẬT 5) Sửa logic getStudios() để dùng NameLongIdPair và thêm error reporting.
+ * (CẬP NHẬT 6) Thêm logic Import/Export/Review/Save.
+ * (CẬP NHẬT 7) Sửa lỗi incompatible types (ThreeTen Instant vs Java Instant).
+ * (CẬP NHẬT 8) Sửa lỗi logic clearDetails() khiến currentItemId bị null khi lưu.
  */
 public class ItemDetailViewModel {
 
@@ -62,6 +71,19 @@ public class ItemDetailViewModel {
     private final ReadOnlyStringWrapper studios = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper people = new ReadOnlyStringWrapper("");
 
+    // (MỚI) Các trường quản lý trạng thái Import/Save
+    private BaseItemDto originalItemDto; // Lưu trữ DTO gốc tải từ server
+    private final Map<String, Object> preImportState = new HashMap<>(); // Lưu trạng thái ngay trước khi import
+    private String currentItemId; // (MỚI) Lưu ID của item hiện tại
+
+    // (MỚI) Thêm các BooleanProperty cho 6 cặp nút (v/x)
+    private final ReadOnlyBooleanWrapper showTitleReview = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyBooleanWrapper showOverviewReview = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyBooleanWrapper showTagsReview = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyBooleanWrapper showReleaseDateReview = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyBooleanWrapper showStudiosReview = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyBooleanWrapper showPeopleReview = new ReadOnlyBooleanWrapper(false);
+
 
     public ItemDetailViewModel(ItemRepository itemRepository, EmbyService embyService) {
         this.itemRepository = itemRepository;
@@ -72,6 +94,8 @@ public class ItemDetailViewModel {
         if (item == null) {
             Platform.runLater(() -> {
                 clearDetails();
+                this.currentItemId = null; // (MỚI) <-- Đặt ở đây là ĐÚNG
+                this.originalItemDto = null; // (MỚI) <-- Đặt ở đây là ĐÚNG
                 statusMessage.set("Vui lòng chọn một item từ danh sách...");
                 showStatusMessage.set(true);
                 loading.set(false);
@@ -79,8 +103,10 @@ public class ItemDetailViewModel {
             return;
         }
 
+        this.currentItemId = item.getId(); // (MỚI) Lưu ID
+
         Platform.runLater(() -> {
-            clearDetails();
+            clearDetails(); // <-- Hàm này giờ đã AN TOÀN, không xóa currentItemId
             statusMessage.set("Đang tải chi tiết cho: " + item.getName() + "...");
             showStatusMessage.set(true);
             loading.set(true);
@@ -89,7 +115,7 @@ public class ItemDetailViewModel {
         new Thread(() -> {
             try {
                 String userId = embyService.getCurrentUserId();
-                String itemId = item.getId();
+                String itemId = item.getId(); // Lấy ID đã lưu (an toàn)
                 String serverUrl = embyService.getApiClient().getBasePath();
 
                 if (userId == null) {
@@ -97,6 +123,10 @@ public class ItemDetailViewModel {
                 }
 
                 BaseItemDto fullDetails = itemRepository.getFullItemDetails(userId, itemId);
+
+                // (MỚI) Lưu DTO gốc
+                this.originalItemDto = fullDetails;
+
                 List<ImageInfo> images = itemRepository.getItemImages(itemId);
 
                 // --- Xử lý dữ liệu (luồng nền) ---
@@ -116,7 +146,8 @@ public class ItemDetailViewModel {
                 String releaseDateText = "";
                 if (fullDetails.getPremiereDate() != null) {
                     try {
-                        releaseDateText = fullDetails.getPremiereDate().toString();
+                        // (SỬA LỖI) Dùng hàm helper mới
+                        releaseDateText = dateToString(fullDetails.getPremiereDate());
                     } catch (Exception e) {
                         System.err.println("Không thể format PremiereDate: " + e.getMessage());
                     }
@@ -171,6 +202,9 @@ public class ItemDetailViewModel {
                     }
 
                     backdropImageUrls.setAll(backdropUrls);
+
+                    // (MỚI) Reset tất cả các nút review
+                    hideAllReviewButtons();
                     loading.set(false);
                     showStatusMessage.set(false);
                 });
@@ -187,6 +221,10 @@ public class ItemDetailViewModel {
         }).start();
     }
 
+    /**
+     * (*** SỬA LỖI ***)
+     * Hàm này chỉ xóa các trường UI, KHÔNG xóa state (currentItemId, originalItemDto).
+     */
     private void clearDetails() {
         title.set("");
         year.set("");
@@ -206,6 +244,47 @@ public class ItemDetailViewModel {
         releaseDate.set("");
         studios.set("");
         people.set("");
+
+        // (MỚI)
+        // this.originalItemDto = null; // <<<--- ĐÃ XÓA
+        // this.currentItemId = null; // <<<--- ĐÃ XÓA
+        this.preImportState.clear();
+        hideAllReviewButtons();
+    }
+
+    // (MỚI) Thêm hàm ẩn tất cả nút review
+    private void hideAllReviewButtons() {
+        showTitleReview.set(false);
+        showOverviewReview.set(false);
+        showTagsReview.set(false);
+        showReleaseDateReview.set(false);
+        showStudiosReview.set(false);
+        showPeopleReview.set(false);
+    }
+
+    // (MỚI) Các hàm helper chuyển đổi
+    private String listToString(List<String> list) {
+        return (list != null) ? String.join(", ", list) : "";
+    }
+
+    private String dateToString(OffsetDateTime date) {
+        if (date == null) return "";
+        try {
+            // *** SỬA LỖI (FIX) ***
+            // Chuyển OffsetDateTime (threetenbp) sang java.util.Date
+            // bằng cách lấy epochMilli, vì toInstant() trả về org.threeten.bp.Instant
+            return dateFormat.format(new java.util.Date(date.toInstant().toEpochMilli()));
+        } catch (Exception e) {
+            System.err.println("Lỗi format dateToString: " + e.getMessage());
+            return "";
+        }
+    }
+
+    private String studiosToString(List<NameLongIdPair> studios) {
+        return (studios != null) ? studios.stream().map(NameLongIdPair::getName).collect(Collectors.joining(", ")) : "";
+    }
+    private String peopleToString(List<BaseItemPerson> people) {
+        return (people != null) ? people.stream().map(BaseItemPerson::getName).collect(Collectors.joining(", ")) : "";
     }
 
     private String formatRuntime(Long runTimeTicks) {
@@ -226,6 +305,7 @@ public class ItemDetailViewModel {
     }
 
     private String findImageUrl(List<ImageInfo> images, String imageType, String serverUrl, String itemId) {
+        if (images == null) return null; // (MỚI) Kiểm tra null
         for (ImageInfo image : images) {
             if (imageType.equals(image.getImageType().getValue())) {
                 return String.format("%s/Items/%s/Images/%s/%d", serverUrl, itemId, imageType, 0);
@@ -236,6 +316,7 @@ public class ItemDetailViewModel {
 
     private List<String> buildBackdropUrls(List<ImageInfo> images, String serverUrl, String itemId) {
         List<String> urls = new ArrayList<>();
+        if (images == null) return urls; // (MỚI) Kiểm tra null
         for (ImageInfo imgInfo : images) {
             if ("Backdrop".equals(imgInfo.getImageType().getValue()) && imgInfo.getImageIndex() != null) {
                 String url = String.format("%s/Items/%s/Images/Backdrop/%d?maxWidth=400",
@@ -245,6 +326,175 @@ public class ItemDetailViewModel {
         }
         return urls;
     }
+
+
+    // --- (MỚI) LOGIC IMPORT/EXPORT/SAVE ---
+
+    /**
+     * (MỚI) Lấy DTO gốc để export
+     */
+    public BaseItemDto getItemForExport() {
+        return this.originalItemDto;
+    }
+
+    /**
+     * (MỚI) Nhận DTO từ file import và cập nhật UI để review.
+     */
+    public void importAndPreview(BaseItemDto importedDto) {
+        if (originalItemDto == null || importedDto == null) return;
+
+        Platform.runLater(() -> {
+            preImportState.clear(); // Xóa state cũ
+            hideAllReviewButtons(); // Ẩn tất cả nút
+
+            // 1. Title (Editable)
+            preImportState.put("title", title.get()); // Lưu giá trị HIỆN TẠI (có thể đã edit)
+            title.set(importedDto.getName() != null ? importedDto.getName() : "");
+            showTitleReview.set(true);
+
+            // 2. Overview (Editable)
+            preImportState.put("overview", overview.get());
+            overview.set(importedDto.getOverview() != null ? importedDto.getOverview() : "");
+            showOverviewReview.set(true);
+
+            // 3. Tags (Read-only field)
+            preImportState.put("tags_string", tags.get()); // Lưu string UI
+            preImportState.put("tags_data", originalItemDto.getTags()); // Lưu data thật
+            List<String> importTags = importedDto.getTags() != null ? importedDto.getTags() : Collections.emptyList();
+            tags.set(listToString(importTags)); // Cập nhật UI
+            originalItemDto.setTags(importTags); // Cập nhật data thật
+            showTagsReview.set(true);
+
+            // 4. Release Date (Read-only field)
+            preImportState.put("releaseDate_string", releaseDate.get());
+            preImportState.put("releaseDate_data", originalItemDto.getPremiereDate());
+            releaseDate.set(dateToString(importedDto.getPremiereDate()));
+            originalItemDto.setPremiereDate(importedDto.getPremiereDate());
+            showReleaseDateReview.set(true);
+
+            // 5. Studios (Read-only field)
+            preImportState.put("studios_string", studios.get());
+            preImportState.put("studios_data", originalItemDto.getStudios());
+            List<NameLongIdPair> importStudios = importedDto.getStudios() != null ? importedDto.getStudios() : Collections.emptyList();
+            studios.set(studiosToString(importStudios));
+            originalItemDto.setStudios(importStudios);
+            showStudiosReview.set(true);
+
+            // 6. People (Read-only field)
+            preImportState.put("people_string", people.get());
+            preImportState.put("people_data", originalItemDto.getPeople());
+            List<BaseItemPerson> importPeople = importedDto.getPeople() != null ? importedDto.getPeople() : Collections.emptyList();
+            people.set(peopleToString(importPeople));
+            originalItemDto.setPeople(importPeople);
+            showPeopleReview.set(true);
+        });
+    }
+
+    /**
+     * (MỚI) Người dùng nhấn (v) - Chấp nhận thay đổi.
+     */
+    public void acceptImportField(String fieldName) {
+        switch (fieldName) {
+            case "title": showTitleReview.set(false); break;
+            case "overview": showOverviewReview.set(false); break;
+            case "tags": showTagsReview.set(false); break;
+            case "releaseDate": showReleaseDateReview.set(false); break;
+            case "studios": showStudiosReview.set(false); break;
+            case "people": showPeopleReview.set(false); break;
+        }
+    }
+
+    /**
+     * (MỚI) Người dùng nhấn (x) - Hủy bỏ thay đổi.
+     */
+    @SuppressWarnings("unchecked")
+    public void rejectImportField(String fieldName) {
+        switch (fieldName) {
+            case "title":
+                title.set((String) preImportState.get("title"));
+                showTitleReview.set(false);
+                break;
+            case "overview":
+                overview.set((String) preImportState.get("overview"));
+                showOverviewReview.set(false);
+                break;
+            case "tags":
+                tags.set((String) preImportState.get("tags_string"));
+                originalItemDto.setTags((List<String>) preImportState.get("tags_data"));
+                showTagsReview.set(false);
+                break;
+            case "releaseDate":
+                releaseDate.set((String) preImportState.get("releaseDate_string"));
+                originalItemDto.setPremiereDate((OffsetDateTime) preImportState.get("releaseDate_data"));
+                showReleaseDateReview.set(false);
+                break;
+            case "studios":
+                studios.set((String) preImportState.get("studios_string"));
+                originalItemDto.setStudios((List<NameLongIdPair>) preImportState.get("studios_data"));
+                showStudiosReview.set(false);
+                break;
+            case "people":
+                people.set((String) preImportState.get("people_string"));
+                originalItemDto.setPeople((List<BaseItemPerson>) preImportState.get("people_data"));
+                showPeopleReview.set(false);
+                break;
+        }
+    }
+
+    /**
+     * (MỚI) Được gọi bởi Controller khi nhấn nút "Lưu thay đổi".
+     */
+    public void saveChanges() {
+        if (originalItemDto == null || currentItemId == null) {
+            reportActionError("Lỗi: Không có item nào đang được chọn để lưu.");
+            return;
+        }
+
+        // 1. Cập nhật các trường editable (Title, Overview) vào DTO
+        originalItemDto.setName(title.get());
+        originalItemDto.setOverview(overview.get());
+        // Các trường (Tags, Studios, People...) ĐÃ ĐƯỢC CẬP NHẬT trong DTO
+        // bởi logic `importAndPreview` và `rejectImportField`.
+
+        reportActionError("Đang lưu thay đổi lên server...");
+        hideAllReviewButtons(); // Ẩn các nút (v/x) sau khi lưu
+
+        // 2. Gọi API trong luồng nền
+        new Thread(() -> {
+            try {
+                // (MỚI) Lấy API service từ EmbyService
+                ItemUpdateServiceApi itemUpdateServiceApi = embyService.getItemUpdateServiceApi();
+                if (itemUpdateServiceApi == null) {
+                    throw new IllegalStateException("Không thể lấy ItemUpdateServiceApi. Vui lòng đăng nhập lại.");
+                }
+
+                // Gọi API (theo code mẫu của bạn)
+                itemUpdateServiceApi.postItemsByItemid(originalItemDto, currentItemId);
+
+                // Báo thành công
+                Platform.runLater(() -> {
+                    reportActionError("Đã lưu thay đổi thành công!");
+                });
+
+            } catch (ApiException e) {
+                System.err.println("API Error saving item: " + e.getMessage());
+                Platform.runLater(() -> reportActionError("Lỗi API khi lưu: " + e.getMessage()));
+            } catch (Exception e) {
+                System.err.println("Generic Error saving item: " + e.getMessage());
+                e.printStackTrace();
+                Platform.runLater(() -> reportActionError("Lỗi không xác định khi lưu: " + e.getMessage()));
+            }
+        }).start();
+    }
+
+
+    // --- (MỚI) Getters cho các BooleanProperty (v/x) ---
+    public ReadOnlyBooleanProperty showTitleReviewProperty() { return showTitleReview.getReadOnlyProperty(); }
+    public ReadOnlyBooleanProperty showOverviewReviewProperty() { return showOverviewReview.getReadOnlyProperty(); }
+    public ReadOnlyBooleanProperty showTagsReviewProperty() { return showTagsReview.getReadOnlyProperty(); }
+    public ReadOnlyBooleanProperty showReleaseDateReviewProperty() { return showReleaseDateReview.getReadOnlyProperty(); }
+    public ReadOnlyBooleanProperty showStudiosReviewProperty() { return showStudiosReview.getReadOnlyProperty(); }
+    public ReadOnlyBooleanProperty showPeopleReviewProperty() { return showPeopleReview.getReadOnlyProperty(); }
 
 
     // --- Getters cho Properties ---

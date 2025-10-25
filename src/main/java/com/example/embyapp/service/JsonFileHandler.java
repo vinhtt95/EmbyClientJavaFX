@@ -1,0 +1,67 @@
+package com.example.embyapp.service;
+
+import com.example.emby.modelEmby.BaseItemDto;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.Reader;
+import java.io.Writer;
+
+public class JsonFileHandler {
+
+    // Khởi tạo Gson (đã có trong pom.xml)
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+    /**
+     * Hiển thị cửa sổ MỞ file JSON.
+     * @param ownerStage Stage hiện tại (để khóa)
+     * @return File đã chọn, hoặc null nếu hủy.
+     */
+    public static File showOpenJsonDialog(Stage ownerStage) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Import Item JSON");
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("JSON files (*.json)", "*.json")
+        );
+        return fileChooser.showOpenDialog(ownerStage);
+    }
+
+    /**
+     * Hiển thị cửa sổ LƯU file JSON.
+     * @param ownerStage Stage hiện tại (để khóa)
+     * @param initialFileName Tên file gợi ý (ví dụ: "item-name.json")
+     * @return File đích (nơi lưu), hoặc null nếu hủy.
+     */
+    public static File showSaveJsonDialog(Stage ownerStage, String initialFileName) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export Item JSON");
+        fileChooser.setInitialFileName(initialFileName);
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("JSON files (*.json)", "*.json")
+        );
+        return fileChooser.showSaveDialog(ownerStage);
+    }
+
+    /**
+     * Đọc file JSON và chuyển đổi thành đối tượng (như bạn yêu cầu).
+     */
+    public static BaseItemDto readJsonFileToObject(File file) throws Exception {
+        try (Reader reader = new FileReader(file)) {
+            return gson.fromJson(reader, BaseItemDto.class);
+        }
+    }
+
+    /**
+     * Ghi một đối tượng (BaseItemDto) ra file JSON.
+     */
+    public static void writeObjectToJsonFile(BaseItemDto object, File file) throws Exception {
+        try (Writer writer = new FileWriter(file)) {
+            gson.toJson(object, writer);
+        }
+    }
+}

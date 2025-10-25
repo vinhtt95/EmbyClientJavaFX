@@ -12,18 +12,12 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.10.0</junit.version>
-        <javafx.version>21</javafx.version> <!-- Hoặc phiên bản JavaFX bạn muốn -->
-        <maven.compiler.source>21</maven.compiler.source> <!-- Đảm bảo khớp với JDK -->
-        <maven.compiler.target>21</maven.compiler.target> <!-- Đảm bảo khớp với JDK -->
-        <emby.sdk.version>1.0.0</emby.sdk.version> <!-- Phiên bản SDK bạn đã build -->
-        <okhttp2.version>2.7.5</okhttp2.version> <!-- Phiên bản OkHttp 2.x -->
-        <gson.version>2.10.1</gson.version>
+        <javafx.version>21</javafx.version> <maven.compiler.source>21</maven.compiler.source> <maven.compiler.target>21</maven.compiler.target> <emby.sdk.version>1.0.0</emby.sdk.version> <okhttp2.version>2.7.5</okhttp2.version> <gson.version>2.10.1</gson.version>
         <threetenbp.version>1.6.8</threetenbp.version>
         <gsonfire.version>1.9.0</gsonfire.version>
     </properties>
 
     <dependencies>
-        <!-- JavaFX -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
@@ -46,25 +40,14 @@
         </dependency>
 
 
-        <!-- Emby Client SDK -->
         <dependency>
-            <groupId>com.vinhtt95.emby</groupId> <!-- GroupId mới của SDK -->
-            <artifactId>emby-sdk-java</artifactId> <!-- ArtifactId mới của SDK -->
-            <version>${emby.sdk.version}</version> <!-- Version mới của SDK -->
-        </dependency>
+            <groupId>com.vinhtt95.emby</groupId> <artifactId>emby-sdk-java</artifactId> <version>${emby.sdk.version}</version> </dependency>
 
-        <!-- Dependencies required by Emby SDK (using OkHttp 2.x now) -->
         <dependency>
             <groupId>com.squareup.okhttp</groupId>
             <artifactId>okhttp</artifactId>
             <version>${okhttp2.version}</version>
         </dependency>
-        <!-- logging-interceptor không tương thích với okhttp 2.x -->
-        <!-- <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>logging-interceptor</artifactId>
-            <version>4.10.0</version>
-        </dependency> -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
@@ -74,7 +57,6 @@
             <groupId>org.threeten</groupId>
             <artifactId>threetenbp</artifactId>
             <version>${threetenbp.version}</version>
-            <!-- Classifier đã bị xóa ở bước trước -->
         </dependency>
         <dependency>
             <groupId>io.gsonfire</groupId>
@@ -82,7 +64,6 @@
             <version>${gsonfire.version}</version>
         </dependency>
 
-        <!-- JUnit (for testing, optional) -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -102,10 +83,8 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version> <!-- Keep version -->
-                <configuration>
-                    <!-- Không cần compilerArgs phức tạp nữa -->
-                </configuration>
+                <version>3.11.0</version> <configuration>
+            </configuration>
             </plugin>
             <plugin>
                 <groupId>org.openjfx</groupId>
@@ -113,7 +92,6 @@
                 <version>0.0.8</version>
                 <executions>
                     <execution>
-                        <!-- Default configuration for running with: mvn clean javafx:run -->
                         <id>default-cli</id>
                         <configuration>
                             <mainClass>com.example.embyapp/com.example.embyapp.Launcher</mainClass>
@@ -123,18 +101,19 @@
                             <noManPages>true</noManPages>
                             <stripDebug>true</stripDebug>
                             <noHeaderFiles>true</noHeaderFiles>
+
+                            <options>
+                                <option>--add-opens=emby.sdk.java/com.example.emby.modelEmby=com.google.gson</option>
+                                <option>--add-opens=emby.sdk.java/com.example.emby.EmbyClient=com.google.gson</option>
+                            </options>
                             <addModules>
                                 <module>javafx.controls</module>
                                 <module>javafx.fxml</module>
                                 <module>javafx.graphics</module>
                                 <module>javafx.base</module>
-                                <!-- Thêm module tự động của SDK và các dependency -->
                                 <module>emby.sdk.java</module>
                                 <module>com.google.gson</module>
-                                <!-- OkHttp 2.x không phải là module Java 9+ -->
-                                <!-- <module>okhttp</module> -->
                                 <module>org.threeten.bp</module>
-                                <!-- <module>io.gsonfire</module> --> <!-- Thử bỏ comment nếu cần -->
                             </addModules>
                         </configuration>
                     </execution>
@@ -143,4 +122,3 @@
         </plugins>
     </build>
 </project>
-

@@ -5,6 +5,7 @@ import com.example.emby.EmbyClient.ApiException;
 import com.example.emby.EmbyClient.Java.ItemsServiceApi;
 import com.example.emby.EmbyClient.Java.SystemServiceApi;
 import com.example.emby.EmbyClient.Java.UserServiceApi;
+import com.example.emby.EmbyClient.Java.ItemUpdateServiceApi; // (MỚI) Import
 import com.example.emby.modelEmby.AuthenticationAuthenticationResult;
 import com.example.emby.modelEmby.SystemInfo;
 import com.example.emby.modelEmby.UserDto;
@@ -45,6 +46,7 @@ public class EmbyService {
     private UserServiceApi userServiceApi;
     private ItemsServiceApi itemsServiceApi;
     private SystemServiceApi systemServiceApi;
+    private ItemUpdateServiceApi itemUpdateServiceApi; // (MỚI) Cache API
 
 
     private final BooleanProperty loggedIn = new SimpleBooleanProperty(false);
@@ -149,6 +151,7 @@ public class EmbyService {
             this.userServiceApi = null;
             this.itemsServiceApi = null;
             this.systemServiceApi = null;
+            this.itemUpdateServiceApi = null; // (MỚI)
         } else {
             // (Khi logout hoặc login fail)
             this.currentAccessToken = null;
@@ -158,6 +161,7 @@ public class EmbyService {
             this.userServiceApi = null;
             this.itemsServiceApi = null;
             this.systemServiceApi = null;
+            this.itemUpdateServiceApi = null; // (MỚI)
         }
     }
 
@@ -272,6 +276,7 @@ public class EmbyService {
                         this.userServiceApi = null;
                         this.itemsServiceApi = null;
                         this.systemServiceApi = null;
+                        this.itemUpdateServiceApi = null; // (MỚI)
                         return true; // SUCCESS!
 
                     } else {
@@ -357,5 +362,19 @@ public class EmbyService {
         }
         return systemServiceApi;
     }
-}
 
+    /**
+     * (MỚI) Getter cho API Update
+     */
+    public synchronized ItemUpdateServiceApi getItemUpdateServiceApi() {
+        if (!isLoggedIn()) {
+            System.err.println("Attempted to get ItemUpdateServiceApi while not logged in.");
+            return null;
+        }
+        if (itemUpdateServiceApi == null) {
+            System.out.println("Creating ItemUpdateServiceApi");
+            itemUpdateServiceApi = new ItemUpdateServiceApi(apiClient);
+        }
+        return itemUpdateServiceApi;
+    }
+}

@@ -17,6 +17,7 @@ import java.util.stream.Collectors; // (CẬP NHẬT) Thêm import (từ lần s
  * (SỬA ĐỔI) Repository để quản lý việc truy xuất BaseItemDto (Thư viện, Phim, Series...).
  * (CẬP NHẬT) Thêm logic để lấy Chi tiết Item đầy đủ và Danh sách Ảnh.
  * (CẬP NHẬT MỚI) Thêm phương thức phân trang getFullByParentIdPaginated.
+ * (CẬP NHẬT TÌM KIẾM) Thêm phương thức searchItemsPaginated.
  */
 public class ItemRepository {
 
@@ -149,6 +150,43 @@ public class ItemRepository {
 
         // Gọi hàm RequestEmby đã sửa đổi
         QueryResultBaseItemDto result = new RequestEmby().getQueryResultFullBaseItemDto(parentId, service, startIndex, limit);
+
+        if (result != null) {
+            return result;
+        }
+
+        // Trả về kết quả rỗng an toàn
+        QueryResultBaseItemDto emptyResult = new QueryResultBaseItemDto();
+        emptyResult.setItems(Collections.emptyList());
+        emptyResult.setTotalRecordCount(0);
+        return emptyResult;
+    }
+
+    /**
+     * (MỚI) Tìm kiếm items dựa trên từ khóa với phân trang.
+     *
+     * @param keywords Từ khóa tìm kiếm.
+     * @param startIndex Vị trí bắt đầu.
+     * @param limit Số lượng item muốn lấy.
+     * @param sortOrder Thứ tự sắp xếp.
+     * @param sortBy Tiêu chí sắp xếp.
+     * @return QueryResultBaseItemDto chứa danh sách items và tổng số.
+     * @throws ApiException Nếu API call thất bại.
+     */
+    public QueryResultBaseItemDto searchItemsPaginated(String keywords, int startIndex, int limit, String sortOrder, String sortBy) throws ApiException {
+        if (!embyService.isLoggedIn()) {
+            throw new IllegalStateException("Không thể tìm kiếm khi chưa đăng nhập.");
+        }
+
+        ItemsServiceApi service = getItemsService();
+        if (service == null) {
+            throw new IllegalStateException("ItemsServiceApi is null.");
+        }
+
+        // Gọi hàm RequestEmby
+        QueryResultBaseItemDto result = new RequestEmby().searchBaseItemDto(
+                keywords, service, startIndex, limit, sortOrder, sortBy
+        );
 
         if (result != null) {
             return result;

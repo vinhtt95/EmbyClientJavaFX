@@ -1,13 +1,7 @@
-/* * CSS cho Ứng dụng EmbyClientJavaFX
- * (CẬP NHẬT 5): Fix nền TextArea trắng, ẩn thanh cuộn (Scrollbar Policy).
- * (CẬP NHẬT 7): Thêm style cho Tag (chip)
- * (CẬP NHẬT 8): Thêm style cho Separator và Label (Key/Value) trong chip JSON.
- * (CẬP NHẬT 9): Sửa lỗi hiển thị 3 vạch của Separator.
- * (CẬP NHẬT 14): Sửa style cho nút gợi ý tag (suggested-tag-button) giống chip.
- * (CẬP NHẬT 15): Sửa nền trắng cho ScrollPane trong dialog gợi ý tag.
- * (CẬP NHẬT 18): Thêm style cho các nút/view cập nhật ảnh.
- * (CẬP NHẬT 17): Sửa style nút Key cho bo tròn.
- * (CẬP NHẬT 33): Thống nhất style các nút Add (+), Accept (✓), Reject (✕) thành hình tròn và màu sắc theo yêu cầu.
+/* ... (phần đầu file giữ nguyên) ... */
+
+/* --- (CẬP NHẬT 33): Thống nhất style các nút Add (+), Accept (✓), Reject (✕) thành hình tròn và màu sắc theo yêu cầu.
+ * (CẬP NHẬT MỚI): Thêm style cho nút xóa tìm kiếm.
  */
 
 /* --- DARK MODE GLOBAL STYLES --- */
@@ -56,6 +50,25 @@
     -fx-background-color: #1e1e1e;
 }
 
+/* --- (MỚI) SEARCH CLEAR BUTTON STYLES --- */
+.search-clear-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #999999;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-padding: 0 5px 0 5px; /* Điều chỉnh padding để nó nhỏ và ở bên phải */
+    -fx-min-width: 25px;
+    -fx-min-height: 25px;
+    -fx-font-size: 14px; /* Font nhỏ cho '✕' */
+    -fx-cursor: hand;
+    -fx-opacity: 0.8;
+}
+.search-clear-button:hover {
+    -fx-text-fill: #ffffff;
+    -fx-opacity: 1.0;
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+}
+
 /* SplitPane */
 .split-pane {
     -fx-background-color: #121212;
@@ -66,6 +79,7 @@
 }
 
 /* TreeView */
+/* ... (phần còn lại của file giữ nguyên) ... */
 .tree-view {
     -fx-background-color: #1e1e1e;
     -fx-border-width: 0;

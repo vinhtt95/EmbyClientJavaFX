@@ -16,6 +16,7 @@ import java.util.List;
 /**
  * (SỬA ĐỔI) ViewModel cho ItemGridView (Cột giữa).
  * (CẬP NHẬT MỚI) Chuyển sang logic PHÂN TRANG THAY THẾ (Page Replacement) khi cuộn.
+ * (CẬP NHẬT TÌM KIẾM) Thêm logic cho tìm kiếm và phân trang kết quả tìm kiếm.
  */
 public class ItemGridViewModel {
 
@@ -32,6 +33,11 @@ public class ItemGridViewModel {
 
     private final ReadOnlyBooleanWrapper hasNextPage = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper hasPreviousPage = new ReadOnlyBooleanWrapper(false);
+
+    // --- Search State --- (MỚI)
+    private String currentSearchKeywords;
+    private boolean isSearching = false;
+
 
     // Dùng để khóa load và báo hiệu trạng thái
     private final ReadOnlyBooleanWrapper loading = new ReadOnlyBooleanWrapper(false);
@@ -64,6 +70,10 @@ public class ItemGridViewModel {
         loading.set(true);
         showStatusMessage.set(false);
         scrollAction.set(ScrollAction.NONE); // Reset scroll action
+
+        // Reset search state khi tải trang thư viện
+        isSearching = false;
+        currentSearchKeywords = null;
 
         int startIndex = pageIndex * ITEMS_PER_LOAD;
 
@@ -108,6 +118,11 @@ public class ItemGridViewModel {
                     } else {
                         // Cập nhật status
                         statusMessage.set("Đang hiển thị: " + (pageIndex + 1) + "/" + totalPages + " (" + totalCount + " items)");
+
+                        // Nếu đang ở trang đầu tiên (0), tự động chọn item đầu tiên
+                        if (pageIndex == 0 && !pageItems.isEmpty()) {
+                            selectedItem.set(pageItems.get(0));
+                        }
                     }
 
                     // 3. Hoàn thành loading
@@ -132,6 +147,86 @@ public class ItemGridViewModel {
         }).start();
     }
 
+    /**
+     * (MỚI) Phương thức tải trang cho kết quả tìm kiếm.
+     */
+    private void loadSearchPage(int pageIndex, String keywords) {
+        if (loading.get() || pageIndex < 0 || (totalPages > 0 && pageIndex >= totalPages)) {
+            return;
+        }
+
+        loading.set(true);
+        showStatusMessage.set(false);
+        scrollAction.set(ScrollAction.NONE); // Reset scroll action
+
+        int startIndex = pageIndex * ITEMS_PER_LOAD;
+
+        Platform.runLater(() -> {
+            statusMessage.set("Đang tìm kiếm và tải trang " + (pageIndex + 1) + "/" + (totalPages > 0 ? totalPages : "...") + "...");
+        });
+
+        new Thread(() -> {
+            try {
+                // SỬ DỤNG ItemRepository.searchItemsPaginated
+                QueryResultBaseItemDto result = itemRepository.searchItemsPaginated(
+                        keywords, startIndex, ITEMS_PER_LOAD, "Ascending", "SortName" // SortName là tiêu chí sắp xếp hợp lý
+                );
+
+                int calculatedTotalCount = result.getTotalRecordCount() != null ? result.getTotalRecordCount() : 0;
+                int calculatedTotalPages = (int) Math.ceil((double) calculatedTotalCount / ITEMS_PER_LOAD);
+
+                List<BaseItemDto> pageItems = result.getItems();
+
+                Platform.runLater(() -> {
+                    // 1. Cập nhật Pagination State & Search State
+                    currentSearchKeywords = keywords;
+                    currentParentId = null; // Rất quan trọng: Báo hiệu không còn ở chế độ thư viện
+                    totalCount = calculatedTotalCount;
+                    totalPages = calculatedTotalPages;
+                    currentPageIndex = pageIndex;
+                    isSearching = true; // Set cờ tìm kiếm
+
+                    hasNextPage.set(currentPageIndex < totalPages - 1);
+                    hasPreviousPage.set(currentPageIndex > 0);
+
+                    // 2. Cập nhật Items (Thay thế nội dung)
+                    items.setAll(pageItems);
+
+                    if (items.isEmpty() && totalCount > 0) {
+                        statusMessage.set("Trang này rỗng.");
+                        showStatusMessage.set(true);
+                    } else if (items.isEmpty()) {
+                        statusMessage.set("Không tìm thấy items nào khớp với từ khóa \"" + keywords + "\".");
+                        showStatusMessage.set(true);
+                    } else {
+                        statusMessage.set("Kết quả tìm kiếm: " + (pageIndex + 1) + "/" + totalPages + " (" + totalCount + " items)");
+                        // 3. (QUAN TRỌNG) Tự động chọn item đầu tiên
+                        selectedItem.set(pageItems.get(0));
+                    }
+
+                    // 4. Hoàn thành loading
+                    loading.set(false);
+                });
+
+            } catch (ApiException e) {
+                System.err.println("API Error loading search page: " + e.getMessage());
+                Platform.runLater(() -> {
+                    statusMessage.set("Lỗi API khi tìm kiếm: " + e.getMessage());
+                    showStatusMessage.set(true);
+                    loading.set(false);
+                });
+            } catch (Exception e) {
+                System.err.println("Generic Error loading search page: " + e.getMessage());
+                Platform.runLater(() -> {
+                    statusMessage.set("Lỗi không xác định khi tìm kiếm.");
+                    showStatusMessage.set(true);
+                    loading.set(false);
+                });
+            }
+        }).start();
+    }
+
+
     // --- Public Page Control ---
 
     /**
@@ -154,16 +249,33 @@ public class ItemGridViewModel {
                 totalPages = 0;
                 hasNextPage.set(false);
                 hasPreviousPage.set(false);
+
+                // Reset search state
+                isSearching = false;
+                currentSearchKeywords = null;
             });
             return;
         }
 
-        if (parentId.equals(currentParentId) && !items.isEmpty() && currentPageIndex == 0 && !loading.get()) {
+        if (!isSearching && parentId.equals(currentParentId) && !items.isEmpty() && currentPageIndex == 0 && !loading.get()) {
             return; // Đã load trang đầu tiên
         }
 
         // Tải trang 0
         loadPage(0, parentId);
+    }
+
+    /**
+     * (MỚI) Bắt đầu tìm kiếm items theo từ khóa.
+     */
+    public void searchItemsByKeywords(String keywords) {
+        if (keywords == null || keywords.trim().isEmpty()) {
+            loadItemsByParentId(null); // Clear view
+            return;
+        }
+
+        // Tải trang 0 cho kết quả tìm kiếm mới
+        loadSearchPage(0, keywords);
     }
 
     /**
@@ -185,8 +297,12 @@ public class ItemGridViewModel {
             }
         };
 
-        // Tải trang
-        loadPage(nextPage, currentParentId);
+        // Quyết định dùng hàm tải nào
+        if (isSearching) {
+            loadSearchPage(nextPage, currentSearchKeywords); // Tải trang tìm kiếm
+        } else {
+            loadPage(nextPage, currentParentId); // Tải trang thư viện
+        }
 
         // Yêu cầu Controller cuộn lên đầu sau khi tải
         loading.addListener(cleanupListener);
@@ -211,14 +327,25 @@ public class ItemGridViewModel {
             }
         };
 
-        // Tải trang
-        loadPage(previousPage, currentParentId);
+        // Quyết định dùng hàm tải nào
+        if (isSearching) {
+            loadSearchPage(previousPage, currentSearchKeywords); // Tải trang tìm kiếm
+        } else {
+            loadPage(previousPage, currentParentId); // Tải trang thư viện
+        }
 
         // Yêu cầu Controller cuộn xuống cuối sau khi tải
         loading.addListener(cleanupListener);
     }
 
     // --- Getters cho Properties ---
+
+    /**
+     * (MỚI) Trả về true nếu Grid đang hiển thị kết quả tìm kiếm.
+     */
+    public boolean isSearching() {
+        return isSearching;
+    }
 
     public ReadOnlyBooleanProperty loadingProperty() {
         return loading.getReadOnlyProperty();

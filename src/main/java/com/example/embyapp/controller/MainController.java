@@ -229,6 +229,11 @@ public class MainController {
                 BaseItemDto selectedDto = newVal.getValue();
                 String parentId = selectedDto.getId();
 
+                // (*** THÊM MỚI: Clear search field khi chọn item từ tree ***)
+                if (searchField != null) {
+                    searchField.setText("");
+                }
+
                 // Tải Grid
                 itemGridController.loadItemsByParentId(parentId);
 

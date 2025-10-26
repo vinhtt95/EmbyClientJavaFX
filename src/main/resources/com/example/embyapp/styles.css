@@ -65,6 +65,7 @@
     -fx-text-fill: #999999;
     -fx-background-radius: 0;
     -fx-border-color: transparent;
+    -fx-border-color: transparent;
     -fx-padding: 0 5px 0 5px; /* Điều chỉnh padding để nó nhỏ và ở bên phải */
     -fx-min-width: 25px;
     -fx-min-height: 25px;
@@ -332,35 +333,32 @@
 
 /* *** REVIEW BUTTONS (Unified Round) *** */
 .review-button-round {
-    /* Hình dáng chung (Tròn và Kích thước) */
-    -fx-background-color: #555555;
-    -fx-text-fill: white;
-    -fx-font-size: 12px; /* GIẢM FONT SIZE */
+    -fx-font-size: 12px;
     -fx-font-weight: bold;
-    /* HÌNH DÁNG TRÒN */
-    -fx-background-radius: 100px;
-    -fx-padding: 0px 8px 0px 8px; /* ĐIỀU CHỈNH PADDING */
+    -fx-background-radius: 50em; /* Bán kính lớn để đảm bảo hình tròn */
     -fx-min-width: 30px;
     -fx-min-height: 30px;
+    -fx-max-width: 30px;
+    -fx-max-height: 30px;
+    -fx-padding: 0;
     -fx-border-width: 0;
+    -fx-text-fill: white;
 }
 
-/* Specific style for Accept (Green) - Tối ưu hóa */
-.accept-button {
-    -fx-background-color: #28a745; /* XANH */
-    -fx-background-radius: 100px; /* Đảm bảo độ ưu tiên */
-}
-.accept-button:hover {
-    -fx-background-color: #218838;
+.review-button-round.accept-button {
+    -fx-background-color: #28a745; /* MÀU XANH */
 }
 
-/* Specific style for Reject (Red) - Tối ưu hóa */
-.reject-button {
-    -fx-background-color: #dc3545; /* ĐỎ */
-    -fx-background-radius: 100px; /* Đảm bảo độ ưu tiên */
+.review-button-round.accept-button:hover {
+    -fx-background-color: #218838; /* Xanh đậm hơn khi hover */
 }
-.reject-button:hover {
-    -fx-background-color: #c82333;
+
+.review-button-round.reject-button {
+    -fx-background-color: #dc3545; /* MÀU ĐỎ */
+}
+
+.review-button-round.reject-button:hover {
+    -fx-background-color: #c82333; /* Đỏ đậm hơn khi hover */
 }
 /* *** END REVIEW BUTTONS *** */
 

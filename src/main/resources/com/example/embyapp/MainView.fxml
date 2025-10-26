@@ -21,7 +21,7 @@
 
                 <HBox alignment="CENTER_LEFT" spacing="5.0">
                     <children>
-                        <TextField fx:id="searchField" promptText="Tìm kiếm items..." prefWidth="250.0" onAction="#handleSearchAction"/>
+                        <TextField fx:id="searchField" promptText="Tìm món ..." prefWidth="250.0" onAction="#handleSearchAction"/>
                         <Button fx:id="searchButton" onAction="#handleSearchAction" text="🔍"/>
                     </children>
                 </HBox>

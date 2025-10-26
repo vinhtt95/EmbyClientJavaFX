@@ -16,7 +16,7 @@
     -fx-text-fill: #e0e0e0;
 }
 * {
-    -fx-font-size: 16px;
+    -fx-font-size: 18px;
     -fx-font-family: "System";
 }
 .label, .dialog-pane .label {
@@ -310,31 +310,43 @@
 /* *** REVIEW BUTTONS (Unified Round) *** */
 .review-button-round {
     /* Hình dáng chung (Tròn và Kích thước) */
+    -fx-background-color: #555555;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    /* HÌNH DÁNG TRÒN */
     -fx-background-radius: 100px;
-    -fx-border-radius: 100px;
+    -fx-padding: 0px 10px 0px 10px;
     -fx-min-width: 30px;
     -fx-min-height: 30px;
-    -fx-padding: 0;
-    -fx-alignment: center;
-    -fx-border-width: 0;
-    -fx-text-fill: white;
-    -fx-font-weight: bold;
-    -fx-font-size: 16px; /* Tăng size font để nhìn rõ hơn */
+    -fx-border-width: 0; /* Tăng size font để nhìn rõ hơn */
 }
 
 /* Specific style for Accept (Green) */
 .accept-button {
+    -fx-border-radius: 100px;
     -fx-background-color: #28a745; /* XANH */
 }
 .accept-button:hover {
+    -fx-border-radius: 100px;
     -fx-background-color: #218838;
 }
 
 /* Specific style for Reject (Red) */
 .reject-button {
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    /* HÌNH DÁNG TRÒN */
+    -fx-background-radius: 100px;
+    -fx-padding: 0px 10px 0px 10px;
+    -fx-min-width: 30px;
+    -fx-min-height: 30px;
+    -fx-border-width: 0;
     -fx-background-color: #dc3545; /* ĐỎ */
 }
 .reject-button:hover {
+    -fx-border-radius: 100px;
     -fx-background-color: #c82333;
 }
 /* *** END REVIEW BUTTONS *** */

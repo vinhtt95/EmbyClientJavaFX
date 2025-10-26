@@ -61,7 +61,6 @@ public class ItemDetailController {
     // (*** TRƯỜNG TEXT ***)
     @FXML private TextField titleTextField;
     @FXML private TextArea overviewTextArea;
-    @FXML private Label taglineLabel;
     @FXML private Label genresLabel; // Giữ lại nhưng bị ẩn
     // Xóa runtimeLabel
 
@@ -168,8 +167,6 @@ public class ItemDetailController {
         this.viewModel = viewModel;
 
         // --- BINDING UI VỚI VIEWMODEL ---
-        // 1. Labels & TextFields cơ bản
-        taglineLabel.textProperty().bind(viewModel.taglineProperty());
 
         if (genresLabel != null) {
             genresLabel.visibleProperty().set(false); // Hide Genres Label (legacy)

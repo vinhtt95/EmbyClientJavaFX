@@ -55,9 +55,7 @@
                             </HBox>
 
                             <HBox fx:id="releaseDateContainer" alignment="CENTER_LEFT" spacing="10.0">
-                                <VBox.margin>
-                                    <Insets bottom="10.0" />
-                                </VBox.margin>
+
                                 <children>
                                     <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                                         <children>
@@ -72,10 +70,6 @@
                                             </HBox>
                                             <TextField fx:id="releaseDateTextField" promptText="Định dạng dd/MM/yyyy" />
                                         </children>
-                                    </VBox>
-
-                                    <VBox spacing="5.0" alignment="BOTTOM_LEFT">
-                                        <Label fx:id="taglineLabel" text="Tagline goes here..." textFill="#b3b3b3" wrapText="true" style="-fx-font-style: italic;"/>
                                     </VBox>
                                 </children>
                             </HBox>

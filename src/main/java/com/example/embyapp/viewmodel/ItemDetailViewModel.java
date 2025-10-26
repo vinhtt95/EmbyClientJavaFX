@@ -69,7 +69,7 @@ public class ItemDetailViewModel {
     private final ReadOnlyStringWrapper year = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper tagline = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper genres = new ReadOnlyStringWrapper(""); // Giữ lại cho hiển thị legacy/phụ
-//    private final ReadOnlyStringWrapper runtime = new ReadOnlyStringWrapper("");
+    //    private final ReadOnlyStringWrapper runtime = new ReadOnlyStringWrapper("");
     private final ReadOnlyObjectWrapper<Image> primaryImage = new ReadOnlyObjectWrapper<>(null);
     private final ObservableList<ImageInfo> backdropImages = FXCollections.observableArrayList();
     private final ReadOnlyStringWrapper itemPath = new ReadOnlyStringWrapper("");
@@ -578,7 +578,7 @@ public class ItemDetailViewModel {
     public ReadOnlyBooleanProperty showStatusMessageProperty() { return showStatusMessage.getReadOnlyProperty(); }
     public ReadOnlyStringProperty taglineProperty() { return tagline.getReadOnlyProperty(); }
     public ReadOnlyStringProperty genresProperty() { return genres.getReadOnlyProperty(); }
-//    public ReadOnlyStringProperty runtimeProperty() { return runtime.getReadOnlyProperty(); }
+    //    public ReadOnlyStringProperty runtimeProperty() { return runtime.getReadOnlyProperty(); }
     public ReadOnlyObjectProperty<Image> primaryImageProperty() { return primaryImage.getReadOnlyProperty(); }
     public ObservableList<ImageInfo> getBackdropImages() { return backdropImages; }
     public ReadOnlyStringProperty itemPathProperty() { return itemPath.getReadOnlyProperty(); }
@@ -592,4 +592,5 @@ public class ItemDetailViewModel {
     public ReadOnlyBooleanProperty showStudiosReviewProperty() { return importHandler.showStudiosReviewProperty(); }
     public ReadOnlyBooleanProperty showPeopleReviewProperty() { return importHandler.showPeopleReviewProperty(); }
     public ReadOnlyBooleanProperty showGenresReviewProperty() { return importHandler.showGenresReviewProperty(); } // (*** MỚI ***)
+    public ReadOnlyBooleanProperty showTagsReviewProperty() { return importHandler.showTagsReviewProperty(); } // (*** MỚI (THÊM CHO TAGS) ***)
 }

@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
  * - Sửa FXML fields để khớp với cấu trúc mới (Path, Release Date, Fixed Footer).
  * - Cập nhật logic binding để khớp với cấu trúc mới.
  * (FIX LỖI) Khắc phục lỗi statusLabel không mất đi sau khi tải xong và xóa binding cho actionStatusLabel.
+ * (CẬP NHẬT MỚI) Thêm nút review cho Tags.
  */
 public class ItemDetailController {
 
@@ -62,7 +63,6 @@ public class ItemDetailController {
     @FXML private TextField titleTextField;
     @FXML private TextArea overviewTextArea;
     @FXML private Label genresLabel; // Giữ lại nhưng bị ẩn
-    // Xóa runtimeLabel
 
     // (*** GALLERY ***)
     @FXML private HBox backdropHeaderHBox; // (*** KHAI BÁO MỚI ***)
@@ -117,6 +117,11 @@ public class ItemDetailController {
     @FXML private Button acceptGenresButton;
     @FXML private Button rejectGenresButton;
 
+    // (*** THÊM 3 DÒNG NÀY CHO TAGS ***)
+    @FXML private HBox reviewTagsContainer;
+    @FXML private Button acceptTagsButton;
+    @FXML private Button rejectTagsButton;
+
 
     private ItemDetailViewModel viewModel;
     private final ItemRepository itemRepository = new ItemRepository();
@@ -136,6 +141,10 @@ public class ItemDetailController {
         rejectPeopleButton.setOnAction(e -> viewModel.rejectImportField("people"));
         acceptGenresButton.setOnAction(e -> viewModel.acceptImportField("genres"));
         rejectGenresButton.setOnAction(e -> viewModel.rejectImportField("genres"));
+
+        // (*** THÊM 2 DÒNG NÀY CHO TAGS ***)
+        acceptTagsButton.setOnAction(e -> viewModel.acceptImportField("tags"));
+        rejectTagsButton.setOnAction(e -> viewModel.rejectImportField("tags"));
 
 
         // (*** NÚT ẢNH ***)
@@ -271,6 +280,9 @@ public class ItemDetailController {
         bindReviewContainer(reviewStudiosContainer, viewModel.showStudiosReviewProperty());
         bindReviewContainer(reviewPeopleContainer, viewModel.showPeopleReviewProperty());
         bindReviewContainer(reviewGenresContainer, viewModel.showGenresReviewProperty());
+
+        // (*** THÊM DÒNG NÀY CHO TAGS ***)
+        bindReviewContainer(reviewTagsContainer, viewModel.showTagsReviewProperty());
 
         // 11. Binding nút Save
         saveButton.disableProperty().bind(viewModel.isDirtyProperty().not());

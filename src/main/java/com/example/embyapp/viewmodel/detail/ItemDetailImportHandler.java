@@ -26,6 +26,7 @@ import java.time.OffsetDateTime;
 /**
  * (CẬP NHẬT 30) Thêm Genres.
  * - Thêm logic cho Genres (state, import, accept/reject).
+ * (CẬP NHẬT MỚI) Thêm Tags.
  */
 public class ItemDetailImportHandler {
 
@@ -47,6 +48,7 @@ public class ItemDetailImportHandler {
     private final ReadOnlyBooleanWrapper showStudiosReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showPeopleReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showGenresReview = new ReadOnlyBooleanWrapper(false); // (*** MỚI ***)
+    private final ReadOnlyBooleanWrapper showTagsReview = new ReadOnlyBooleanWrapper(false); // (*** MỚI (THÊM CHO TAGS) ***)
 
     public ItemDetailImportHandler(ItemDetailViewModel viewModel, ItemDetailDirtyTracker dirtyTracker) {
         this.viewModel = viewModel;
@@ -79,7 +81,7 @@ public class ItemDetailImportHandler {
             viewModel.overviewProperty().set(importedDto.getOverview() != null ? importedDto.getOverview() : "");
             showOverviewReview.set(true);
 
-            // 3. Tags
+            // 3. Tags (*** SỬA LỖI LOGIC: KHÔNG TỰ ĐỘNG ACCEPT ***)
             preImportState.put("tags", new ArrayList<>(viewModel.getTagItems()));
             List<TagModel> importedTags = new ArrayList<>();
             if (importedDto.getTagItems() != null) {
@@ -91,7 +93,8 @@ public class ItemDetailImportHandler {
             }
             viewModel.getTagItems().setAll(importedTags);
             // Tags không có nút accept riêng, coi như được accept ngầm khi import
-            acceptedFields.add("tags"); // <-- Tự động accept tags
+            // acceptedFields.add("tags"); // (*** XÓA DÒNG NÀY ***)
+            showTagsReview.set(true); // (*** THÊM DÒNG NÀY ***)
 
             // 4. Release Date (*** SỬA LỖI TẠI ĐÂY ***)
             preImportState.put("releaseDate", viewModel.releaseDateProperty().get());
@@ -176,7 +179,7 @@ public class ItemDetailImportHandler {
                 case "overview":
                     viewModel.overviewProperty().set((String) preImportState.get("overview"));
                     break;
-                case "tags": // Tags không có nút reject riêng, nhưng logic vẫn cần
+                case "tags": // (*** LOGIC NÀY GIỜ ĐÃ CÓ TÁC DỤNG ***)
                     List<TagModel> originalTags = (List<TagModel>) preImportState.get("tags");
                     if (originalTags != null) {
                         viewModel.getTagItems().setAll(originalTags);
@@ -216,7 +219,7 @@ public class ItemDetailImportHandler {
         switch (fieldName) {
             case "title": showTitleReview.set(false); break;
             case "overview": showOverviewReview.set(false); break;
-            // Tags không có nút
+            case "tags": showTagsReview.set(false); break; // (*** THÊM DÒNG NÀY ***)
             case "releaseDate": showReleaseDateReview.set(false); break;
             case "studios": showStudiosReview.set(false); break;
             case "people": showPeopleReview.set(false); break;
@@ -231,6 +234,7 @@ public class ItemDetailImportHandler {
         showStudiosReview.set(false);
         showPeopleReview.set(false);
         showGenresReview.set(false); // (*** MỚI ***)
+        showTagsReview.set(false); // (*** THÊM DÒNG NÀY ***)
     }
 
     /**
@@ -269,7 +273,7 @@ public class ItemDetailImportHandler {
 
     // --- Hàm helper định dạng ---
 
-    // (*** SỬA LỖI TẠY ĐÂY: Thay đổi kiểu tham số ***)
+    // (*** SỬA LỖI TẠI ĐÂY: Thay đổi kiểu tham số ***)
     private String dateToString(OffsetDateTime date) { // <-- Đổi từ org.threeten.bp sang java.time
         if (date == null) return "";
         try {
@@ -288,4 +292,5 @@ public class ItemDetailImportHandler {
     public ReadOnlyBooleanProperty showStudiosReviewProperty() { return showStudiosReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showPeopleReviewProperty() { return showPeopleReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showGenresReviewProperty() { return showGenresReview.getReadOnlyProperty(); } // (*** MỚI ***)
+    public ReadOnlyBooleanProperty showTagsReviewProperty() { return showTagsReview.getReadOnlyProperty(); } // (*** MỚI (THÊM CHO TAGS) ***)
 }

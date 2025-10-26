@@ -443,7 +443,8 @@ public class ItemDetailViewModel {
                 imageUpdater.deleteImage(currentItemId, backdrop);
                 Platform.runLater(() -> {
                     reportActionError("Xóa backdrop thành công.");
-                    backdropImages.remove(backdrop);
+                    // backdropImages.remove(backdrop); // ĐÃ XÓA: Thay thế bằng reloadBackdrops() để đồng bộ chỉ mục
+                    reloadBackdrops();
                 });
             } catch (Exception e) {
                 e.printStackTrace();

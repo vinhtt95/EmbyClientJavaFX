@@ -264,7 +264,7 @@
 
     <ProgressIndicator
             fx:id="loadingIndicator" maxHeight="60.0" maxWidth="60.0" visible="false" />
-    <Label fx:id="statusLabel" text="Vui lòng chọn một item..." textFill="GREY" StackPane.alignment="CENTER" wrapText="true">
+    <Label fx:id="statusLabel" text="Vui lòng chọn một item..." textFill="GREY" StackPane.alignment="CENTER" wrapText="true" mouseTransparent="true">
         <font>
             <Font name="System Italic" size="16.0" />
         </font>

@@ -4,6 +4,12 @@
  * (CẬP NHẬT MỚI): Thêm style cho nút xóa tìm kiếm.
  */
 
+/* ... (phần đầu file giữ nguyên) ... */
+
+/* --- (CẬP NHẬT 33): Thống nhất style các nút Add (+), Accept (✓), Reject (✕) thành hình tròn và màu sắc theo yêu cầu.
+ * (CẬP NHẬT MỚI): Thêm style cho nút xóa tìm kiếm.
+ */
+
 /* --- DARK MODE GLOBAL STYLES --- */
 .root, .vbox, .hbox, .anchor-pane, .stack-pane, .dialog-pane {
     -fx-background-color: #121212;
@@ -54,9 +60,13 @@
     -fx-border-color: #3a3a3a;
     -fx-border-radius: 5px;
     -fx-padding: 8px;
+    /* THÊM MỚI */
+    -fx-font-size: 20px;
 }
 .text-area .content {
     -fx-background-color: #1e1e1e;
+    /* THÊM MỚI */
+    -fx-line-spacing: 0.5em;
 }
 
 /* --- (MỚI) SEARCH CLEAR BUTTON STYLES --- */
@@ -64,7 +74,6 @@
     -fx-background-color: transparent;
     -fx-text-fill: #999999;
     -fx-background-radius: 0;
-    -fx-border-color: transparent;
     -fx-border-color: transparent;
     -fx-padding: 0 5px 0 5px; /* Điều chỉnh padding để nó nhỏ và ở bên phải */
     -fx-min-width: 25px;

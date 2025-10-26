@@ -1,5 +1,6 @@
 package com.example.embyapp.viewmodel.detail;
 
+import com.example.embyapp.service.I18nManager;
 import embyclient.ApiException;
 import embyclient.model.BaseItemDto;
 import embyclient.model.BaseItemPerson;
@@ -30,11 +31,13 @@ public class ItemDetailLoader {
 
     private final ItemRepository itemRepository;
     private final EmbyService embyService;
+    private final I18nManager i18n; // <-- ADDED
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
 
     public ItemDetailLoader(ItemRepository itemRepository, EmbyService embyService) {
         this.itemRepository = itemRepository;
         this.embyService = embyService;
+        this.i18n = I18nManager.getInstance();
     }
 
     public LoadResult loadItemData(String userId, String itemId) throws ApiException {
@@ -54,7 +57,7 @@ public class ItemDetailLoader {
         result.setTaglineText((fullDetails.getTaglines() != null && !fullDetails.getTaglines().isEmpty()) ? fullDetails.getTaglines().get(0) : "");
         result.setGenresText((fullDetails.getGenres() != null) ? String.join(", ", fullDetails.getGenres()) : "");
         result.setRuntimeText(formatRuntime(fullDetails.getRunTimeTicks()));
-        result.setPathText(fullDetails.getPath() != null ? fullDetails.getPath() : "Không có đường dẫn");
+        result.setPathText(fullDetails.getPath() != null ? fullDetails.getPath() : i18n.getString("itemDetailLoader", "noPath"));
         result.setFolder(fullDetails.isIsFolder() != null && fullDetails.isIsFolder());
 
         // (*** LOGIC TAGS (giữ nguyên) ***)

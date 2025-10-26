@@ -33,7 +33,7 @@ public class JsonFileHandler {
      */
     public static File showOpenJsonDialog(Stage ownerStage) {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Import Item JSON");
+        fileChooser.setTitle(I18nManager.getInstance().getString("jsonFileHandler", "importTitle")); // <-- MODIFIED
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("JSON files (*.json)", "*.json")
         );
@@ -48,7 +48,7 @@ public class JsonFileHandler {
      */
     public static File showSaveJsonDialog(Stage ownerStage, String initialFileName) {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Export Item JSON");
+        fileChooser.setTitle(I18nManager.getInstance().getString("jsonFileHandler", "exportTitle")); // <-- MODIFIED
         fileChooser.setInitialFileName(initialFileName);
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("JSON files (*.json)", "*.json")

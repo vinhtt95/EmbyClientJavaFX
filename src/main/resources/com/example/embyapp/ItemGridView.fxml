@@ -16,11 +16,13 @@
            fx:controller="com.example.embyapp.controller.ItemGridController">
     <children>
 
-        <ScrollPane fx:id="gridScrollPane" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;" visible="false">
+        <ScrollPane fx:id="gridScrollPane" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;"
+                    visible="false">
             <content>
                 <FlowPane fx:id="itemFlowPane" hgap="20.0" vgap="20.0">
                     <padding>
                         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+
                     </padding>
                 </FlowPane>
             </content>
@@ -29,8 +31,7 @@
         <VBox fx:id="statusContainer" alignment="CENTER" mouseTransparent="true" spacing="10.0" visible="false">
             <children>
                 <ProgressIndicator fx:id="loadingIndicator" maxHeight="50.0" maxWidth="50.0"/>
-                <Label fx:id="statusLabel" text="Chọn một thư viện từ cột trái..." textFill="#e0e0e0"/>
-            </children>
+                <Label fx:id="statusLabel" textFill="#e0e0e0"/> </children>
         </VBox>
 
     </children>

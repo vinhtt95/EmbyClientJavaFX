@@ -4,6 +4,7 @@ import embyclient.model.BaseItemDto;
 import embyclient.model.ImageInfo;
 import com.example.embyapp.MainApp;
 import com.example.embyapp.service.EmbyService;
+import com.example.embyapp.service.I18nManager; // <-- IMPORT
 import com.example.embyapp.service.ItemRepository;
 import com.example.embyapp.service.JsonFileHandler;
 import com.example.embyapp.viewmodel.ItemDetailViewModel;
@@ -63,6 +64,8 @@ public class ItemDetailController {
     @FXML private TextField titleTextField;
     @FXML private TextArea overviewTextArea;
     @FXML private Label genresLabel; // Giữ lại nhưng bị ẩn
+    @FXML private Label overviewLabel; // <-- ADDED
+    @FXML private Label backdropGalleryLabel; // <-- ADDED
 
     // (*** GALLERY ***)
     @FXML private HBox backdropHeaderHBox; // (*** KHAI BÁO MỚI ***)
@@ -72,22 +75,28 @@ public class ItemDetailController {
 
     // (*** CÁC TRƯỜNG DỮ LIỆU MỚI ***)
     @FXML private HBox pathContainer; // Container cho path/open
+    @FXML private Label pathLabel; // <-- ADDED
     @FXML private TextField pathTextField;
     @FXML private Button openButton;
     @FXML private Label actionStatusLabel; // Vẫn khai báo để tránh NPE khi FXML field bị xóa.
 
     @FXML private HBox releaseDateContainer; // Container cho date/tagline/runtime
+    @FXML private Label releaseDateLabel; // <-- ADDED
     @FXML private TextField releaseDateTextField;
 
     // (*** TAGS ***)
+    @FXML private Label tagsLabel; // <-- ADDED
     @FXML private FlowPane tagsFlowPane;
     @FXML private Button addTagButton;
 
     // (*** STUDIOS/PEOPLE/GENRES DẠNG CHIP ***)
+    @FXML private Label studiosLabel; // <-- ADDED
     @FXML private FlowPane studiosFlowPane;
     @FXML private Button addStudioButton;
+    @FXML private Label peopleLabel; // <-- ADDED
     @FXML private FlowPane peopleFlowPane;
     @FXML private Button addPeopleButton;
+    @FXML private Label genresLabelText; // <-- ADDED (để phân biệt với genresLabel cũ)
     @FXML private FlowPane genresFlowPane;
     @FXML private Button addGenreButton;
 
@@ -128,6 +137,9 @@ public class ItemDetailController {
 
     @FXML
     public void initialize() {
+        // --- Setup Localization ---
+        setupLocalization(); // <-- CALL NEW METHOD
+
         // (Gán sự kiện onAction cho các nút (v/x) giữ nguyên)
         acceptTitleButton.setOnAction(e -> viewModel.acceptImportField("title"));
         rejectTitleButton.setOnAction(e -> viewModel.rejectImportField("title"));
@@ -169,6 +181,58 @@ public class ItemDetailController {
         saveButton.setOnAction(e -> handleSaveButtonAction());
         importButton.setOnAction(e -> handleImportButtonAction());
         exportButton.setOnAction(e -> handleExportButtonAction());
+    }
+
+    // <-- ADD THIS NEW METHOD -->
+    private void setupLocalization() {
+        I18nManager i18n = I18nManager.getInstance();
+
+        statusLabel.setText(i18n.getString("itemDetailView", "statusDefault"));
+        savePrimaryImageButton.setText(i18n.getString("itemDetailView", "saveImageButton"));
+        titleTextField.setPromptText(i18n.getString("itemDetailView", "titlePrompt"));
+
+        acceptTitleButton.setText(i18n.getString("itemDetailView", "acceptButton"));
+        rejectTitleButton.setText(i18n.getString("itemDetailView", "rejectButton"));
+
+        releaseDateLabel.setText(i18n.getString("itemDetailView", "releaseDateLabel"));
+        releaseDateTextField.setPromptText(i18n.getString("itemDetailView", "releaseDatePrompt"));
+        acceptReleaseDateButton.setText(i18n.getString("itemDetailView", "acceptButton"));
+        rejectReleaseDateButton.setText(i18n.getString("itemDetailView", "rejectButton"));
+
+        pathLabel.setText(i18n.getString("itemDetailView", "pathLabel"));
+        // openButton text is handled by binding
+
+        tagsLabel.setText(i18n.getString("itemDetailView", "tagsLabel"));
+        acceptTagsButton.setText(i18n.getString("itemDetailView", "acceptButton"));
+        rejectTagsButton.setText(i18n.getString("itemDetailView", "rejectButton"));
+        addTagButton.setText(i18n.getString("itemDetailView", "addButton"));
+
+        genresLabelText.setText(i18n.getString("itemDetailView", "genresLabel"));
+        acceptGenresButton.setText(i18n.getString("itemDetailView", "acceptButton"));
+        rejectGenresButton.setText(i18n.getString("itemDetailView", "rejectButton"));
+        addGenreButton.setText(i18n.getString("itemDetailView", "addButton"));
+
+        studiosLabel.setText(i18n.getString("itemDetailView", "studiosLabel"));
+        acceptStudiosButton.setText(i18n.getString("itemDetailView", "acceptButton"));
+        rejectStudiosButton.setText(i18n.getString("itemDetailView", "rejectButton"));
+        addStudioButton.setText(i18n.getString("itemDetailView", "addButton"));
+
+        peopleLabel.setText(i18n.getString("itemDetailView", "peopleLabel"));
+        acceptPeopleButton.setText(i18n.getString("itemDetailView", "acceptButton"));
+        rejectPeopleButton.setText(i18n.getString("itemDetailView", "rejectButton"));
+        addPeopleButton.setText(i18n.getString("itemDetailView", "addButton"));
+
+        overviewLabel.setText(i18n.getString("itemDetailView", "overviewLabel"));
+        acceptOverviewButton.setText(i18n.getString("itemDetailView", "acceptButton"));
+        rejectOverviewButton.setText(i18n.getString("itemDetailView", "rejectButton"));
+        overviewTextArea.setPromptText(i18n.getString("itemDetailView", "overviewPrompt"));
+
+        backdropGalleryLabel.setText(i18n.getString("itemDetailView", "backdropGalleryLabel"));
+        addBackdropButton.setText(i18n.getString("itemDetailView", "addButton"));
+
+        saveButton.setText(i18n.getString("itemDetailView", "saveButton"));
+        importButton.setText(i18n.getString("itemDetailView", "importButton"));
+        exportButton.setText(i18n.getString("itemDetailView", "exportButton"));
     }
 
     /**
@@ -266,8 +330,8 @@ public class ItemDetailController {
 
         openButton.textProperty().bind(
                 Bindings.when(viewModel.isFolderProperty())
-                        .then("Mở trong Finder")
-                        .otherwise("Phát (Mặc định)")
+                        .then(I18nManager.getInstance().getString("itemDetailView", "openButtonFolder")) // <-- UPDATE
+                        .otherwise(I18nManager.getInstance().getString("itemDetailView", "openButtonFile")) // <-- UPDATE
         );
 
         releaseDateContainer.visibleProperty().bind(viewModel.isFolderProperty().not());
@@ -396,11 +460,18 @@ public class ItemDetailController {
             controller.setContext(context, itemRepository);
 
             // Cấu hình Stage
-            String title = context == AddTagDialogController.SuggestionContext.STUDIO ? "Thêm Studio Mới" :
-                    context == AddTagDialogController.SuggestionContext.PEOPLE ? "Thêm Người Mới" :
-                            context == AddTagDialogController.SuggestionContext.GENRE ? "Thêm Thể Loại Mới" :
-                                    "Thêm Tag Mới";
-            dialogStage.setTitle(title);
+            String title; // <-- Logic is now in the dialog controller, but we set title here
+            I18nManager i18n = I18nManager.getInstance();
+            switch (context) {
+                case STUDIO: title = i18n.getString("addTagDialog", "addStudioTitle"); break;
+                case PEOPLE: title = i18n.getString("addTagDialog", "addPeopleTitle"); break;
+                case GENRE:  title = i18n.getString("addTagDialog", "addGenreTitle"); break;
+                case TAG:
+                default:
+                    title = i18n.getString("addTagDialog", "addTagTitle"); break;
+            }
+
+            dialogStage.setTitle(title); // <-- UPDATE
             dialogStage.initModality(Modality.WINDOW_MODAL);
             dialogStage.initOwner((Stage) rootPane.getScene().getWindow());
             Scene scene = new Scene(page);
@@ -428,10 +499,10 @@ public class ItemDetailController {
             }
         } catch (IOException e) {
             e.printStackTrace();
-            viewModel.reportActionError("Lỗi: Không thể mở dialog thêm " + context.name().toLowerCase() + ".");
+            viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorOpenDialog", context.name().toLowerCase())); // <-- UPDATE
         } catch (Exception e) {
             e.printStackTrace();
-            viewModel.reportActionError("Lỗi không xác định: " + e.getMessage());
+            viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorOpenDialogGeneric", e.getMessage())); // <-- UPDATE
         }
     }
 
@@ -445,18 +516,18 @@ public class ItemDetailController {
         viewModel.clearActionError();
         String path = pathTextField.getText();
         if (path == null || path.isEmpty() || path.equals("Không có đường dẫn")) {
-            viewModel.reportActionError("Lỗi: Đường dẫn không hợp lệ.");
+            viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorInvalidPath")); // <-- UPDATE
             return;
         }
         if (!Desktop.isDesktopSupported()) {
-            viewModel.reportActionError("Lỗi: Desktop API không được hỗ trợ.");
+            viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorDesktopAPINotSupported")); // <-- UPDATE
             return;
         }
         new Thread(() -> {
             try {
                 File fileOrDir = new File(path);
                 if (!fileOrDir.exists()) {
-                    viewModel.reportActionError("Lỗi: Đường dẫn không tồn tại.");
+                    viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorPathNotExist")); // <-- UPDATE
                     return;
                 }
 
@@ -471,7 +542,7 @@ public class ItemDetailController {
 
             } catch (Exception e) {
                 System.err.println("Lỗi khi mở đường dẫn: " + path + " | " + e.getMessage());
-                viewModel.reportActionError("Lỗi: " + e.getMessage());
+                viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorOpenPath", e.getMessage())); // <-- UPDATE
             }
         }).start();
     }
@@ -526,7 +597,7 @@ public class ItemDetailController {
             Stage stage = (Stage) rootPane.getScene().getWindow();
             File selectedFile = JsonFileHandler.showOpenJsonDialog(stage);
             if (selectedFile != null) {
-                viewModel.reportActionError("Đang đọc file JSON...");
+                viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorImportRead")); // <-- UPDATE
                 new Thread(() -> {
                     try {
                         BaseItemDto importedDto = JsonFileHandler.readJsonFileToObject(selectedFile);
@@ -535,17 +606,17 @@ public class ItemDetailController {
                                 viewModel.importAndPreview(importedDto);
                             });
                         } else {
-                            throw new Exception("File JSON không hợp lệ hoặc rỗng.");
+                            throw new Exception(I18nManager.getInstance().getString("itemDetailView", "errorImportInvalid")); // <-- UPDATE
                         }
                     } catch (Exception ex) {
                         System.err.println("Lỗi khi Import (luồng nền): " + ex.getMessage());
-                        Platform.runLater(() -> viewModel.reportActionError("Lỗi Import: " + ex.getMessage()));
+                        Platform.runLater(() -> viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorImportReadThread", ex.getMessage()))); // <-- UPDATE
                     }
                 }).start();
             }
         } catch (Exception e) {
             System.err.println("Lỗi khi Import (hiển thị dialog): " + e.getMessage());
-            viewModel.reportActionError("Lỗi Import: " + e.getMessage());
+            viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorImportDialog", e.getMessage())); // <-- UPDATE
         }
     }
     @FXML
@@ -555,7 +626,7 @@ public class ItemDetailController {
         try {
             BaseItemDto dtoToExport = viewModel.getItemForExport();
             if (dtoToExport == null) {
-                viewModel.reportActionError("Lỗi: Không có dữ liệu item để export.");
+                viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorExportNoData")); // <-- UPDATE
                 return;
             }
             Stage stage = (Stage) rootPane.getScene().getWindow();
@@ -568,16 +639,16 @@ public class ItemDetailController {
                 new Thread(() -> {
                     try {
                         JsonFileHandler.writeObjectToJsonFile(dtoToExport, targetFile);
-                        Platform.runLater(() -> viewModel.reportActionError("Đã export thành công ra " + targetFile.getName()));
+                        Platform.runLater(() -> viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "exportSuccess", targetFile.getName()))); // <-- UPDATE
                     } catch (Exception ex) {
                         System.err.println("Lỗi khi Export (luồng nền): " + ex.getMessage());
-                        Platform.runLater(() -> viewModel.reportActionError("Lỗi Export: " + ex.getMessage()));
+                        Platform.runLater(() -> viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorExportWriteThread", ex.getMessage()))); // <-- UPDATE
                     }
                 }).start();
             }
         } catch (Exception e) {
             System.err.println("Lỗi khi Export (hiển thị dialog): " + e.getMessage());
-            viewModel.reportActionError("Lỗi Export: " + e.getMessage());
+            viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorExportDialog", e.getMessage())); // <-- UPDATE
         }
     }
 

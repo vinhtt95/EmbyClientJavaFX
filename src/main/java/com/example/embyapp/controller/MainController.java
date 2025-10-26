@@ -3,6 +3,7 @@ package com.example.embyapp.controller;
 import embyclient.model.BaseItemDto;
 import com.example.embyapp.MainApp;
 import com.example.embyapp.service.EmbyService;
+import com.example.embyapp.service.I18nManager; // <-- IMPORT
 import com.example.embyapp.service.ItemRepository;
 import com.example.embyapp.service.UserRepository;
 import com.example.embyapp.viewmodel.*;
@@ -115,6 +116,9 @@ public class MainController {
 
     @FXML
     public void initialize() {
+        // --- Setup Localization ---
+        setupLocalization(); // <-- CALL NEW METHOD
+
         // 1. Khởi tạo Service và Repository
         this.embyService = EmbyService.getInstance();
         this.itemRepository = new ItemRepository();
@@ -158,7 +162,7 @@ public class MainController {
 
         } catch (IOException e) {
             e.printStackTrace();
-            statusLabel.setText("Lỗi nghiêm trọng: Không thể tải giao diện.");
+            statusLabel.setText(I18nManager.getInstance().getString("mainView", "errorLoadUI")); // <-- UPDATE
         }
 
         // 5. Binding UI chính (StatusBar, Welcome)
@@ -186,6 +190,16 @@ public class MainController {
         }
     }
 
+    // <-- ADD THIS NEW METHOD -->
+    private void setupLocalization() {
+        I18nManager i18n = I18nManager.getInstance();
+        logoutButton.setText(i18n.getString("mainView", "logoutButton"));
+        // sortByButton and sortOrderButton text is handled by binding
+        searchField.setPromptText(i18n.getString("mainView", "searchPrompt"));
+        searchButton.setText(i18n.getString("mainView", "searchButton"));
+        statusLabel.setText(i18n.getString("mainView", "statusInitializing"));
+    }
+
     /**
      * (*** HÀM MỚI: Binding cho các nút sắp xếp ***)
      */
@@ -195,13 +209,14 @@ public class MainController {
         // 1. Nút Sort By (Tiêu chí)
         sortByButton.textProperty().bind(
                 Bindings.createStringBinding(() -> {
+                    I18nManager i18n = I18nManager.getInstance(); // <-- Get I18n
                     String currentSortBy = itemGridViewModel.currentSortByProperty().get();
                     if (currentSortBy.equals(ItemGridViewModel.SORT_BY_NAME)) {
-                        return "Sort By: Name (A-Z)";
+                        return i18n.getString("mainView", "sortByName"); // <-- UPDATE
                     } else if (currentSortBy.equals(ItemGridViewModel.SORT_BY_DATE_RELEASE)) {
-                        return "Sort By: Date (Year, Release)";
+                        return i18n.getString("mainView", "sortByDateRelease"); // <-- UPDATE
                     }
-                    return "Sort By...";
+                    return i18n.getString("mainView", "sortByDefault"); // <-- UPDATE
                 }, itemGridViewModel.currentSortByProperty())
         );
         // Vô hiệu hóa khi đang tải hoặc đang tìm kiếm
@@ -211,11 +226,12 @@ public class MainController {
         // 2. Nút Sort Order (Thứ tự)
         sortOrderButton.textProperty().bind(
                 Bindings.createStringBinding(() -> {
+                    I18nManager i18n = I18nManager.getInstance(); // <-- Get I18n
                     String currentOrder = itemGridViewModel.currentSortOrderProperty().get();
                     if (currentOrder.equals(ItemGridViewModel.SORT_ORDER_ASCENDING)) {
-                        return "Order: Asc (▲)";
+                        return i18n.getString("mainView", "orderAsc"); // <-- UPDATE
                     } else {
-                        return "Order: Desc (▼)";
+                        return i18n.getString("mainView", "orderDesc"); // <-- UPDATE
                     }
                 }, itemGridViewModel.currentSortOrderProperty())
         );
@@ -348,6 +364,7 @@ public class MainController {
      */
     private void updateStatusMessage(boolean isTreeLoading, boolean isGridLoading, boolean isDetailLoading, String actionStatus) {
         Platform.runLater(() -> {
+            I18nManager i18n = I18nManager.getInstance(); // <-- Get I18n
             // Ưu tiên 1: Lỗi Hành động (Mở/Phát)
             if (actionStatus != null && !actionStatus.isEmpty()) {
                 viewModel.statusMessageProperty().set(actionStatus);
@@ -362,14 +379,14 @@ public class MainController {
 
             // Ưu tiên 3: Status Loading
             if (isTreeLoading) {
-                viewModel.statusMessageProperty().set("Đang tải thư viện...");
+                viewModel.statusMessageProperty().set(i18n.getString("mainView", "statusLoadingLibrary")); // <-- UPDATE
             } else if (isGridLoading) {
-                viewModel.statusMessageProperty().set("Đang tải items...");
+                viewModel.statusMessageProperty().set(i18n.getString("mainView", "statusLoadingItems")); // <-- UPDATE
             } else if (isDetailLoading) {
-                viewModel.statusMessageProperty().set("Đang tải chi tiết...");
+                viewModel.statusMessageProperty().set(i18n.getString("mainView", "statusLoadingDetail")); // <-- UPDATE
             } else {
                 // Mặc định
-                viewModel.statusMessageProperty().set("Sẵn sàng.");
+                viewModel.statusMessageProperty().set(i18n.getString("mainView", "statusReady")); // <-- UPDATE
             }
         });
     }
@@ -475,7 +492,7 @@ public class MainController {
 
                 // Tạo Stage (Dialog)
                 detailDialog = new Stage();
-                detailDialog.setTitle("Chi tiết Item (Pop-out)");
+                detailDialog.setTitle(I18nManager.getInstance().getString("itemDetailView", "popOutTitle")); // <-- UPDATE
 
                 // Set loaded size
                 detailDialog.setWidth(savedWidth);
@@ -512,7 +529,7 @@ public class MainController {
 
         } catch (IOException e) {
             e.printStackTrace();
-            statusLabel.setText("Lỗi: Không thể mở dialog chi tiết. " + e.getMessage());
+            statusLabel.setText(I18nManager.getInstance().getString("mainView", "errorDialog") + e.getMessage()); // <-- UPDATE
         }
     }
 
@@ -527,7 +544,7 @@ public class MainController {
             itemGridViewModel.searchItemsByKeywords(keywords.trim());
         } else {
             // Nếu ô tìm kiếm rỗng, hiển thị thông báo và xóa kết quả tìm kiếm
-            viewModel.statusMessageProperty().set("Vui lòng nhập từ khóa tìm kiếm.");
+            viewModel.statusMessageProperty().set(I18nManager.getInstance().getString("mainView", "errorSearchKeywords")); // <-- UPDATE
             // Quay về trạng thái ban đầu (grid trống)
             itemGridViewModel.loadItemsByParentId(null);
         }

@@ -2,6 +2,7 @@ package com.example.embyapp.controller;
 
 import embyclient.model.BaseItemDto;
 import com.example.embyapp.service.EmbyService;
+import com.example.embyapp.service.I18nManager; // <-- IMPORT
 import com.example.embyapp.viewmodel.ItemDetailViewModel;
 import com.example.embyapp.viewmodel.ItemGridViewModel;
 import com.example.embyapp.viewmodel.ItemGridViewModel.ScrollAction;
@@ -85,7 +86,10 @@ public class ItemGridController {
                     int totalPages = viewModel.getTotalPages();
 
                     // MỞ POPUP CONFIRM
-                    if (showConfirmationDialog("Chuyển Trang", "Bạn có muốn chuyển sang trang tiếp theo (" + nextPageDisplay + "/" + totalPages + ")?")) {
+                    if (showConfirmationDialog(
+                            I18nManager.getInstance().getString("itemGridView", "confirmDialogTitle"), // <-- UPDATE
+                            I18nManager.getInstance().getString("itemGridView", "confirmNextPage", nextPageDisplay, totalPages) // <-- UPDATE
+                    )) {
                         viewModel.loadNextPage();
                     }
                 }
@@ -98,12 +102,18 @@ public class ItemGridController {
                     int totalPages = viewModel.getTotalPages();
 
                     // MỞ POPUP CONFIRM
-                    if (showConfirmationDialog("Chuyển Trang", "Bạn có muốn chuyển về trang trước đó (" + prevPageDisplay + "/" + totalPages + ")?")) {
+                    if (showConfirmationDialog(
+                            I18nManager.getInstance().getString("itemGridView", "confirmDialogTitle"), // <-- UPDATE
+                            I18nManager.getInstance().getString("itemGridView", "confirmPrevPage", prevPageDisplay, totalPages) // <-- UPDATE
+                    )) {
                         viewModel.loadPreviousPage();
                     }
                 }
             }
         });
+
+        // <-- ADDED: Set default text for statusLabel -->
+        statusLabel.setText(I18nManager.getInstance().getString("itemGridView", "statusDefault"));
     }
 
     public void setViewModel(ItemGridViewModel viewModel) {
@@ -260,11 +270,12 @@ public class ItemGridController {
      */
     private void handleDoubleClick(BaseItemDto item) {
         // 1. Báo trạng thái (Clear lỗi cũ)
+        I18nManager i18n = I18nManager.getInstance(); // <-- Get I18n
         if (itemDetailViewModel != null) {
             itemDetailViewModel.clearActionError();
-            itemDetailViewModel.reportActionError("Đang lấy đường dẫn chi tiết...");
+            itemDetailViewModel.reportActionError(i18n.getString("itemGridController", "statusGetPath")); // <-- UPDATE
         } else {
-            System.err.println("ItemDetailViewModel is null, cannot report status.");
+            System.err.println(i18n.getString("itemGridController", "errorDetailVMNull")); // <-- UPDATE
         }
 
         // --- Bắt đầu chạy luồng nền để gọi API ---
@@ -272,7 +283,7 @@ public class ItemGridController {
             try {
                 String userId = embyService.getCurrentUserId();
                 if (userId == null) {
-                    throw new IllegalStateException("Chưa đăng nhập. Không thể lấy đường dẫn.");
+                    throw new IllegalStateException(i18n.getString("itemGridController", "errorNoLogin")); // <-- UPDATE
                 }
 
                 // 1. Gọi API để lấy DTO chi tiết (có Path)
@@ -281,7 +292,7 @@ public class ItemGridController {
                 // 2. KIỂM TRA FOLDER (FIX LỖI)
                 if (fullDetails.isIsFolder() != null && fullDetails.isIsFolder()) {
                     if (itemDetailViewModel != null) {
-                        itemDetailViewModel.reportActionError("Double-click chỉ dùng để Phát file. Vui lòng dùng nút ở cột chi tiết nếu bạn muốn Mở Finder.");
+                        itemDetailViewModel.reportActionError(i18n.getString("itemGridController", "errorFolderDoubleClick")); // <-- UPDATE
                     }
                     return; // Dừng lại nếu là Folder
                 }
@@ -289,30 +300,30 @@ public class ItemGridController {
                 // 3. Xử lý Path (Chỉ cho file)
                 String path = fullDetails.getPath();
                 if (path == null || path.isEmpty()) {
-                    throw new IllegalStateException("Không tìm thấy đường dẫn file media này.");
+                    throw new IllegalStateException(i18n.getString("itemGridController", "errorNoPath")); // <-- UPDATE
                 }
 
                 // 4. Thực hiện hành động mở file
                 if (!Desktop.isDesktopSupported()) {
-                    throw new UnsupportedOperationException("Hệ điều hành không hỗ trợ Desktop API (Mở/Phát).");
+                    throw new UnsupportedOperationException(i18n.getString("itemGridController", "errorNoDesktopSupport")); // <-- UPDATE
                 }
 
                 File fileOrDir = new File(path);
                 if (!fileOrDir.exists()) {
-                    throw new java.io.FileNotFoundException("Đường dẫn không tồn tại trên hệ thống: " + path);
+                    throw new java.io.FileNotFoundException(i18n.getString("itemGridController", "errorPathNotExist", path)); // <-- UPDATE
                 }
 
                 Desktop.getDesktop().open(fileOrDir);
 
                 // 5. Báo cáo thành công
                 if (itemDetailViewModel != null) {
-                    itemDetailViewModel.reportActionError("Phát file: " + item.getName());
+                    itemDetailViewModel.reportActionError(i18n.getString("itemGridController", "statusPlayFile", item.getName())); // <-- UPDATE
                 }
 
             } catch (Exception e) {
                 System.err.println("Lỗi khi Phát từ Grid: " + e.getMessage());
                 if (itemDetailViewModel != null) {
-                    itemDetailViewModel.reportActionError("Lỗi Phát file: " + e.getMessage());
+                    itemDetailViewModel.reportActionError(i18n.getString("itemGridController", "errorPlayFile", e.getMessage())); // <-- UPDATE
                 }
             }
         }).start();

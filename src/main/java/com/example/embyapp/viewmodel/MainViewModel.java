@@ -3,6 +3,7 @@ package com.example.embyapp.viewmodel;
 import embyclient.model.AuthenticationAuthenticationResult;
 import embyclient.model.UserDto;
 import com.example.embyapp.service.EmbyService;
+import com.example.embyapp.service.I18nManager; // <-- IMPORT
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -18,16 +19,22 @@ import javafx.beans.property.StringProperty;
 public class MainViewModel {
 
     // Property cho WelcomeLabel (giữ lại)
-    private final StringProperty welcomeMessage = new SimpleStringProperty("Loading user data...");
+    private final StringProperty welcomeMessage; // <-- MODIFIED
 
     // Property MỚI cho StatusBar
-    private final StringProperty statusMessage = new SimpleStringProperty("Ready.");
+    private final StringProperty statusMessage; // <-- MODIFIED
     private final BooleanProperty loading = new SimpleBooleanProperty(false); // MỚI
 
     private final EmbyService embyService;
+    private final I18nManager i18n; // <-- ADDED
 
     public MainViewModel(EmbyService embyService) {
         this.embyService = embyService;
+        this.i18n = I18nManager.getInstance(); // <-- ADDED
+
+        // <-- MODIFIED: Load text from I18nManager -->
+        this.welcomeMessage = new SimpleStringProperty(i18n.getString("mainViewModel", "loadingUser"));
+        this.statusMessage = new SimpleStringProperty(i18n.getString("mainViewModel", "ready"));
     }
 
     // --- Getters cho Properties ---
@@ -62,12 +69,11 @@ public class MainViewModel {
         AuthenticationAuthenticationResult authResult = embyService.getCurrentAuthResult();
         if (authResult != null && authResult.getUser() != null) {
             UserDto user = authResult.getUser();
-            Platform.runLater(() -> welcomeMessage.set("Welcome, " + user.getName() + "!"));
+            Platform.runLater(() -> welcomeMessage.set(i18n.getString("mainViewModel", "welcomeUser", user.getName()))); // <-- MODIFIED
         } else {
-            Platform.runLater(() -> welcomeMessage.set("Welcome!")); // Fallback message
+            Platform.runLater(() -> welcomeMessage.set(i18n.getString("mainViewModel", "welcomeGuest"))); // <-- MODIFIED
         }
     }
 
     // (Logic loadLibraryData() cũ đã được XÓA và chuyển sang LibraryTreeController)
 }
-

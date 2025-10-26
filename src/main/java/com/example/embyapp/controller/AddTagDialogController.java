@@ -1,6 +1,7 @@
 package com.example.embyapp.controller;
 
 import com.example.embyapp.service.EmbyService;
+import com.example.embyapp.service.I18nManager; // <-- IMPORT
 import com.example.embyapp.service.ItemRepository;
 import com.example.embyapp.service.RequestEmby;
 import com.example.embyapp.viewmodel.detail.SuggestionItemModel;
@@ -8,6 +9,7 @@ import com.example.embyapp.viewmodel.detail.TagModel;
 import embyclient.model.UserLibraryTagItem;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button; // <-- IMPORT
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
@@ -42,20 +44,27 @@ public class AddTagDialogController {
         TAG, STUDIO, PEOPLE, GENRE
     }
 
+    @FXML private Label titleLabel; // <-- ADDED
     @FXML private ToggleGroup tagTypeGroup;
     @FXML private RadioButton simpleTagRadio;
     @FXML private RadioButton jsonTagRadio;
 
     @FXML private GridPane simpleTagPane;
+    @FXML private Label contentLabel; // <-- ADDED
     @FXML private TextField simpleNameField;
 
     @FXML private GridPane jsonTagPane;
+    @FXML private Label keyLabel; // <-- ADDED
     @FXML private TextField keyField;
+    @FXML private Label valueLabel; // <-- ADDED
     @FXML private TextField valueField;
 
     // (*** THÊM MỚI: 3 ô Search ***)
+    @FXML private Label suggestionKeyLabel; // <-- ADDED
     @FXML private TextField keySearchField;
+    @FXML private Label suggestionValueLabel; // <-- ADDED
     @FXML private TextField valueSearchField;
+    @FXML private Label suggestionSimpleLabel; // <-- ADDED
     @FXML private TextField simpleSearchField;
 
     @FXML private VBox suggestionJsonContainer;
@@ -64,6 +73,9 @@ public class AddTagDialogController {
 
     @FXML private VBox suggestionSimpleContainer;
     @FXML private FlowPane suggestionSimplePane;
+
+    @FXML private Button cancelButton; // <-- ADDED
+    @FXML private Button okButton; // <-- ADDED
 
     private final ToggleGroup keySuggestionGroup = new ToggleGroup();
     private final ToggleGroup valueSuggestionGroup = new ToggleGroup();
@@ -93,6 +105,9 @@ public class AddTagDialogController {
 
     @FXML
     public void initialize() {
+        // --- Setup Localization ---
+        setupLocalization(); // <-- CALL NEW METHOD
+
         // Listener chuyển đổi pane nhập liệu (Giữ nguyên)
         simpleTagRadio.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
             simpleTagPane.setVisible(isSelected);
@@ -140,6 +155,35 @@ public class AddTagDialogController {
         }
     }
 
+    // <-- ADD THIS NEW METHOD -->
+    private void setupLocalization() {
+        I18nManager i18n = I18nManager.getInstance();
+
+        // Title is set in setContext
+
+        jsonTagRadio.setText(i18n.getString("addTagDialog", "labelJson"));
+
+        contentLabel.setText(i18n.getString("addTagDialog", "contentLabel"));
+        simpleNameField.setPromptText(i18n.getString("addTagDialog", "contentPrompt"));
+
+        keyLabel.setText(i18n.getString("addTagDialog", "keyLabel"));
+        keyField.setPromptText(i18n.getString("addTagDialog", "keyPrompt"));
+        valueLabel.setText(i18n.getString("addTagDialog", "valueLabel"));
+        valueField.setPromptText(i18n.getString("addTagDialog", "valuePrompt"));
+
+        suggestionKeyLabel.setText(i18n.getString("addTagDialog", "suggestionKeyLabel"));
+        keySearchField.setPromptText(i18n.getString("addTagDialog", "suggestionKeyPrompt"));
+        suggestionValueLabel.setText(i18n.getString("addTagDialog", "suggestionValueLabel"));
+        valueSearchField.setPromptText(i18n.getString("addTagDialog", "suggestionValuePrompt"));
+
+        // suggestionSimpleLabel is set in setContext
+
+        simpleSearchField.setPromptText(i18n.getString("addTagDialog", "suggestionSimplePrompt"));
+
+        cancelButton.setText(i18n.getString("addTagDialog", "cancelButton"));
+        okButton.setText(i18n.getString("addTagDialog", "okButton"));
+    }
+
     /**
      * Thiết lập context và repository trước khi hiển thị.
      */
@@ -149,30 +193,48 @@ public class AddTagDialogController {
 
         // Cập nhật UI theo context (Chỉ thay đổi tiêu đề, không ẩn JSON inputs)
         Platform.runLater(() -> {
+            I18nManager i18n = I18nManager.getInstance(); // <-- Get I18n
             Stage stage = (Stage) dialogStage.getScene().getWindow();
-            String title = context == SuggestionContext.STUDIO ? "Thêm Studio Mới" :
-                    context == SuggestionContext.PEOPLE ? "Thêm Người Mới" :
-                            context == SuggestionContext.GENRE ? "Thêm Thể Loại Mới" :
-                                    "Thêm Tag Mới";
+            String title;
+            String simpleRadioText;
+            String simpleSuggestionLabelText;
+
+            switch (context) {
+                case STUDIO:
+                    title = i18n.getString("addTagDialog", "addStudioTitle");
+                    simpleRadioText = i18n.getString("addTagDialog", "labelSimpleStudio");
+                    simpleSuggestionLabelText = i18n.getString("addTagDialog", "suggestionSimpleStudioLabel");
+                    break;
+                case PEOPLE:
+                    title = i18n.getString("addTagDialog", "addPeopleTitle");
+                    simpleRadioText = i18n.getString("addTagDialog", "labelSimplePeople");
+                    simpleSuggestionLabelText = i18n.getString("addTagDialog", "suggestionSimplePeopleLabel");
+                    break;
+                case GENRE:
+                    title = i18n.getString("addTagDialog", "addGenreTitle");
+                    simpleRadioText = i18n.getString("addTagDialog", "labelSimpleGenre");
+                    simpleSuggestionLabelText = i18n.getString("addTagDialog", "suggestionSimpleGenreLabel");
+                    break;
+                case TAG:
+                default:
+                    title = i18n.getString("addTagDialog", "addTagTitle");
+                    simpleRadioText = i18n.getString("addTagDialog", "labelSimple");
+                    simpleSuggestionLabelText = i18n.getString("addTagDialog", "suggestionSimpleLabel");
+                    break;
+            }
+
             stage.setTitle(title);
+            titleLabel.setText(title); // <-- Set title label in dialog
+            simpleTagRadio.setText(simpleRadioText); // <-- Set radio button text
 
-            // Đặt lại label cho Simple Tags (dù là Tag, Studio, People hay Genre)
-            simpleTagRadio.setText(context == SuggestionContext.TAG ? "Tag Đơn giản" :
-                    context == SuggestionContext.STUDIO ? "Tên Studio" :
-                            context == SuggestionContext.PEOPLE ? "Tên Người" :
-                                    "Tên Thể Loại");
-
-            // Cập nhật label cho Simple Suggestions
+            // Đặt lại label cho Simple Suggestions
             // (*** ĐÃ SỬA LỖI CAST TẠI ĐÂY ***)
             // Lấy HBox chứa Label và TextField (index 0 của suggestionSimpleContainer)
             HBox headerHBox = (HBox) suggestionSimpleContainer.getChildren().get(0);
             // Lấy Label (index 0 của headerHBox)
             Label suggestionLabel = (Label) headerHBox.getChildren().get(0);
 
-            suggestionLabel.setText("Gợi ý " + (context == SuggestionContext.TAG ? "Tag Đơn giản" :
-                    context == SuggestionContext.STUDIO ? "Studios" :
-                            context == SuggestionContext.PEOPLE ? "People" :
-                                    "Genres"));
+            suggestionLabel.setText(simpleSuggestionLabelText); // <-- Set suggestion label text
 
             // Luôn hiển thị cả hai radio buttons và containers
             jsonTagRadio.setVisible(true);
@@ -504,7 +566,7 @@ public class AddTagDialogController {
         if (resultTag != null) {
             dialogStage.close();
         } else {
-            System.err.println("Dữ liệu tag không hợp lệ.");
+            System.err.println(I18nManager.getInstance().getString("addTagDialog", "errorInvalid")); // <-- UPDATE
         }
     }
 

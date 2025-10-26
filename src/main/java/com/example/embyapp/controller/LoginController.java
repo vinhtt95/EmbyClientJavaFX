@@ -2,6 +2,7 @@ package com.example.embyapp.controller;
 
 import com.example.embyapp.MainApp;
 import com.example.embyapp.service.EmbyService;
+import com.example.embyapp.service.I18nManager; // <-- IMPORT
 import com.example.embyapp.viewmodel.LoginViewModel;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -16,6 +17,7 @@ import javafx.scene.layout.VBox;
 public class LoginController {
 
     @FXML private VBox rootPane; // Added root pane reference if needed
+    @FXML private Label titleLabel; // <-- ADDED
     @FXML private TextField serverUrlField;
     @FXML private TextField usernameField;
     @FXML private PasswordField passwordField;
@@ -36,6 +38,9 @@ public class LoginController {
         // Initialize ViewModel and pass EmbyService
         viewModel = new LoginViewModel(embyService);
 
+        // --- Setup Localization ---
+        setupLocalization(); // <-- CALL NEW METHOD
+
 
         // --- Bind UI components to ViewModel properties ---
         serverUrlField.textProperty().bindBidirectional(viewModel.serverUrlProperty());
@@ -50,8 +55,8 @@ public class LoginController {
         // Change button text while logging in (optional)
         loginButton.textProperty().bind(
                 Bindings.when(viewModel.loginInProgressProperty())
-                        .then("Logging in...")
-                        .otherwise("Login")
+                        .then(I18nManager.getInstance().getString("loginView", "loginInProgress")) // <-- UPDATE
+                        .otherwise(I18nManager.getInstance().getString("loginView", "loginButton")) // <-- UPDATE
         );
 
         // --- Listen for login success ---
@@ -71,6 +76,16 @@ public class LoginController {
         });
 
 
+    }
+
+    // <-- ADD THIS NEW METHOD -->
+    private void setupLocalization() {
+        I18nManager i18n = I18nManager.getInstance();
+        titleLabel.setText(i18n.getString("loginView", "title"));
+        serverUrlField.setPromptText(i18n.getString("loginView", "serverUrlPrompt"));
+        usernameField.setPromptText(i18n.getString("loginView", "usernamePrompt"));
+        passwordField.setPromptText(i18n.getString("loginView", "passwordPrompt"));
+        // loginButton text is handled by binding
     }
 
     // Method to set the MainApp instance (called from MainApp)
@@ -94,4 +109,3 @@ public class LoginController {
         }
     }
 }
-

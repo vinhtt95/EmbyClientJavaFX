@@ -3,6 +3,7 @@ package com.example.embyapp;
 import com.example.embyapp.controller.LoginController;
 import com.example.embyapp.controller.MainController;
 import com.example.embyapp.service.EmbyService; // Import EmbyService
+import com.example.embyapp.service.I18nManager; // <-- IMPORT
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -17,6 +18,7 @@ public class MainApp extends Application {
 
     private Stage primaryStage;
     private EmbyService embyService; // Hold EmbyService instance
+    private I18nManager i18n; // <-- ADDED
 
     // (CẬP NHẬT) Dùng chung một đường dẫn Preferences
     private static final String PREFS_NODE_PATH = "/com/example/embyapp";
@@ -26,6 +28,7 @@ public class MainApp extends Application {
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
         this.embyService = EmbyService.getInstance(); // Get EmbyService instance
+        this.i18n = I18nManager.getInstance(); // <-- ADDED: Initialize I18nManager
 
         // (CẬP NHẬT) Tải và áp dụng kích thước/vị trí cửa sổ đã lưu
         Preferences prefs = Preferences.userRoot().node(PREFS_NODE_PATH);
@@ -84,7 +87,7 @@ public class MainApp extends Application {
                 System.err.println("Lỗi khi tải styles.css: " + e.getMessage());
             }
 
-            primaryStage.setTitle("Emby Login");
+            primaryStage.setTitle(i18n.getString("mainApp", "loginTitle")); // <-- MODIFIED
             primaryStage.setScene(scene);
             primaryStage.show();
         } catch (Exception e) { // Bắt Exception chung
@@ -129,7 +132,7 @@ public class MainApp extends Application {
                 System.err.println("Lỗi khi tải styles.css: " + e.getMessage());
             }
 
-            primaryStage.setTitle("Emby Client");
+            primaryStage.setTitle(i18n.getString("mainApp", "mainTitle")); // <-- MODIFIED
             primaryStage.setScene(scene);
             primaryStage.show();
         } catch (Exception e) { // Bắt Exception chung
@@ -144,4 +147,3 @@ public class MainApp extends Application {
         launch(args);
     }
 }
-

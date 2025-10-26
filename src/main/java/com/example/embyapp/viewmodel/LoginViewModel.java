@@ -5,6 +5,7 @@ import embyclient.api.UserServiceApi;
 import embyclient.model.AuthenticateUserByName;
 import embyclient.model.AuthenticationAuthenticationResult;
 import com.example.embyapp.service.EmbyService;
+import com.example.embyapp.service.I18nManager; // <-- IMPORT
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.concurrent.Task;
@@ -55,17 +56,18 @@ public class LoginViewModel {
         String url = serverUrl.get().trim();
         String user = username.get().trim();
         String pass = password.get(); // Password typically doesn't need trimming
+        I18nManager i18n = I18nManager.getInstance(); // <-- Get I18n
 
 
         // Basic validation
         if (url.isEmpty() || user.isEmpty() || pass.isEmpty()) {
-            statusMessage.set("Please enter Server URL, Username, and Password.");
+            statusMessage.set(i18n.getString("loginViewModel", "errorEmptyFields")); // <-- UPDATE
             return;
         }
 
         // --- Prepare for background task ---
         loginInProgress.set(true);
-        statusMessage.set("Logging in...");
+        statusMessage.set(i18n.getString("loginViewModel", "statusLoggingIn")); // <-- UPDATE
         loginSuccess.set(false); // Reset success flag
 
 
@@ -109,13 +111,13 @@ public class LoginViewModel {
         loginTask.setOnSucceeded(event -> {
             AuthenticationAuthenticationResult authResult = loginTask.getValue();
             if (authResult != null && authResult.getAccessToken() != null) {
-                statusMessage.set("Login Successful!");
+                statusMessage.set(i18n.getString("loginViewModel", "statusSuccess")); // <-- UPDATE
                 // *** FIX: Pass serverUrl as the second argument ***
                 embyService.setCurrentAuthResult(authResult, url); // Store result and URL in service
                 loginSuccess.set(true); // Signal success
             } else {
                 // Should not happen if API call succeeded without exception but handle defensively
-                statusMessage.set("Login failed: Invalid response from server.");
+                statusMessage.set(i18n.getString("loginViewModel", "errorInvalidResponse")); // <-- UPDATE
                 embyService.setCurrentAuthResult(null, null); // Clear any previous auth state
             }
             loginInProgress.set(false);
@@ -123,31 +125,31 @@ public class LoginViewModel {
 
         loginTask.setOnFailed(event -> {
             Throwable exception = loginTask.getException();
-            String errorMessage = "Login failed: ";
+            String errorMessage; // <-- Remove default "Login failed: "
             if (exception instanceof ApiException) {
                 ApiException apiEx = (ApiException) exception;
-                errorMessage += "API Error " + apiEx.getCode();
+                errorMessage = i18n.getString("loginViewModel", "errorApi", apiEx.getCode()); // <-- UPDATE
                 System.err.println("API Exception during login: " + apiEx.getCode());
                 System.err.println("Response body: " + apiEx.getResponseBody());
                 apiEx.printStackTrace();
                 // Provide more specific user feedback based on code
                 if (apiEx.getCode() == 401 || apiEx.getCode() == 403) {
-                    errorMessage = "Login failed: Invalid username or password.";
+                    errorMessage = i18n.getString("loginViewModel", "errorUnauthorized"); // <-- UPDATE
                 } else if (apiEx.getCode() == 400) {
-                    errorMessage = "Login failed: Bad request (check server URL or client header).";
+                    errorMessage = i18n.getString("loginViewModel", "errorBadRequest"); // <-- UPDATE
                 } else if (apiEx.getCode() == 0) {
-                    errorMessage = "Login failed: Could not connect to the server (check URL and network).";
+                    errorMessage = i18n.getString("loginViewModel", "errorConnection"); // <-- UPDATE
                 } else {
-                    errorMessage = "Login failed: Server returned error " + apiEx.getCode() + ".";
+                    errorMessage = i18n.getString("loginViewModel", "errorApiGeneric", apiEx.getCode()); // <-- UPDATE
                 }
 
 
             } else if (exception instanceof IOException) {
-                errorMessage += "Network error. Check server URL and connection.";
+                errorMessage = i18n.getString("loginViewModel", "errorNetwork"); // <-- UPDATE
                 exception.printStackTrace();
             }
             else {
-                errorMessage += "An unexpected error occurred.";
+                errorMessage = i18n.getString("loginViewModel", "errorUnexpected"); // <-- UPDATE
                 exception.printStackTrace();
             }
             statusMessage.set(errorMessage);
@@ -170,4 +172,3 @@ public class LoginViewModel {
         }
     }
 }
-

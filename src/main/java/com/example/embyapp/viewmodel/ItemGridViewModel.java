@@ -3,6 +3,7 @@ package com.example.embyapp.viewmodel;
 import embyclient.ApiException;
 import embyclient.model.BaseItemDto;
 import embyclient.model.QueryResultBaseItemDto;
+import com.example.embyapp.service.I18nManager; // <-- IMPORT
 import com.example.embyapp.service.ItemRepository;
 import javafx.application.Platform;
 import javafx.beans.property.*;
@@ -53,7 +54,7 @@ public class ItemGridViewModel {
 
     // Dùng để khóa load và báo hiệu trạng thái
     private final ReadOnlyBooleanWrapper loading = new ReadOnlyBooleanWrapper(false);
-    private final ReadOnlyStringWrapper statusMessage = new ReadOnlyStringWrapper("Vui lòng chọn một thư viện...");
+    private final ReadOnlyStringWrapper statusMessage = new ReadOnlyStringWrapper(""); // <-- Remove default
     private final ReadOnlyBooleanWrapper showStatusMessage = new ReadOnlyBooleanWrapper(true);
 
     // --- Properties (Không đổi) ---
@@ -65,6 +66,8 @@ public class ItemGridViewModel {
 
     public ItemGridViewModel(ItemRepository itemRepository) {
         this.itemRepository = itemRepository;
+        // <-- Set default text here -->
+        this.statusMessage.set(I18nManager.getInstance().getString("itemGridView", "statusDefault"));
     }
 
     /** Enum báo hiệu hành động cuộn cần thực hiện sau khi tải trang mới. */
@@ -88,6 +91,7 @@ public class ItemGridViewModel {
         currentSearchKeywords = null;
 
         int startIndex = pageIndex * ITEMS_PER_LOAD;
+        I18nManager i18n = I18nManager.getInstance(); // <-- Get I18n
 
         // Lấy thông tin sắp xếp hiện tại
         final String sortBy = currentSortBy.get();
@@ -95,7 +99,7 @@ public class ItemGridViewModel {
 
         // Cập nhật trạng thái tải
         Platform.runLater(() -> {
-            statusMessage.set("Đang tải trang " + (pageIndex + 1) + "/" + (totalPages > 0 ? totalPages : "...") + "...");
+            statusMessage.set(i18n.getString("itemGridView", "statusPageLoading", (pageIndex + 1), (totalPages > 0 ? totalPages : "..."))); // <-- UPDATE
         });
 
 
@@ -129,14 +133,14 @@ public class ItemGridViewModel {
 
                     if (items.isEmpty() && totalCount > 0) {
                         // Trường hợp hiếm: API trả về trang rỗng giữa chừng, nên giữ trạng thái loading
-                        statusMessage.set("Trang này rỗng.");
+                        statusMessage.set(i18n.getString("itemGridView", "statusPageEmpty")); // <-- UPDATE
                         showStatusMessage.set(true);
                     } else if (items.isEmpty()) {
-                        statusMessage.set("Thư viện này không có items.");
+                        statusMessage.set(i18n.getString("itemGridView", "statusLibraryEmpty")); // <-- UPDATE
                         showStatusMessage.set(true);
                     } else {
                         // Cập nhật status
-                        statusMessage.set("Đang hiển thị: " + (pageIndex + 1) + "/" + totalPages + " (" + totalCount + " items)");
+                        statusMessage.set(i18n.getString("itemGridView", "statusDisplaying", (pageIndex + 1), totalPages, totalCount)); // <-- UPDATE
 
                         // Nếu đang ở trang đầu tiên (0), tự động chọn item đầu tiên
                         if (pageIndex == 0 && !pageItems.isEmpty()) {
@@ -151,14 +155,14 @@ public class ItemGridViewModel {
             } catch (ApiException e) {
                 System.err.println("API Error loading page: " + e.getMessage());
                 Platform.runLater(() -> {
-                    statusMessage.set("Lỗi khi tải trang: " + e.getMessage());
+                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingPage", e.getMessage())); // <-- UPDATE
                     showStatusMessage.set(true);
                     loading.set(false);
                 });
             } catch (Exception e) {
                 System.err.println("Generic Error loading page: " + e.getMessage());
                 Platform.runLater(() -> {
-                    statusMessage.set("Lỗi không xác định khi tải trang.");
+                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingPageGeneric")); // <-- UPDATE
                     showStatusMessage.set(true);
                     loading.set(false);
                 });
@@ -179,9 +183,10 @@ public class ItemGridViewModel {
         scrollAction.set(ScrollAction.NONE); // Reset scroll action
 
         int startIndex = pageIndex * ITEMS_PER_LOAD;
+        I18nManager i18n = I18nManager.getInstance(); // <-- Get I18n
 
         Platform.runLater(() -> {
-            statusMessage.set("Đang tìm kiếm và tải trang " + (pageIndex + 1) + "/" + (totalPages > 0 ? totalPages : "...") + "...");
+            statusMessage.set(i18n.getString("itemGridView", "statusSearchPageLoading", (pageIndex + 1), (totalPages > 0 ? totalPages : "..."))); // <-- UPDATE
         });
 
         new Thread(() -> {
@@ -213,13 +218,13 @@ public class ItemGridViewModel {
                     items.setAll(pageItems);
 
                     if (items.isEmpty() && totalCount > 0) {
-                        statusMessage.set("Trang này rỗng.");
+                        statusMessage.set(i18n.getString("itemGridView", "statusPageEmpty")); // <-- UPDATE
                         showStatusMessage.set(true);
                     } else if (items.isEmpty()) {
-                        statusMessage.set("Không tìm thấy items nào khớp với từ khóa \"" + keywords + "\".");
+                        statusMessage.set(i18n.getString("itemGridView", "statusSearchEmpty", keywords)); // <-- UPDATE
                         showStatusMessage.set(true);
                     } else {
-                        statusMessage.set("Kết quả tìm kiếm: " + (pageIndex + 1) + "/" + totalPages + " (" + totalCount + " items)");
+                        statusMessage.set(i18n.getString("itemGridView", "statusSearchResult", (pageIndex + 1), totalPages, totalCount)); // <-- UPDATE
                         // 3. (QUAN TRỌNG) Tự động chọn item đầu tiên
                         selectedItem.set(pageItems.get(0));
                     }
@@ -231,14 +236,14 @@ public class ItemGridViewModel {
             } catch (ApiException e) {
                 System.err.println("API Error loading search page: " + e.getMessage());
                 Platform.runLater(() -> {
-                    statusMessage.set("Lỗi API khi tìm kiếm: " + e.getMessage());
+                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingSearch", e.getMessage())); // <-- UPDATE
                     showStatusMessage.set(true);
                     loading.set(false);
                 });
             } catch (Exception e) {
                 System.err.println("Generic Error loading search page: " + e.getMessage());
                 Platform.runLater(() -> {
-                    statusMessage.set("Lỗi không xác định khi tìm kiếm.");
+                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingSearchGeneric")); // <-- UPDATE
                     showStatusMessage.set(true);
                     loading.set(false);
                 });
@@ -257,7 +262,7 @@ public class ItemGridViewModel {
         if (parentId == null) {
             Platform.runLater(() -> {
                 items.clear();
-                statusMessage.set("Vui lòng chọn một thư viện...");
+                statusMessage.set(I18nManager.getInstance().getString("itemGridView", "statusDefault")); // <-- UPDATE
                 showStatusMessage.set(true);
                 loading.set(false);
                 selectedItem.set(null);

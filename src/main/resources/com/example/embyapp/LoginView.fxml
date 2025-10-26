@@ -8,31 +8,23 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox fx:id="rootPane" alignment="CENTER" spacing="15.0" style="-fx-padding: 20;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.embyapp.controller.LoginController">
+<VBox fx:id="rootPane" alignment="CENTER" spacing="15.0" style="-fx-padding: 20;"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.embyapp.controller.LoginController">
     <padding>
         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
     </padding>
 
-    <Label text="Emby Login">
-        <font>
-            <Font name="System Bold" size="24.0" />
-        </font>
+    <Label fx:id="titleLabel"> <font>
+        <Font name="System Bold" size="24.0" />
+    </font>
         <VBox.margin>
             <Insets bottom="10.0" />
         </VBox.margin>
     </Label>
 
-    <TextField fx:id="serverUrlField" promptText="Server URL (e.g., http://localhost:8096)" />
-    <TextField fx:id="usernameField" promptText="Username" />
-    <PasswordField fx:id="passwordField" onAction="#handlePasswordKeyPress" promptText="Password" /> <!-- Added onAction for Enter key -->
-
-    <!-- *** FIX: Changed onAction to #handleLoginButtonAction *** -->
-    <Button fx:id="loginButton" defaultButton="true" onAction="#handleLoginButtonAction" text="Login" />
-
-    <Label fx:id="statusLabel" text="" textFill="red" wrapText="true">
-        <VBox.margin>
-            <Insets top="10.0" />
-        </VBox.margin>
-    </Label>
+    <TextField
+            fx:id="serverUrlField" /> <TextField fx:id="usernameField" /> <PasswordField fx:id="passwordField" onAction="#handlePasswordKeyPress" /> <Button fx:id="loginButton" defaultButton="true" onAction="#handleLoginButtonAction" /> <Label fx:id="statusLabel" textFill="red" wrapText="true"> <VBox.margin>
+    <Insets top="10.0" />
+</VBox.margin>
+</Label>
 </VBox>
-

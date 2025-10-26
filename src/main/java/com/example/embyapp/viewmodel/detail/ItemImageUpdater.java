@@ -14,6 +14,7 @@ import embyclient.api.ImageServiceApi;
 import embyclient.model.ImageInfo;
 import embyclient.model.ImageType;
 import com.example.embyapp.service.EmbyService; // Correct import
+import com.example.embyapp.service.I18nManager; // <-- IMPORT
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -38,12 +39,14 @@ import java.util.List;
 public class ItemImageUpdater {
 
     private final EmbyService embyService;
+    private final I18nManager i18n; // <-- ADDED
 
     // Client riêng biệt cho upload (Giữ nguyên từ lần sửa trước)
     private OkHttpClient uploadHttpClient;
 
     public ItemImageUpdater(EmbyService embyService) {
         this.embyService = embyService;
+        this.i18n = I18nManager.getInstance(); // <-- ADDED
     }
 
     // (Giữ nguyên từ lần sửa trước)
@@ -76,7 +79,12 @@ public class ItemImageUpdater {
      */
     public List<File> chooseImages(Stage ownerStage, boolean allowMultiple) {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle(allowMultiple ? "Chọn các ảnh Backdrop" : "Chọn ảnh Primary");
+
+        // <-- MODIFIED: Use I18nManager for titles -->
+        fileChooser.setTitle(allowMultiple ?
+                i18n.getString("itemImageUpdater", "selectBackdropsTitle") :
+                i18n.getString("itemImageUpdater", "selectPrimaryTitle"));
+
 
         // (*** SỬA LỖI: Trả lại logic FileChooser.ExtensionFilter ***)
         fileChooser.getExtensionFilters().addAll(

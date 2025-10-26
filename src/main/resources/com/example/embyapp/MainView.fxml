@@ -11,19 +11,13 @@
         <ToolBar fx:id="mainToolBar" style="-fx-background-color: #1e1e1e;"
                  BorderPane.alignment="CENTER">
             <items>
-                <Button fx:id="logoutButton" mnemonicParsing="false" text="Logout"/>
-                <Separator orientation="VERTICAL" />
+                <Button fx:id="logoutButton" mnemonicParsing="false"/> <Separator orientation="VERTICAL" />
 
-                <Button fx:id="sortByButton" onAction="#handleSortByToggle" text="Sort By: Date" minWidth="150.0"/>
-                <ToggleButton fx:id="sortOrderButton" onAction="#handleSortOrderToggle" text="Order: Desc" minWidth="100.0"/>
-
-                <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="sortByButton" onAction="#handleSortByToggle" minWidth="150.0"/> <ToggleButton fx:id="sortOrderButton" onAction="#handleSortOrderToggle" minWidth="100.0"/>         <Region HBox.hgrow="ALWAYS" />
 
                 <HBox alignment="CENTER_LEFT" spacing="5.0">
                     <children>
-                        <TextField fx:id="searchField" promptText="Tìm món ..." prefWidth="250.0" onAction="#handleSearchAction"/>
-                        <Button fx:id="searchButton" onAction="#handleSearchAction" text="🔍"/>
-                    </children>
+                        <TextField fx:id="searchField" prefWidth="250.0" onAction="#handleSearchAction"/>   <Button fx:id="searchButton" onAction="#handleSearchAction"/> </children>
                 </HBox>
             </items>
         </ToolBar>
@@ -31,13 +25,14 @@
     <bottom>
         <HBox fx:id="statusBar" alignment="CENTER_LEFT" spacing="10.0" styleClass="status-bar" BorderPane.alignment="CENTER">
             <padding>
+
                 <Insets bottom="5.0" left="10.0" right="10.0" top="5.0"/>
             </padding>
             <children>
-                <Label fx:id="statusLabel" text="Đang khởi tạo..." HBox.hgrow="ALWAYS"/>
-                <ProgressIndicator fx:id="statusProgressIndicator" maxHeight="20.0" maxWidth="20.0" visible="false"/>
+                <Label fx:id="statusLabel" HBox.hgrow="ALWAYS"/> <ProgressIndicator fx:id="statusProgressIndicator" maxHeight="20.0" maxWidth="20.0" visible="false"/>
             </children>
         </HBox>
+
     </bottom>
     <center>
         <SplitPane fx:id="mainSplitPane" prefHeight="160.0" prefWidth="200.0" BorderPane.alignment="CENTER">

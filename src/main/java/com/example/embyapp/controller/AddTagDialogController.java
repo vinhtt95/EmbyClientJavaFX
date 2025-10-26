@@ -26,17 +26,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
 /**
  * (CẬP NHẬT 30) Thêm Genres.
  * - Cập nhật SuggestionContext và loadSuggestedTags.
+ * (CẬP NHẬT 34) Thêm chức năng tìm kiếm nhanh trong các gợi ý (3 ô tìm kiếm).
+ * (FIX LỖI) Sửa ClassCastException và Lỗi biên dịch rawName.
  */
 public class AddTagDialogController {
 
     public enum SuggestionContext {
-        TAG, STUDIO, PEOPLE, GENRE // (*** THÊM GENRE ***)
+        TAG, STUDIO, PEOPLE, GENRE
     }
 
     @FXML private ToggleGroup tagTypeGroup;
@@ -49,6 +52,11 @@ public class AddTagDialogController {
     @FXML private GridPane jsonTagPane;
     @FXML private TextField keyField;
     @FXML private TextField valueField;
+
+    // (*** THÊM MỚI: 3 ô Search ***)
+    @FXML private TextField keySearchField;
+    @FXML private TextField valueSearchField;
+    @FXML private TextField simpleSearchField;
 
     @FXML private VBox suggestionJsonContainer;
     @FXML private FlowPane suggestionKeysPane;
@@ -66,17 +74,21 @@ public class AddTagDialogController {
     private ItemRepository itemRepository;
     private SuggestionContext currentContext = SuggestionContext.TAG;
 
+    // (*** Danh sách gốc và các nhóm đã phân tách ***)
+    private List<String> allRawNames = Collections.emptyList();
+    private Map<String, List<ParsedTag>> jsonGroups = new HashMap<>(); // Key -> List<ParsedTag>
+    private List<ParsedTag> allSimpleTags = Collections.emptyList(); // List<ParsedTag> cho Simple
+
+
     private static class ParsedTag {
         final String rawString;
         final TagModel model;
 
-        ParsedTag(String rawString, TagModel model) {
+        public ParsedTag(String rawString, TagModel model) {
             this.rawString = rawString;
             this.model = model;
         }
     }
-
-    private Map<String, List<ParsedTag>> jsonGroups = new HashMap<>();
 
 
     @FXML
@@ -101,8 +113,31 @@ public class AddTagDialogController {
             if (newToggle != null) {
                 valueSuggestionGroup.selectToggle(null);
             }
-            populateValues(newToggle);
+            // Gọi hàm populateValues để lọc và hiển thị
+            if (valueSearchField != null) {
+                populateValues(newToggle, valueSearchField.getText());
+            } else {
+                populateValues(newToggle, "");
+            }
         });
+
+        // (*** THÊM MỚI: 3 Listener cho 3 ô Search ***)
+        if (keySearchField != null) {
+            keySearchField.textProperty().addListener((obs, oldVal, newVal) -> {
+                applyFiltersAndPopulate(true, false, false); // Chỉ lọc Keys
+            });
+        }
+        if (valueSearchField != null) {
+            valueSearchField.textProperty().addListener((obs, oldVal, newVal) -> {
+                // Chỉ lọc Values (chỉ cần gọi populateValues lại)
+                populateValues(keySuggestionGroup.getSelectedToggle(), newVal);
+            });
+        }
+        if (simpleSearchField != null) {
+            simpleSearchField.textProperty().addListener((obs, oldVal, newVal) -> {
+                applyFiltersAndPopulate(false, false, true); // Chỉ lọc Simple
+            });
+        }
     }
 
     /**
@@ -117,7 +152,7 @@ public class AddTagDialogController {
             Stage stage = (Stage) dialogStage.getScene().getWindow();
             String title = context == SuggestionContext.STUDIO ? "Thêm Studio Mới" :
                     context == SuggestionContext.PEOPLE ? "Thêm Người Mới" :
-                            context == SuggestionContext.GENRE ? "Thêm Thể Loại Mới" : // (*** MỚI ***)
+                            context == SuggestionContext.GENRE ? "Thêm Thể Loại Mới" :
                                     "Thêm Tag Mới";
             stage.setTitle(title);
 
@@ -128,11 +163,16 @@ public class AddTagDialogController {
                                     "Tên Thể Loại");
 
             // Cập nhật label cho Simple Suggestions
-            Label suggestionLabel = (Label) suggestionSimpleContainer.getChildren().get(0);
+            // (*** ĐÃ SỬA LỖI CAST TẠI ĐÂY ***)
+            // Lấy HBox chứa Label và TextField (index 0 của suggestionSimpleContainer)
+            HBox headerHBox = (HBox) suggestionSimpleContainer.getChildren().get(0);
+            // Lấy Label (index 0 của headerHBox)
+            Label suggestionLabel = (Label) headerHBox.getChildren().get(0);
+
             suggestionLabel.setText("Gợi ý " + (context == SuggestionContext.TAG ? "Tag Đơn giản" :
                     context == SuggestionContext.STUDIO ? "Studios" :
                             context == SuggestionContext.PEOPLE ? "People" :
-                                    "Genres")); // (*** MỚI ***)
+                                    "Genres"));
 
             // Luôn hiển thị cả hai radio buttons và containers
             jsonTagRadio.setVisible(true);
@@ -148,7 +188,6 @@ public class AddTagDialogController {
 
     private void loadSuggestedTags() {
         new Thread(() -> {
-            // FIX: Khai báo final List<T> để khắc phục lỗi 'effectively final'
             final List<String> rawNames = new ArrayList<>();
 
             try {
@@ -170,7 +209,7 @@ public class AddTagDialogController {
                         rawNames.addAll(itemRepository.getPeopleSuggestions(embyService.getApiClient())
                                 .stream().map(SuggestionItemModel::getName).collect(Collectors.toList()));
                         break;
-                    case GENRE: // (*** MỚI ***)
+                    case GENRE:
                         rawNames.addAll(itemRepository.getGenreSuggestions(embyService.getApiClient())
                                 .stream().map(SuggestionItemModel::getName).collect(Collectors.toList()));
                         break;
@@ -183,15 +222,24 @@ public class AddTagDialogController {
 
             // Cập nhật UI
             Platform.runLater(() -> {
-                populateSuggestedTags(rawNames);
+                this.allRawNames = rawNames;
+                prepareSuggestionLists(); // Chuẩn bị danh sách gốc
 
-                // Hiển thị/ẩn container JSON
+                // Áp dụng filter ban đầu (đọc từ text fields, nếu có)
+                String keySearch = keySearchField != null ? keySearchField.getText() : "";
+                String valueSearch = valueSearchField != null ? valueSearchField.getText() : "";
+                String simpleSearch = simpleSearchField != null ? simpleSearchField.getText() : "";
+
+                // Gọi applyFiltersAndPopulate sau khi đã có dữ liệu gốc
+                populateKeys(keySearch);
+                populateSimpleTags(simpleSearch);
+                populateValues(keySuggestionGroup.getSelectedToggle(), valueSearch);
+
+                // Cập nhật hiển thị container (làm thủ công vì không gọi applyFiltersAndPopulate)
                 suggestionJsonContainer.setVisible(!jsonGroups.isEmpty());
                 suggestionJsonContainer.setManaged(!jsonGroups.isEmpty());
-
-                // Hiển thị/ẩn container Simple (dù là Tag, Studio hay People)
-                suggestionSimpleContainer.setVisible(!suggestionSimplePane.getChildren().isEmpty());
-                suggestionSimpleContainer.setManaged(!suggestionSimplePane.getChildren().isEmpty());
+                suggestionSimpleContainer.setVisible(!allSimpleTags.isEmpty());
+                suggestionSimpleContainer.setManaged(!allSimpleTags.isEmpty());
             });
         }).start();
     }
@@ -217,18 +265,17 @@ public class AddTagDialogController {
     }
 
     /**
-     * (HỢP NHẤT LOGIC) Phân tích danh sách tên thô thành JSON Groups và Simple Tags.
+     * (*** TÁCH LOGIC: Chuẩn bị danh sách gốc (Không lọc) ***)
      */
-    private void populateSuggestedTags(List<String> rawNames) {
-        if (rawNames == null || rawNames.isEmpty()) {
+    private void prepareSuggestionLists() {
+        if (allRawNames == null || allRawNames.isEmpty()) {
             jsonGroups.clear();
-            populateKeys(); // Xóa keys
-            populateSimpleTags(Collections.emptyList()); // Xóa simple tags
+            allSimpleTags = Collections.emptyList();
             return;
         }
 
         // 1. Parse tất cả tên thô thành TagModel
-        List<ParsedTag> parsedTags = rawNames.stream()
+        List<ParsedTag> parsedTags = allRawNames.stream()
                 .map(raw -> new ParsedTag(raw, TagModel.parse(raw)))
                 .collect(Collectors.toList());
 
@@ -238,23 +285,67 @@ public class AddTagDialogController {
                 .collect(Collectors.groupingBy(pt -> pt.model.getKey()));
 
         // 3. Lấy danh sách Simple Tags
-        List<ParsedTag> simpleTags = parsedTags.stream()
+        allSimpleTags = parsedTags.stream()
                 .filter(pt -> !pt.model.isJson())
                 .collect(Collectors.toList());
-
-        // 4. Populate UI
-        populateKeys(); // JSON Keys
-        populateSimpleTags(simpleTags); // Simple Tags (hoặc Studio/People/Genre đơn giản)
     }
 
-    private void populateKeys( ) {
+
+    /**
+     * (*** HÀM TỔNG HỢP: Gọi khi nhấn Enter/thay đổi Text (cho Keys/Simple) ***)
+     */
+    private void applyFiltersAndPopulate(boolean filterKeys, boolean filterValues, boolean filterSimple) {
+        if (filterKeys) {
+            populateKeys(keySearchField.getText());
+        }
+
+        if (filterValues) {
+            // Gọi populateValues cho Key đang được chọn
+            populateValues(keySuggestionGroup.getSelectedToggle(), valueSearchField.getText());
+        }
+
+        if (filterSimple) {
+            populateSimpleTags(simpleSearchField.getText());
+        }
+
+        // Cập nhật hiển thị container
+        Platform.runLater(() -> {
+            // Hiển thị/ẩn container JSON
+            suggestionJsonContainer.setVisible(!jsonGroups.isEmpty());
+            suggestionJsonContainer.setManaged(!jsonGroups.isEmpty());
+
+            // Hiển thị/ẩn container Simple
+            boolean hasSimpleSuggestions = suggestionSimplePane.getChildren().size() > 0;
+            suggestionSimpleContainer.setVisible(hasSimpleSuggestions);
+            suggestionSimpleContainer.setManaged(hasSimpleSuggestions);
+        });
+    }
+
+    /**
+     * Lọc và populate Keys dựa trên searchText.
+     * @param searchText Text từ keySearchField.
+     */
+    private void populateKeys(String searchText) {
         suggestionKeysPane.getChildren().clear();
         keySuggestionGroup.getToggles().clear();
 
-        List<String> sortedKeys = new ArrayList<>(jsonGroups.keySet());
-        Collections.sort(sortedKeys, String.CASE_INSENSITIVE_ORDER);
+        Set<String> allKeys = jsonGroups.keySet();
 
-        for (String key : sortedKeys) {
+        // 1. Lọc Keys
+        List<String> filteredKeys;
+        if (searchText == null || searchText.trim().isEmpty()) {
+            filteredKeys = new ArrayList<>(allKeys);
+        } else {
+            String lowerCaseSearchText = searchText.trim().toLowerCase();
+            filteredKeys = allKeys.stream()
+                    .filter(key -> key.toLowerCase().contains(lowerCaseSearchText))
+                    .collect(Collectors.toList());
+        }
+
+        // 2. Sắp xếp và Populate
+        Collections.sort(filteredKeys, String.CASE_INSENSITIVE_ORDER);
+
+        for (String key : filteredKeys) {
             ToggleButton chip = new ToggleButton(key);
             chip.setToggleGroup(keySuggestionGroup);
             chip.getStyleClass().add("suggestion-key-button");
@@ -262,16 +353,32 @@ public class AddTagDialogController {
             suggestionKeysPane.getChildren().add(chip);
         }
 
-        if (!keySuggestionGroup.getToggles().isEmpty()) {
+        // Giữ lại key đã chọn nếu nó vẫn còn trong danh sách đã lọc
+        if (keySuggestionGroup.getSelectedToggle() == null && !filteredKeys.isEmpty()) {
             keySuggestionGroup.selectToggle(keySuggestionGroup.getToggles().get(0));
+        } else if (keySuggestionGroup.getSelectedToggle() != null) {
+            // Kiểm tra xem toggle hiện tại có bị lọc mất không
+            String selectedKey = (String) keySuggestionGroup.getSelectedToggle().getUserData();
+            if (!filteredKeys.contains(selectedKey) && !filteredKeys.isEmpty()) {
+                // Chọn lại cái đầu tiên nếu cái cũ bị lọc mất
+                keySuggestionGroup.selectToggle(keySuggestionGroup.getToggles().get(0));
+            } else if (!filteredKeys.contains(selectedKey) && filteredKeys.isEmpty()) {
+                // Nếu không có key nào, clear values
+                populateValues(null, valueSearchField.getText());
+            }
         }
     }
 
-    private void populateValues(Toggle selectedKeyToggle) {
+    /**
+     * Lọc và populate Values của Key đang được chọn.
+     * @param selectedKeyToggle Toggle của Key đang được chọn.
+     * @param searchText Text từ valueSearchField.
+     */
+    private void populateValues(Toggle selectedKeyToggle, String searchText) {
         suggestionValuesPane.getChildren().clear();
+        valueSuggestionGroup.getToggles().clear(); // Reset ToggleGroup cho Values
 
         if (selectedKeyToggle == null) {
-            suggestionValuesPane.getChildren().clear();
             return;
         }
 
@@ -280,10 +387,22 @@ public class AddTagDialogController {
 
         if (tagsInGroup == null) return;
 
-        // Sắp xếp theo Value
-        tagsInGroup.sort((pt1, pt2) -> pt1.model.getValue().compareToIgnoreCase(pt2.model.getValue()));
+        // 1. Lọc Values
+        final List<ParsedTag> filteredTags;
+        if (searchText == null || searchText.trim().isEmpty()) {
+            filteredTags = tagsInGroup;
+        } else {
+            String lowerCaseSearchText = searchText.trim().toLowerCase();
+            filteredTags = tagsInGroup.stream()
+                    .filter(pt -> pt.model.getValue().toLowerCase().contains(lowerCaseSearchText))
+                    .collect(Collectors.toList());
+        }
 
-        for (ParsedTag pt : tagsInGroup) {
+        // 2. Sắp xếp và Populate
+        filteredTags.sort((pt1, pt2) -> pt1.model.getValue().compareToIgnoreCase(pt2.model.getValue()));
+
+
+        for (ParsedTag pt : filteredTags) {
             ToggleButton chip = new ToggleButton(pt.model.getValue());
             chip.setToggleGroup(valueSuggestionGroup);
             chip.getStyleClass().addAll("suggested-tag-button", "tag-view-json");
@@ -299,15 +418,28 @@ public class AddTagDialogController {
     }
 
     /**
-     * Dùng cho Tag Đơn Giản, Studio Đơn giản, People Đơn giản, Genre Đơn giản.
+     * Lọc và Populate Simple Tags.
+     * @param searchText Text từ simpleSearchField.
      */
-    private void populateSimpleTags(List<ParsedTag> simpleTags) {
+    private void populateSimpleTags(String searchText) {
         suggestionSimplePane.getChildren().clear();
+        // Không reset valueSuggestionGroup ở đây, vì nó dùng chung với value/key
+
+        final List<ParsedTag> filteredTags;
+        if (searchText == null || searchText.trim().isEmpty()) {
+            filteredTags = allSimpleTags;
+        } else {
+            String lowerCaseSearchText = searchText.trim().toLowerCase();
+            filteredTags = allSimpleTags.stream()
+                    .filter(pt -> pt.model.getDisplayName().toLowerCase().contains(lowerCaseSearchText))
+                    .collect(Collectors.toList());
+        }
 
         // Sắp xếp theo DisplayName (tên)
-        simpleTags.sort((pt1, pt2) -> pt1.model.getDisplayName().compareToIgnoreCase(pt2.model.getDisplayName()));
+        filteredTags.sort((pt1, pt2) -> pt1.model.getDisplayName().compareToIgnoreCase(pt2.model.getDisplayName()));
 
-        for (ParsedTag pt : simpleTags) {
+
+        for (ParsedTag pt : filteredTags) {
             ToggleButton chip = new ToggleButton(pt.model.getDisplayName());
             chip.setToggleGroup(valueSuggestionGroup);
             chip.getStyleClass().add("suggested-tag-button");

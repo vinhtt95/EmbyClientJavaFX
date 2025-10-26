@@ -15,10 +15,9 @@
 
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.example.embyapp.controller.AddTagDialogController"
-      spacing="15.0" styleClass="dialog-pane" prefWidth="550.0" prefHeight="650.0">
-    <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-    </padding>
+      spacing="15.0" styleClass="dialog-pane" prefWidth="550.0" prefHeight="975.0"> <padding>
+    <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+</padding>
 
     <Label text="Thêm Tag Mới" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
 
@@ -26,7 +25,6 @@
         <children>
             <RadioButton fx:id="simpleTagRadio" text="Tag Đơn giản" selected="false">
                 <toggleGroup>
-
                     <ToggleGroup fx:id="tagTypeGroup"/>
                 </toggleGroup>
             </RadioButton>
@@ -55,53 +53,59 @@
     </VBox>
 
 
-    <VBox fx:id="suggestionJsonContainer" spacing="10.0">
+    <VBox fx:id="suggestionJsonContainer" spacing="10.0" VBox.vgrow="ALWAYS">
         <children>
-            <VBox spacing="5.0">
+            <VBox spacing="5.0" VBox.vgrow="ALWAYS">
                 <children>
-                    <Label text="Key" style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-font-style: italic;"/>
+                    <HBox alignment="CENTER_LEFT" spacing="10.0">
+                        <Label text="Key" style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-font-style: italic;"/>
+                        <TextField fx:id="keySearchField" promptText="Tìm Key..." HBox.hgrow="ALWAYS"/>
+                    </HBox>
                     <ScrollPane fitToWidth="true" vbarPolicy="NEVER" hbarPolicy="AS_NEEDED" styleClass="scroll-pane"
-                                prefHeight="90.0">
-                        <content>
-                            <FlowPane fx:id="suggestionKeysPane" hgap="8.0" vgap="8.0">
-                                <padding>
-                                    <Insets top="5.0" bottom="5.0" left="5.0" right="5.0"/>
-                                </padding>
-                            </FlowPane>
-                        </content>
+                                prefHeight="180.0"> <content>
+                        <FlowPane fx:id="suggestionKeysPane" hgap="8.0" vgap="8.0">
+                            <padding>
+                                <Insets top="5.0" bottom="5.0" left="5.0" right="5.0"/>
+                            </padding>
+                        </FlowPane>
+                    </content>
                     </ScrollPane>
                 </children>
             </VBox>
-            <VBox spacing="5.0">
+            <VBox spacing="5.0" VBox.vgrow="ALWAYS">
                 <children>
-                    <Label text="Value" style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-font-style: italic;"/>
+                    <HBox alignment="CENTER_LEFT" spacing="10.0">
+                        <Label text="Value" style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-font-style: italic;"/>
+                        <TextField fx:id="valueSearchField" promptText="Tìm Value..." HBox.hgrow="ALWAYS"/>
+                    </HBox>
                     <ScrollPane fitToWidth="true" vbarPolicy="NEVER" hbarPolicy="AS_NEEDED" styleClass="scroll-pane"
-                                prefHeight="90.0">
-                        <content>
-                            <FlowPane fx:id="suggestionValuesPane" hgap="8.0" vgap="8.0">
-                                <padding>
-                                    <Insets top="5.0" bottom="5.0" left="5.0" right="5.0"/>
-                                </padding>
-                            </FlowPane>
-                        </content>
+                                prefHeight="180.0"> <content>
+                        <FlowPane fx:id="suggestionValuesPane" hgap="8.0" vgap="8.0">
+                            <padding>
+                                <Insets top="5.0" bottom="5.0" left="5.0" right="5.0"/>
+                            </padding>
+                        </FlowPane>
+                    </content>
                     </ScrollPane>
                 </children>
             </VBox>
         </children>
     </VBox>
 
-    <VBox fx:id="suggestionSimpleContainer" spacing="5.0" visible="false" managed="false">
+    <VBox fx:id="suggestionSimpleContainer" spacing="5.0" visible="false" managed="false" VBox.vgrow="ALWAYS">
         <children>
-            <Label text="Tag Đơn giản" style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-font-style: italic;"/>
+            <HBox alignment="CENTER_LEFT" spacing="10.0">
+                <Label text="Tag Đơn giản" style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-font-style: italic;"/>
+                <TextField fx:id="simpleSearchField" promptText="Tìm Tag..." HBox.hgrow="ALWAYS"/>
+            </HBox>
             <ScrollPane fitToWidth="true" vbarPolicy="NEVER" hbarPolicy="AS_NEEDED" styleClass="scroll-pane"
-                        prefHeight="90.0">
-                <content>
-                    <FlowPane fx:id="suggestionSimplePane" hgap="8.0" vgap="8.0">
-                        <padding>
-                            <Insets top="5.0" bottom="5.0" left="5.0" right="5.0"/>
-                        </padding>
-                    </FlowPane>
-                </content>
+                        prefHeight="180.0" VBox.vgrow="ALWAYS"> <content>
+                <FlowPane fx:id="suggestionSimplePane" hgap="8.0" vgap="8.0">
+                    <padding>
+                        <Insets top="5.0" bottom="5.0" left="5.0" right="5.0"/>
+                    </padding>
+                </FlowPane>
+            </content>
             </ScrollPane>
         </children>
     </VBox>

@@ -208,6 +208,12 @@
     -fx-background-color: #004d80;
     -fx-border-color: #007acc;
 }
+
+.tag-view-simple {
+    -fx-background-color: rgba(180, 49, 93, 0.8); /* Màu hồng đậm */
+    -fx-border-color: #F06292; /* Viền hồng nhạt hơn */
+}
+
 .tag-label {
     -fx-text-fill: #ffffff;
     -fx-font-size: 14px;
@@ -243,6 +249,11 @@
 .tag-view-json .tag-delete-button {
     -fx-background-color: #007acc;
 }
+
+.tag-view-simple .tag-delete-button {
+    -fx-background-color: #F06292; /* Màu hồng nhạt hơn để tương phản */
+}
+
 .tag-delete-button:hover {
     -fx-background-color: #dc3545;
     -fx-text-fill: #ffffff;

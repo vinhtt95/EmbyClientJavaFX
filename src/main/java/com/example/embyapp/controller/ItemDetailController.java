@@ -65,6 +65,8 @@ public class ItemDetailController {
     // Xóa runtimeLabel
 
     // (*** GALLERY ***)
+    @FXML private HBox backdropHeaderHBox; // (*** KHAI BÁO MỚI ***)
+    @FXML private ScrollPane imageGalleryScrollPane; // (*** KHAI BÁO MỚI ***)
     @FXML private Button addBackdropButton;
     @FXML private FlowPane imageGalleryPane;
 
@@ -225,6 +227,14 @@ public class ItemDetailController {
 
         bottomButtonBar.visibleProperty().bind(mainScrollPane.visibleProperty());
         bottomButtonBar.managedProperty().bind(mainScrollPane.visibleProperty());
+
+        // (*** THÊM BINDING MỚI CHO GALLERY SCROLLPANE VÀ HEADER ***)
+        imageGalleryScrollPane.visibleProperty().bind(mainScrollPane.visibleProperty());
+        imageGalleryScrollPane.managedProperty().bind(mainScrollPane.visibleProperty());
+
+        backdropHeaderHBox.visibleProperty().bind(mainScrollPane.visibleProperty());
+        backdropHeaderHBox.managedProperty().bind(mainScrollPane.visibleProperty());
+        // (*** KẾT THÚC THÊM BINDING MỚI ***)
 
 
         // 9. Binding UI linh hoạt, Path...

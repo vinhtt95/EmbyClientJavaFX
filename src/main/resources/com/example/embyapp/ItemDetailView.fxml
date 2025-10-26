@@ -22,6 +22,7 @@
     <VBox maxWidth="858.0" alignment="TOP_CENTER">
         <children>
             <ScrollPane fx:id="mainScrollPane" fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS"
+                        minHeight="100.0"
                         style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;"
                         visible="false">
                 <content>
@@ -29,25 +30,31 @@
                         <padding>
                             <Insets bottom="10.0" left="20.0" right="20.0" top="20.0" />
 
+
                         </padding>
                         <children>
 
                             <StackPane fx:id="primaryImageContainer" alignment="TOP_CENTER" style="-fx-cursor: hand;">
 
+
                                 <children>
                                     <ImageView fx:id="primaryImageView" fitHeight="450.0" pickOnBounds="true" preserveRatio="true" mouseTransparent="true" />
                                     <Button fx:id="savePrimaryImageButton" text="Lưu ảnh" visible="false" styleClass="image-save-button" StackPane.alignment="BOTTOM_RIGHT">
 
+
                                         <StackPane.margin>
                                             <Insets bottom="10.0" right="10.0" />
+
 
                                         </StackPane.margin>
                                     </Button>
                                 </children>
 
+
                                 <VBox.margin>
                                     <Insets bottom="10.0" />
                                 </VBox.margin>
+
 
                             </StackPane>
 
@@ -57,9 +64,11 @@
                                 <HBox fx:id="reviewTitleContainer" alignment="CENTER" spacing="5.0">
                                     <children>
 
+
                                         <Button fx:id="acceptTitleButton" text="✓" styleClass="review-button-round accept-button"/>
                                         <Button fx:id="rejectTitleButton" text="✕" styleClass="review-button-round reject-button"/>
                                     </children>
+
 
                                 </HBox>
                             </HBox>
@@ -67,32 +76,40 @@
                             <HBox fx:id="releaseDateContainer" alignment="CENTER_LEFT" spacing="10.0">
 
 
+
                                 <children>
                                     <VBox spacing="5.0" HBox.hgrow="ALWAYS">
                                         <children>
+
 
                                             <HBox alignment="CENTER_LEFT" spacing="10.0">
                                                 <Label text="Ngày phát hành" textFill="WHITE" style="-fx-font-weight: bold;
  -fx-font-size: 14px;" />
                                                 <HBox fx:id="reviewReleaseDateContainer" alignment="CENTER" spacing="5.0">
 
+
                                                     <children>
                                                         <Button fx:id="acceptReleaseDateButton" text="✓" styleClass="review-button-round accept-button"/>
+
 
                                                         <Button fx:id="rejectReleaseDateButton" text="✕" styleClass="review-button-round reject-button"/>
                                                     </children>
 
+
                                                 </HBox>
                                             </HBox>
+
 
                                             <TextField fx:id="releaseDateTextField" promptText="Định dạng dd/MM/yyyy" />
                                         </children>
                                     </VBox>
 
+
                                 </children>
                             </HBox>
 
                             <VBox>
+
 
                                 <children>
                                     <Label text="Đường dẫn trên máy" textFill="WHITE" style="-fx-font-weight: bold;
@@ -100,21 +117,26 @@
                                     <HBox fx:id="pathContainer" alignment="CENTER_LEFT" spacing="10.0" visible="false" managed="false">
                                         <children>
 
+
                                             <TextField fx:id="pathTextField" editable="false" HBox.hgrow="ALWAYS" /> <Button fx:id="openButton" onAction="#handleOpenButtonAction" text="Mở / Phát" minWidth="100.0"/>
                                         </children>
+
 
                                     </HBox>
                                 </children>
                                 <VBox.margin>
+
 
                                     <Insets bottom="10.0"/>
                                 </VBox.margin>
                             </VBox>
 
 
+
                             <Separator prefWidth="200.0" style="-fx-background-color: #2e2e2e;">
                                 <VBox.margin>
                                     <Insets top="5.0" bottom="5.0"/>
+
 
                                 </VBox.margin>
                             </Separator>
@@ -122,61 +144,79 @@
 
                             <HBox alignment="CENTER_LEFT" spacing="10.0">
                                 <Label
-                                        text="Tags" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" HBox.hgrow="ALWAYS"/>
+
+                                        text="Tags" textFill="WHITE" style="-fx-font-weight: bold;
+ -fx-font-size: 14px;" HBox.hgrow="ALWAYS"/>
                                 <Button fx:id="addTagButton" onAction="#handleAddTagButtonAction" text="+" styleClass="add-backdrop-button" />
                             </HBox>
                             <FlowPane
+
                                     fx:id="tagsFlowPane" hgap="8.0" vgap="8.0" prefWrapLength="758.0" />
 
                             <HBox alignment="CENTER_LEFT" spacing="10.0">
                                 <VBox.margin>
 
+
                                     <Insets top="10.0" />
                                 </VBox.margin>
                                 <children>
 
-                                    <Label text="Genres" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" HBox.hgrow="ALWAYS" />
+
+                                    <Label text="Genres" textFill="WHITE" style="-fx-font-weight: bold;
+ -fx-font-size: 14px;" HBox.hgrow="ALWAYS" />
                                     <HBox fx:id="reviewGenresContainer" alignment="CENTER" spacing="5.0">
                                         <children>
+
 
                                             <Button fx:id="acceptGenresButton" text="✓" styleClass="review-button-round accept-button"/>
                                             <Button fx:id="rejectGenresButton" text="✕" styleClass="review-button-round reject-button"/>
 
+
                                         </children>
                                     </HBox>
                                     <Button
+
                                             fx:id="addGenreButton" onAction="#handleAddGenreButtonAction" text="+" styleClass="add-backdrop-button" />
                                 </children>
                             </HBox>
+
                             <FlowPane fx:id="genresFlowPane" hgap="8.0" vgap="8.0" prefWrapLength="758.0" />
 
 
                             <HBox alignment="CENTER_LEFT" spacing="10.0">
                                 <VBox.margin>
+
                                     <Insets top="10.0" />
 
                                 </VBox.margin>
                                 <children>
+
                                     <Label text="Studios" textFill="WHITE"
-                                           style="-fx-font-weight: bold; -fx-font-size: 14px;" HBox.hgrow="ALWAYS" />
+                                           style="-fx-font-weight: bold;
+ -fx-font-size: 14px;" HBox.hgrow="ALWAYS" />
                                     <HBox fx:id="reviewStudiosContainer" alignment="CENTER" spacing="5.0">
                                         <children>
+
 
                                             <Button fx:id="acceptStudiosButton" text="✓" styleClass="review-button-round accept-button"/>
                                             <Button fx:id="rejectStudiosButton" text="✕" styleClass="review-button-round reject-button"/>
 
+
                                         </children>
                                     </HBox>
                                     <Button fx:id="addStudioButton" onAction="#handleAddStudioButtonAction" text="+" styleClass="add-backdrop-button" />
+
 
                                 </children>
                             </HBox>
                             <FlowPane fx:id="studiosFlowPane" hgap="8.0" vgap="8.0" prefWrapLength="758.0" />
 
 
+
                             <HBox alignment="CENTER_LEFT" spacing="10.0">
                                 <VBox.margin>
                                     <Insets top="10.0" />
+
 
                                 </VBox.margin>
                                 <children>
@@ -185,21 +225,26 @@
                                     <HBox fx:id="reviewPeopleContainer" alignment="CENTER" spacing="5.0">
                                         <children>
 
+
                                             <Button fx:id="acceptPeopleButton" text="✓" styleClass="review-button-round accept-button"/>
                                             <Button fx:id="rejectPeopleButton" text="✕" styleClass="review-button-round reject-button"/>
+
 
                                         </children>
                                     </HBox>
                                     <Button fx:id="addPeopleButton" onAction="#handleAddPeopleButtonAction" text="+" styleClass="add-backdrop-button" />
+
 
                                 </children>
                             </HBox>
                             <FlowPane fx:id="peopleFlowPane" hgap="8.0" vgap="8.0" prefWrapLength="758.0" />
 
 
+
                             <HBox alignment="CENTER_LEFT" spacing="10.0">
                                 <VBox.margin>
                                     <Insets top="10.0" />
+
 
                                 </VBox.margin>
                                 <children>
@@ -208,43 +253,55 @@
                                     <HBox fx:id="reviewOverviewContainer" alignment="CENTER" spacing="5.0">
                                         <children>
 
+
                                             <Button fx:id="acceptOverviewButton" text="✓" styleClass="review-button-round accept-button"/>
                                             <Button fx:id="rejectOverviewButton" text="✕" styleClass="review-button-round reject-button"/>
+
 
                                         </children>
                                     </HBox>
                                 </children>
+
 
                             </HBox>
                             <TextArea fx:id="overviewTextArea" prefHeight="200.0" promptText="Mô tả chi tiết..." wrapText="true" />
 
                             <Separator prefWidth="200.0">
 
+
                                 <VBox.margin>
                                     <Insets top="10.0" />
                                 </VBox.margin>
+
 
                             </Separator>
-
-                            <HBox alignment="CENTER_LEFT" spacing="10.0">
-                                <VBox.margin>
-
-                                    <Insets top="10.0" />
-                                </VBox.margin>
-                                <children>
-
-                                    <Label text="Gallery Ảnh Nền (Backdrops)" textFill="WHITE" style="-fx-font-weight: bold;
- -fx-font-size: 16px;" HBox.hgrow="ALWAYS" />
-                                    <Button fx:id="addBackdropButton" text="+" styleClass="add-backdrop-button" />
-                                </children>
-
-                            </HBox>
-                            <FlowPane fx:id="imageGalleryPane" hgap="10.0" prefHeight="100.0" vgap="10.0" />
-
                         </children>
                     </VBox>
                 </content>
 
+
+            </ScrollPane>
+
+            <HBox fx:id="backdropHeaderHBox" alignment="CENTER_LEFT" spacing="10.0" visible="false" managed="false">
+                <VBox.margin>
+                    <Insets top="10.0" left="20.0" right="20.0" />
+                </VBox.margin>
+                <children>
+                    <Label text="Gallery Ảnh Nền (Backdrops)" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 16px;" HBox.hgrow="ALWAYS" />
+                    <Button fx:id="addBackdropButton" text="+" styleClass="add-backdrop-button" />
+                </children>
+            </HBox>
+
+            <ScrollPane fx:id="imageGalleryScrollPane" fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="NEVER" prefHeight="150.0" minHeight="80.0"
+                        style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;"
+                        visible="false" managed="false">
+                <content>
+                    <FlowPane fx:id="imageGalleryPane" hgap="10.0" vgap="10.0">
+                        <padding>
+                            <Insets bottom="20.0" left="20.0" right="20.0" top="10.0" />
+                        </padding>
+                    </FlowPane>
+                </content>
             </ScrollPane>
 
             <HBox fx:id="bottomButtonBar" alignment="CENTER_LEFT" spacing="10.0" style="-fx-background-color: #121212;
@@ -254,10 +311,12 @@
                 </padding>
                 <children>
                     <Button
+
                             fx:id="saveButton" onAction="#handleSaveButtonAction" text="Lưu thay đổi" HBox.hgrow="ALWAYS" maxWidth="Infinity" disable="true"/>
                     <Button fx:id="importButton" onAction="#handleImportButtonAction" text="Import JSON"/>
                     <Button fx:id="exportButton" onAction="#handleExportButtonAction" text="Export JSON"/>
                 </children>
+
             </HBox>
         </children>
     </VBox>

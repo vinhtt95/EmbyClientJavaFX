@@ -32,6 +32,8 @@ public class TagView extends HBox {
         getStyleClass().add("tag-view"); // CSS
         if (tagModel.isJson()) {
             getStyleClass().add("tag-view-json"); // CSS riêng cho tag JSON
+        }else { // (*** THAY ĐỔI/THÊM VÀO ***)
+            getStyleClass().add("tag-view-simple"); // Áp dụng style màu hồng cho tag đơn giản
         }
 
         // (*** LOGIC HIỂN THỊ ĐÃ SỬA ĐỔI ***)

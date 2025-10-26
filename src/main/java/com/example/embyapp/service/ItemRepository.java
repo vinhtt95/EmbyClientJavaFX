@@ -18,6 +18,7 @@ import java.util.stream.Collectors; // (CẬP NHẬT) Thêm import (từ lần s
  * (CẬP NHẬT) Thêm logic để lấy Chi tiết Item đầy đủ và Danh sách Ảnh.
  * (CẬP NHẬT MỚI) Thêm phương thức phân trang getFullByParentIdPaginated.
  * (CẬP NHẬT TÌM KIẾM) Thêm phương thức searchItemsPaginated.
+ * (CẬP NHẬT SẮP XẾP) Cập nhật getFullByParentIdPaginated để hỗ trợ sắp xếp.
  */
 public class ItemRepository {
 
@@ -130,15 +131,18 @@ public class ItemRepository {
     // XÓA HÀM CŨ: public List<BaseItemDto> getFullByParentId(String parentId) throws ApiException { ... }
 
     /**
-     * (MỚI) Lấy các items con đầy đủ dựa trên parentId VỚI PHÂN TRANG.
+     * (MỚI) Lấy các items con đầy đủ dựa trên parentId VỚI PHÂN TRANG VÀ TÙY CHỌN SẮP XẾP.
      *
      * @param parentId ID của thư mục cha.
      * @param startIndex Vị trí bắt đầu.
      * @param limit Số lượng item muốn lấy.
+     * @param sortOrder Thứ tự sắp xếp ("Ascending" hoặc "Descending"). (*** MỚI ***)
+     * @param sortBy Tiêu chí sắp xếp. (*** MỚI ***)
      * @return QueryResultBaseItemDto chứa danh sách items và tổng số.
      * @throws ApiException Nếu API call thất bại.
      */
-    public QueryResultBaseItemDto getFullByParentIdPaginated(String parentId, int startIndex, int limit) throws ApiException {
+    // SỬA ĐỔI: Thêm sortOrder và sortBy
+    public QueryResultBaseItemDto getFullByParentIdPaginated(String parentId, int startIndex, int limit, String sortOrder, String sortBy) throws ApiException {
         if (!embyService.isLoggedIn()) {
             throw new IllegalStateException("Không thể lấy items khi chưa đăng nhập.");
         }
@@ -149,7 +153,7 @@ public class ItemRepository {
         }
 
         // Gọi hàm RequestEmby đã sửa đổi
-        QueryResultBaseItemDto result = new RequestEmby().getQueryResultFullBaseItemDto(parentId, service, startIndex, limit);
+        QueryResultBaseItemDto result = new RequestEmby().getQueryResultFullBaseItemDto(parentId, service, startIndex, limit, sortOrder, sortBy);
 
         if (result != null) {
             return result;

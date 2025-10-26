@@ -47,6 +47,8 @@ import java.util.prefs.Preferences;
  * - Sửa lỗi 'array required' bằng cách lưu getDividerPositions() vào biến rõ ràng.
  * (CẬP NHẬT MỚI: TÌM KIẾM)
  * - Thêm FXML fields và logic handleSearchAction.
+ * (CẬP NHẬT MỚI: SẮP XẾP)
+ * - Thêm FXML fields và logic handleSortByToggle/handleSortOrderToggle.
  */
 public class MainController {
 
@@ -69,6 +71,10 @@ public class MainController {
     // (*** THÊM MỚI: Khung Search ***)
     @FXML private TextField searchField;
     @FXML private Button searchButton;
+
+    // (*** THÊM MỚI: Nút Sắp xếp ***)
+    @FXML private Button sortByButton; // Button thường (Sort By: Date/Name)
+    @FXML private ToggleButton sortOrderButton; // ToggleButton (Order: Desc/Asc)
 
     // --- Services & ViewModels ---
     private MainApp mainApp;
@@ -158,6 +164,9 @@ public class MainController {
         // 5. Binding UI chính (StatusBar, Welcome)
         bindMainUI();
 
+        // (*** THÊM MỚI: Binding cho các nút sắp xếp ***)
+        bindSortingButtons();
+
         // 6. Thiết lập luồng dữ liệu giữa các components
         bindDataFlow();
 
@@ -176,6 +185,47 @@ public class MainController {
             mainSplitPane.getDividers().get(1).positionProperty().addListener((obs, oldVal, newVal) -> saveDividerPositions());
         }
     }
+
+    /**
+     * (*** HÀM MỚI: Binding cho các nút sắp xếp ***)
+     */
+    private void bindSortingButtons() {
+        if (itemGridViewModel == null || sortByButton == null || sortOrderButton == null) return;
+
+        // 1. Nút Sort By (Tiêu chí)
+        sortByButton.textProperty().bind(
+                Bindings.createStringBinding(() -> {
+                    String currentSortBy = itemGridViewModel.currentSortByProperty().get();
+                    if (currentSortBy.equals(ItemGridViewModel.SORT_BY_NAME)) {
+                        return "Sort By: Name (A-Z)";
+                    } else if (currentSortBy.equals(ItemGridViewModel.SORT_BY_DATE_RELEASE)) {
+                        return "Sort By: Date (Year, Release)";
+                    }
+                    return "Sort By...";
+                }, itemGridViewModel.currentSortByProperty())
+        );
+        // Vô hiệu hóa khi đang tải hoặc đang tìm kiếm
+        sortByButton.disableProperty().bind(itemGridViewModel.loadingProperty().or(Bindings.createBooleanBinding(itemGridViewModel::isSearching, itemGridViewModel.statusMessageProperty())));
+
+
+        // 2. Nút Sort Order (Thứ tự)
+        sortOrderButton.textProperty().bind(
+                Bindings.createStringBinding(() -> {
+                    String currentOrder = itemGridViewModel.currentSortOrderProperty().get();
+                    if (currentOrder.equals(ItemGridViewModel.SORT_ORDER_ASCENDING)) {
+                        return "Order: Asc (▲)";
+                    } else {
+                        return "Order: Desc (▼)";
+                    }
+                }, itemGridViewModel.currentSortOrderProperty())
+        );
+        // Vô hiệu hóa khi đang tải hoặc đang tìm kiếm
+        sortOrderButton.disableProperty().bind(itemGridViewModel.loadingProperty().or(Bindings.createBooleanBinding(itemGridViewModel::isSearching, itemGridViewModel.statusMessageProperty())));
+
+        // Set trạng thái ban đầu cho ToggleButton
+        sortOrderButton.setSelected(itemGridViewModel.currentSortOrderProperty().get().equals(ItemGridViewModel.SORT_ORDER_ASCENDING));
+    }
+
 
     /**
      * Helper
@@ -480,6 +530,26 @@ public class MainController {
             viewModel.statusMessageProperty().set("Vui lòng nhập từ khóa tìm kiếm.");
             // Quay về trạng thái ban đầu (grid trống)
             itemGridViewModel.loadItemsByParentId(null);
+        }
+    }
+
+    /**
+     * (*** HÀM MỚI: Xử lý chuyển đổi tiêu chí sắp xếp ***)
+     */
+    @FXML
+    private void handleSortByToggle() {
+        if (itemGridViewModel != null) {
+            itemGridViewModel.toggleSortBy();
+        }
+    }
+
+    /**
+     * (*** HÀM MỚI: Xử lý chuyển đổi thứ tự sắp xếp ***)
+     */
+    @FXML
+    private void handleSortOrderToggle() {
+        if (itemGridViewModel != null) {
+            itemGridViewModel.toggleSortOrder();
         }
     }
 }

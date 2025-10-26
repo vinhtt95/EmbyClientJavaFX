@@ -20,8 +20,8 @@
     -fx-fill: #e0e0e0;
 }
 
-/* Button mặc định */
-.button {
+/* Button mặc định (ĐÃ CHỈNH SỬA) */
+.button, .toggle-button {
     -fx-background-color: #383838;
     -fx-text-fill: #ffffff;
     -fx-background-radius: 5px;
@@ -29,11 +29,20 @@
     -fx-border-radius: 5px;
     -fx-padding: 8px 15px;
 }
-.button:hover {
+.button:hover, .toggle-button:hover {
     -fx-background-color: #4a4a4a;
 }
 .button:default {
     -fx-background-color: #007acc;
+}
+
+/* Thêm style cho ToggleButton khi được chọn */
+.toggle-button:selected {
+    -fx-background-color: #2e2e2e; /* Màu nền tối hơn khi được chọn */
+    -fx-border-color: #777777;
+}
+.toggle-button:selected:hover {
+    -fx-background-color: #383838;
 }
 
 /* TextField và TextArea */

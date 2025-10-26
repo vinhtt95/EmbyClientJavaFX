@@ -17,15 +17,23 @@ import java.util.List;
  * (SỬA ĐỔI) ViewModel cho ItemGridView (Cột giữa).
  * (CẬP NHẬT MỚI) Chuyển sang logic PHÂN TRANG THAY THẾ (Page Replacement) khi cuộn.
  * (CẬP NHẬT TÌM KIẾM) Thêm logic cho tìm kiếm và phân trang kết quả tìm kiếm.
+ * (CẬP NHẬT SẮP XẾP) Thêm logic cho tùy chọn sắp xếp.
  */
 public class ItemGridViewModel {
 
     // Hằng số cho phân trang
     private static final int ITEMS_PER_LOAD = 50;
 
+    // (*** HẰNG SỐ SẮP XẾP MỚI ***)
+    public static final String SORT_BY_DATE_RELEASE = "ProductionYear,PremiereDate,SortName";
+    public static final String SORT_BY_NAME = "SortName";
+    public static final String SORT_ORDER_DESCENDING = "Descending";
+    public static final String SORT_ORDER_ASCENDING = "Ascending";
+
+
     private final ItemRepository itemRepository;
 
-    // --- Pagination State --- (SỬA ĐỔI)
+    // --- Pagination State ---
     private String currentParentId;
     private int totalCount = 0;
     private int currentPageIndex = 0; // Trang hiện tại (bắt đầu từ 0)
@@ -34,9 +42,13 @@ public class ItemGridViewModel {
     private final ReadOnlyBooleanWrapper hasNextPage = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper hasPreviousPage = new ReadOnlyBooleanWrapper(false);
 
-    // --- Search State --- (MỚI)
+    // --- Search State ---
     private String currentSearchKeywords;
     private boolean isSearching = false;
+
+    // --- (*** SORTING STATE MỚI ***) ---
+    private final ReadOnlyStringWrapper currentSortBy = new ReadOnlyStringWrapper(SORT_BY_DATE_RELEASE); // Mặc định sắp xếp theo Ngày phát hành
+    private final ReadOnlyStringWrapper currentSortOrder = new ReadOnlyStringWrapper(SORT_ORDER_DESCENDING); // Mặc định Giảm dần
 
 
     // Dùng để khóa load và báo hiệu trạng thái
@@ -77,6 +89,10 @@ public class ItemGridViewModel {
 
         int startIndex = pageIndex * ITEMS_PER_LOAD;
 
+        // Lấy thông tin sắp xếp hiện tại
+        final String sortBy = currentSortBy.get();
+        final String sortOrder = currentSortOrder.get();
+
         // Cập nhật trạng thái tải
         Platform.runLater(() -> {
             statusMessage.set("Đang tải trang " + (pageIndex + 1) + "/" + (totalPages > 0 ? totalPages : "...") + "...");
@@ -85,7 +101,10 @@ public class ItemGridViewModel {
 
         new Thread(() -> {
             try {
-                QueryResultBaseItemDto result = itemRepository.getFullByParentIdPaginated(parentId, startIndex, ITEMS_PER_LOAD);
+                // (*** SỬA LỖI: THÊM sortOrder và sortBy ***)
+                QueryResultBaseItemDto result = itemRepository.getFullByParentIdPaginated(
+                        parentId, startIndex, ITEMS_PER_LOAD, sortOrder, sortBy
+                );
 
                 // Tính toán tổng số trang/item
                 int calculatedTotalCount = result.getTotalRecordCount() != null ? result.getTotalRecordCount() : 0;
@@ -168,8 +187,9 @@ public class ItemGridViewModel {
         new Thread(() -> {
             try {
                 // SỬ DỤNG ItemRepository.searchItemsPaginated
+                // Tìm kiếm luôn sắp xếp theo Tên (Name) Tăng dần
                 QueryResultBaseItemDto result = itemRepository.searchItemsPaginated(
-                        keywords, startIndex, ITEMS_PER_LOAD, "Ascending", "SortName" // SortName là tiêu chí sắp xếp hợp lý
+                        keywords, startIndex, ITEMS_PER_LOAD, SORT_ORDER_ASCENDING, SORT_BY_NAME
                 );
 
                 int calculatedTotalCount = result.getTotalRecordCount() != null ? result.getTotalRecordCount() : 0;
@@ -257,11 +277,7 @@ public class ItemGridViewModel {
             return;
         }
 
-        if (!isSearching && parentId.equals(currentParentId) && !items.isEmpty() && currentPageIndex == 0 && !loading.get()) {
-            return; // Đã load trang đầu tiên
-        }
-
-        // Tải trang 0
+        // Tải trang 0 cho thư viện mới hoặc khi đã thay đổi sắp xếp
         loadPage(0, parentId);
     }
 
@@ -338,6 +354,45 @@ public class ItemGridViewModel {
         loading.addListener(cleanupListener);
     }
 
+    // --- (*** LOGIC SẮP XẾP MỚI: ĐÃ THÊM ***) ---
+
+    /**
+     * (*** MỚI ***)
+     * Chuyển đổi tiêu chí sắp xếp (Tên <-> Ngày phát hành) và tải lại trang hiện tại.
+     */
+    public void toggleSortBy() {
+        if (currentParentId == null || isSearching || loading.get()) return;
+
+        // Chuyển đổi trạng thái
+        if (currentSortBy.get().equals(SORT_BY_DATE_RELEASE)) {
+            currentSortBy.set(SORT_BY_NAME);
+        } else {
+            currentSortBy.set(SORT_BY_DATE_RELEASE);
+        }
+
+        // Tải lại trang 0 (để đảm bảo tính nhất quán của danh sách)
+        loadPage(0, currentParentId);
+    }
+
+    /**
+     * (*** MỚI ***)
+     * Chuyển đổi thứ tự sắp xếp (Tăng dần <-> Giảm dần) và tải lại trang hiện tại.
+     */
+    public void toggleSortOrder() {
+        if (currentParentId == null || isSearching || loading.get()) return;
+
+        // Chuyển đổi trạng thái
+        if (currentSortOrder.get().equals(SORT_ORDER_DESCENDING)) {
+            currentSortOrder.set(SORT_ORDER_ASCENDING);
+        } else {
+            currentSortOrder.set(SORT_ORDER_DESCENDING);
+        }
+
+        // Tải lại trang 0 (để đảm bảo tính nhất quán của danh sách)
+        loadPage(0, currentParentId);
+    }
+
+
     // --- Getters cho Properties ---
 
     public ReadOnlyBooleanProperty loadingProperty() {
@@ -382,5 +437,19 @@ public class ItemGridViewModel {
     /** (MỚI) Lấy tổng số trang */
     public int getTotalPages() {
         return totalPages;
+    }
+
+    // (*** GETTERS SẮP XẾP MỚI ***)
+    public ReadOnlyStringProperty currentSortByProperty() {
+        return currentSortBy.getReadOnlyProperty();
+    }
+
+    public ReadOnlyStringProperty currentSortOrderProperty() {
+        return currentSortOrder.getReadOnlyProperty();
+    }
+
+    // (*** GETTER MỚI ***)
+    public boolean isSearching() {
+        return isSearching;
     }
 }

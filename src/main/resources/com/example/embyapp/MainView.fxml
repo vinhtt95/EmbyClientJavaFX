@@ -12,6 +12,11 @@
                  BorderPane.alignment="CENTER">
             <items>
                 <Button fx:id="logoutButton" mnemonicParsing="false" text="Logout"/>
+                <Separator orientation="VERTICAL" />
+
+                <Button fx:id="sortByButton" onAction="#handleSortByToggle" text="Sort By: Date" minWidth="150.0"/>
+                <ToggleButton fx:id="sortOrderButton" onAction="#handleSortOrderToggle" text="Order: Desc" minWidth="100.0"/>
+
                 <Region HBox.hgrow="ALWAYS" />
 
                 <HBox alignment="CENTER_LEFT" spacing="5.0">
@@ -37,9 +42,7 @@
     <center>
         <SplitPane fx:id="mainSplitPane" prefHeight="160.0" prefWidth="200.0" BorderPane.alignment="CENTER">
             <AnchorPane fx:id="leftPaneContainer" minHeight="150.0" prefHeight="160.0" prefWidth="100.0" maxWidth="300.0" style="-fx-background-color: #1e1e1e;"/>
-
             <AnchorPane fx:id="centerPaneContainer" minHeight="0.0" prefHeight="160.0" prefWidth="100.0" style="-fx-background-color: #1a1a1a;"/>
-
             <AnchorPane fx:id="rightPaneContainer" minHeight="0.0" prefHeight="160.0" prefWidth="100.0" style="-fx-background-color: #121212;"/>
         </SplitPane>
     </center>

@@ -38,6 +38,7 @@ import java.time.ZoneId;
  * - Thêm ObservableList<TagModel> cho Genres và logic liên quan.
  * (FIX LỖI) Sửa constructor SaveRequest và lỗi thiếu symbol cho hàm ủy quyền.
  * (FIX LỖI) Sửa lỗi lưu Genres: Chuyển sang GenreItems (List<NameLongIdPair>).
+ * (FIX LỖI LƯU) Chụp state khi nhấn Lưu để tránh lỗi "No item selected".
  */
 public class ItemDetailViewModel {
 
@@ -125,14 +126,20 @@ public class ItemDetailViewModel {
                     throw new IllegalStateException(i18n.getString("itemDetailViewModel", "errorNoUser")); // <-- MODIFIED
                 }
                 ItemDetailLoader.LoadResult result = loader.loadItemData(userId, newItemId);
-                this.originalItemDto = result.getFullDetails();
-                this.currentItemId = newItemId;
-                this.exportFileNameTitle = result.getOriginalTitleForExport();
+
+                // *** Store the successfully loaded DTO and ID ***
+                BaseItemDto loadedDto = result.getFullDetails();
+                String loadedItemId = newItemId;
 
                 // (*** SỬA ĐỔI: Lấy trực tiếp backdrops đã lọc ***)
                 List<ImageInfo> backdrops = result.getBackdropImages();
 
                 Platform.runLater(() -> {
+                    // *** Update instance variables ONLY AFTER successful load and on FX thread ***
+                    this.originalItemDto = loadedDto;
+                    this.currentItemId = loadedItemId;
+                    this.exportFileNameTitle = result.getOriginalTitleForExport();
+
                     title.set(result.getTitleText());
                     overview.set(result.getOverviewText());
                     tagItems.setAll(result.getTagItems());
@@ -170,7 +177,7 @@ public class ItemDetailViewModel {
             } catch (Exception e) {
                 e.printStackTrace();
                 Platform.runLater(() -> {
-                    clearAllDetailsUI();
+                    clearAllDetailsUI(); // Ensure state is cleared on failure
                     statusMessage.set(i18n.getString("itemDetailViewModel", "errorLoad", e.getMessage())); // <-- MODIFIED
                     showStatusMessage.set(true);
                     loading.set(false);
@@ -199,24 +206,27 @@ public class ItemDetailViewModel {
         peopleItems.clear();
         genresItems.clear(); // (*** MỚI ***)
         importHandler.clearState();
-        currentItemId = null;
-        originalItemDto = null;
+        currentItemId = null; // Clear ID
+        originalItemDto = null; // Clear DTO
         exportFileNameTitle = null;
         newPrimaryImageFile.set(null);
     }
 
-    // (saveChanges)
+    // --- Save Changes (REVISED LOGIC) ---
     public void saveChanges() {
-        if (originalItemDto == null || currentItemId == null) {
+        // CAPTURE STATE IMMEDIATELY
+        final BaseItemDto dtoAtSaveTime = this.originalItemDto;
+        final String idAtSaveTime = this.currentItemId;
+
+        // Use captured state for the check
+        if (dtoAtSaveTime == null || idAtSaveTime == null) {
             reportActionError(i18n.getString("itemDetailViewModel", "errorSave")); // <-- MODIFIED
             return;
         }
         reportActionError(i18n.getString("itemDetailViewModel", "statusSaving")); // <-- MODIFIED
         importHandler.hideAllReviewButtons();
 
-        // FIX: Tạo các biến local final cho các giá trị cần thiết
-        final BaseItemDto finalOriginalItemDto = this.originalItemDto;
-        final String finalCurrentItemId = this.currentItemId;
+        // Capture UI state (as before, using current property values)
         final String finalTitle = this.title.get();
         final String finalOverview = this.overview.get();
         final String finalReleaseDate = this.releaseDate.get();
@@ -230,23 +240,25 @@ public class ItemDetailViewModel {
 
         new Thread(() -> {
             try {
-                BaseItemDto dtoToSave;
+                BaseItemDto dtoToSendToApi;
                 if (isSavingAfterImport) {
                     System.out.println(i18n.getString("itemDetailViewModel", "statusSavingImport")); // <-- MODIFIED
-                    dtoToSave = createDtoWithAcceptedChanges(acceptedFields);
+                    // Pass the captured DTO
+                    dtoToSendToApi = createDtoWithAcceptedChanges(dtoAtSaveTime, acceptedFields); // Pass dtoAtSaveTime
                 } else {
                     System.out.println(i18n.getString("itemDetailViewModel", "statusSavingManual")); // <-- MODIFIED
-                    // FIX LỖI: Thêm List.copyOf(genresItems) vào SaveRequest
+                    // Pass the captured DTO and ID
                     ItemDetailSaver.SaveRequest manualSaveRequest = new ItemDetailSaver.SaveRequest(
-                            finalOriginalItemDto, finalCurrentItemId, finalTitle, finalOverview,
+                            dtoAtSaveTime, // Use captured DTO
+                            idAtSaveTime,  // Use captured ID
+                            finalTitle, finalOverview,
                             finalTagItems, finalReleaseDate, finalStudiosItems, finalPeopleItems,
-                            finalGenresItems // <-- ĐÃ THÊM
+                            finalGenresItems
                     );
+                    // parseUiToDto already makes its own copy/modifies the passed DTO
+                    dtoToSendToApi = saver.parseUiToDto(manualSaveRequest);
 
-                    dtoToSave = saver.parseUiToDto(manualSaveRequest);
-
-                    // (*** PHẦN SỬA LỖI GENRES CHO MANUAL SAVE ***)
-                    // Chuyển List<TagModel> thành List<NameLongIdPair> và set GenreItems
+                    // Genre handling for manual save (remains the same)
                     List<NameLongIdPair> genreItemsToSave = finalGenresItems.stream()
                             .map(tagModel -> {
                                 NameLongIdPair pair = new NameLongIdPair();
@@ -255,20 +267,31 @@ public class ItemDetailViewModel {
                                 return pair;
                             })
                             .collect(Collectors.toList());
-                    dtoToSave.setGenreItems(genreItemsToSave); // <--- SET VÀO GenreItems
-                    // *LƯU Ý: setGenres(null) sẽ không cần thiết vì ta không setGenres()
-
+                    dtoToSendToApi.setGenreItems(genreItemsToSave);
                 }
+
                 ItemUpdateServiceApi itemUpdateServiceApi = embyService.getItemUpdateServiceApi();
                 if (itemUpdateServiceApi == null) {
                     throw new IllegalStateException(i18n.getString("itemDetailViewModel", "errorApiUpdate")); // <-- MODIFIED
                 }
-                itemUpdateServiceApi.postItemsByItemid(dtoToSave, finalCurrentItemId); // Sử dụng finalCurrentItemId
+                // Use captured ID for the API call
+                itemUpdateServiceApi.postItemsByItemid(dtoToSendToApi, idAtSaveTime);
+
                 Platform.runLater(() -> {
                     reportActionError(i18n.getString("itemDetailViewModel", "statusSaveSuccess")); // <-- MODIFIED
-                    this.originalItemDto = gson.fromJson(gson.toJson(dtoToSave), BaseItemDto.class);
-                    dirtyTracker.updateOriginalStringsFromCurrent();
-                    importHandler.clearState();
+
+                    // CRITICAL: Update the instance variable ONLY AFTER successful save
+                    // Check if the currently displayed item is still the one we saved
+                    if (idAtSaveTime.equals(this.currentItemId)) {
+                        // Create a fresh copy from the DTO sent to the API to avoid reference issues
+                        this.originalItemDto = gson.fromJson(gson.toJson(dtoToSendToApi), BaseItemDto.class);
+                        // Update dirty tracker's baseline to the newly saved state
+                        dirtyTracker.updateOriginalStringsFromCurrent();
+                    } else {
+                        // If the item changed while saving, don't update the baseline DTO or dirty tracker originals
+                        System.out.println("Save successful, but item changed during save. Not updating original DTO/dirty tracker baseline.");
+                    }
+                    importHandler.clearState(); // Clear import state regardless
                 });
             } catch (ApiException e) {
                 System.err.println("API Error saving item: " + e.getMessage());
@@ -282,18 +305,17 @@ public class ItemDetailViewModel {
         }).start();
     }
 
-    /**
-     * (*** HÀM HELPER CŨ: ĐÃ XÓA VÌ KHÔNG CẦN THIẾT NỮA ***)
-     */
-    // private BaseItemDto setGenresOnDto(BaseItemDto dto, List<TagModel> genreItems) { ... }
-
-
-    private BaseItemDto createDtoWithAcceptedChanges(Set<String> acceptedFields) {
-        if (originalItemDto == null) {
-            throw new RuntimeException("originalItemDto không được null khi tạo DTO thay đổi.");
+    // Revised createDtoWithAcceptedChanges signature
+    private BaseItemDto createDtoWithAcceptedChanges(BaseItemDto originalDtoAtSaveTime, Set<String> acceptedFields) { // Added parameter
+        if (originalDtoAtSaveTime == null) { // Check parameter
+            // Consider using a specific exception or logging
+            throw new RuntimeException("originalDtoAtSaveTime không được null khi tạo DTO thay đổi.");
         }
-        BaseItemDto dtoCopy = gson.fromJson(gson.toJson(originalItemDto), BaseItemDto.class);
+        // Use the passed parameter for the copy
+        BaseItemDto dtoCopy = gson.fromJson(gson.toJson(originalDtoAtSaveTime), BaseItemDto.class);
         System.out.println("Accepted fields to save: " + acceptedFields);
+
+        // Apply accepted changes based on current UI state (title.get(), overview.get(), etc.)
         if (acceptedFields.contains("title")) { dtoCopy.setName(title.get()); }
         if (acceptedFields.contains("overview")) { dtoCopy.setOverview(overview.get()); }
         if (acceptedFields.contains("tags")) {
@@ -318,6 +340,7 @@ public class ItemDetailViewModel {
                 dtoCopy.setPremiereDate(odt);
             } catch (ParseException e) {
                 System.err.println("Không thể parse ngày (save accepted): " + releaseDate.get() + ". Sẽ giữ giá trị gốc.");
+                // Keep original value from dtoCopy (which came from originalDtoAtSaveTime)
             }
         }
 
@@ -364,6 +387,7 @@ public class ItemDetailViewModel {
 
         return dtoCopy;
     }
+
 
     // (*** FIX LỖI: Đảm bảo các hàm này ủy quyền đúng cách ***)
     public void importAndPreview(BaseItemDto importedDto) { if (originalItemDto == null) return; importHandler.importAndPreview(importedDto); }
@@ -465,8 +489,9 @@ public class ItemDetailViewModel {
     private void reloadPrimaryImage() {
         if (currentItemId == null) return;
         // Giả định rằng originalItemDto vẫn còn giữ tham chiếu
-        BaseItemDto item = this.originalItemDto;
-        if (item == null) return;
+        // Use a local variable to avoid potential concurrency issues if originalItemDto is changed elsewhere
+        final BaseItemDto itemBeforeReload = this.originalItemDto;
+        if (itemBeforeReload == null) return;
 
         // Tải lại DTO đầy đủ để lấy ImageTags mới
         new Thread(() -> {
@@ -474,19 +499,23 @@ public class ItemDetailViewModel {
                 String userId = embyService.getCurrentUserId();
                 if (userId == null) throw new IllegalStateException(i18n.getString("itemDetailViewModel", "errorLoadUserID")); // <-- MODIFIED
 
-                this.originalItemDto = itemRepository.getFullItemDetails(userId, currentItemId);
+                BaseItemDto updatedDto = itemRepository.getFullItemDetails(userId, currentItemId);
 
                 // Tính toán lại URL ảnh primary
                 String serverUrl = embyService.getApiClient().getBasePath();
                 String primaryImageUrl = null;
-                if (originalItemDto.getImageTags() != null && originalItemDto.getImageTags().containsKey("Primary")) {
-                    String tag = originalItemDto.getImageTags().get("Primary");
+                if (updatedDto.getImageTags() != null && updatedDto.getImageTags().containsKey("Primary")) {
+                    String tag = updatedDto.getImageTags().get("Primary");
                     primaryImageUrl = String.format("%s/Items/%s/Images/Primary?tag=%s&maxWidth=%d&quality=90",
                             serverUrl, currentItemId, tag, 600);
                 }
 
                 final String finalPrimaryImageUrl = primaryImageUrl;
                 Platform.runLater(() -> {
+                    // Only update the instance variable if the item hasn't changed
+                    if (currentItemId != null && currentItemId.equals(updatedDto.getId())) {
+                        this.originalItemDto = updatedDto; // Update the baseline DTO
+                    }
                     if (finalPrimaryImageUrl != null) {
                         Image img = new Image(finalPrimaryImageUrl, true);
                         primaryImage.set(img);

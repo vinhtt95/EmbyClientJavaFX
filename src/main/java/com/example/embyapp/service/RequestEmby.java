@@ -55,6 +55,17 @@ public class RequestEmby {
         return result;
     }
 
+    public QueryResultBaseItemDto searchBaseItemDto(String keywords, ItemsServiceApi itemsServiceApi, Integer startIndex, Integer limit, String sortOrder, String sortBy) {
+
+        QueryResultBaseItemDto result = null;
+        try {
+            itemsServiceApi.getItems(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, startIndex, limit, true, keywords, sortOrder, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, sortBy, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        } catch (ApiException e) {
+            System.out.println(e.getMessage());
+        }
+        return result;
+    }
+
 
     /**
      * Lấy danh sách library theo userID

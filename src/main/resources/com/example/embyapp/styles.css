@@ -312,41 +312,31 @@
     /* Hình dáng chung (Tròn và Kích thước) */
     -fx-background-color: #555555;
     -fx-text-fill: white;
-    -fx-font-size: 16px;
+    -fx-font-size: 12px; /* GIẢM FONT SIZE */
     -fx-font-weight: bold;
     /* HÌNH DÁNG TRÒN */
     -fx-background-radius: 100px;
-    -fx-padding: 0px 10px 0px 10px;
-    -fx-min-width: 30px;
-    -fx-min-height: 30px;
-    -fx-border-width: 0; /* Tăng size font để nhìn rõ hơn */
-}
-
-/* Specific style for Accept (Green) */
-.accept-button {
-    -fx-border-radius: 100px;
-    -fx-background-color: #28a745; /* XANH */
-}
-.accept-button:hover {
-    -fx-border-radius: 100px;
-    -fx-background-color: #218838;
-}
-
-/* Specific style for Reject (Red) */
-.reject-button {
-    -fx-text-fill: white;
-    -fx-font-size: 16px;
-    -fx-font-weight: bold;
-    /* HÌNH DÁNG TRÒN */
-    -fx-background-radius: 100px;
-    -fx-padding: 0px 10px 0px 10px;
+    -fx-padding: 0px 8px 0px 8px; /* ĐIỀU CHỈNH PADDING */
     -fx-min-width: 30px;
     -fx-min-height: 30px;
     -fx-border-width: 0;
+}
+
+/* Specific style for Accept (Green) - Tối ưu hóa */
+.accept-button {
+    -fx-background-color: #28a745; /* XANH */
+    -fx-background-radius: 100px; /* Đảm bảo độ ưu tiên */
+}
+.accept-button:hover {
+    -fx-background-color: #218838;
+}
+
+/* Specific style for Reject (Red) - Tối ưu hóa */
+.reject-button {
     -fx-background-color: #dc3545; /* ĐỎ */
+    -fx-background-radius: 100px; /* Đảm bảo độ ưu tiên */
 }
 .reject-button:hover {
-    -fx-border-radius: 100px;
     -fx-background-color: #c82333;
 }
 /* *** END REVIEW BUTTONS *** */

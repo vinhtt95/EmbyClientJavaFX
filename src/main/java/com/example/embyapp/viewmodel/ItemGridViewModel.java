@@ -340,13 +340,6 @@ public class ItemGridViewModel {
 
     // --- Getters cho Properties ---
 
-    /**
-     * (MỚI) Trả về true nếu Grid đang hiển thị kết quả tìm kiếm.
-     */
-    public boolean isSearching() {
-        return isSearching;
-    }
-
     public ReadOnlyBooleanProperty loadingProperty() {
         return loading.getReadOnlyProperty();
     }

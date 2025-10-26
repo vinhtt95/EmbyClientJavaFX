@@ -16,17 +16,7 @@
 
                 <HBox alignment="CENTER_LEFT" spacing="5.0">
                     <children>
-                        <StackPane prefWidth="250.0">
-                            <children>
-                                <TextField fx:id="searchField" promptText="Tìm kiếm items..." onAction="#handleSearchAction" />
-                                <Button fx:id="clearSearchButton" text="✕" onAction="#handleClearSearchAction"
-                                        styleClass="search-clear-button" visible="false" managed="false" StackPane.alignment="CENTER_RIGHT">
-                                    <StackPane.margin>
-                                        <Insets right="5.0" />
-                                    </StackPane.margin>
-                                </Button>
-                            </children>
-                        </StackPane>
+                        <TextField fx:id="searchField" promptText="Tìm kiếm items..." prefWidth="250.0" onAction="#handleSearchAction"/>
                         <Button fx:id="searchButton" onAction="#handleSearchAction" text="🔍"/>
                     </children>
                 </HBox>

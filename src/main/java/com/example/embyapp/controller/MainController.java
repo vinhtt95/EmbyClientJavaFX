@@ -45,10 +45,8 @@ import java.util.prefs.Preferences;
  * - Thêm logic lưu/tải kích thước cửa sổ dialog.
  * (CẬP NHẬT 26 - FIX LỖI COMPILE)
  * - Sửa lỗi 'array required' bằng cách lưu getDividerPositions() vào biến rõ ràng.
- * (CẬP NHẬT TÌM KIẾM)
+ * (CẬP NHẬT MỚI: TÌM KIẾM)
  * - Thêm FXML fields và logic handleSearchAction.
- * (CẬP NHẬT MỚI: CLEAR SEARCH)
- * - Thêm nút clear và logic điều khiển nó.
  */
 public class MainController {
 
@@ -71,9 +69,6 @@ public class MainController {
     // (*** THÊM MỚI: Khung Search ***)
     @FXML private TextField searchField;
     @FXML private Button searchButton;
-    // (*** THÊM MỚI: Nút Clear ***)
-    @FXML private Button clearSearchButton;
-
 
     // --- Services & ViewModels ---
     private MainApp mainApp;
@@ -126,6 +121,7 @@ public class MainController {
         this.libraryTreeViewModel = new LibraryTreeViewModel(itemRepository);
         this.itemGridViewModel = new ItemGridViewModel(itemRepository);
 
+        // (CẬP NHẬT) Sửa constructor
         // (*** QUAN TRỌNG ***) ViewModel này sẽ được chia sẻ cho cả 2 Controller
         this.itemDetailViewModel = new ItemDetailViewModel(itemRepository, embyService);
 
@@ -149,7 +145,7 @@ public class MainController {
                 itemDetailController.setViewModel(itemDetailViewModel); // Inject VM
             }
 
-            // Inject ItemDetailViewModel vào ItemGridController
+            // (MỚI) Inject ItemDetailViewModel vào ItemGridController
             if (itemGridController != null) {
                 itemGridController.setItemDetailViewModel(itemDetailViewModel);
             }
@@ -169,7 +165,7 @@ public class MainController {
         viewModel.loadUserData(); // Tải Welcome message
         libraryTreeViewModel.loadLibraries(); // Tải cây thư mục
 
-        // 8. Tải và Lưu vị trí SplitPane
+        // 8. (CẬP NHẬT) Tải và Lưu vị trí SplitPane
         prefs = Preferences.userRoot().node(PREF_NODE_PATH);
         loadDividerPositions();
         // Thêm listener để lưu khi người dùng kéo
@@ -178,25 +174,6 @@ public class MainController {
         }
         if (mainSplitPane.getDividers().size() > 1) {
             mainSplitPane.getDividers().get(1).positionProperty().addListener((obs, oldVal, newVal) -> saveDividerPositions());
-        }
-
-        // (*** MỚI: Logic hiển thị nút Clear ***)
-        if (searchField != null && clearSearchButton != null) {
-            // Hiển thị/ẩn nút Clear dựa trên nội dung TextField
-            clearSearchButton.visibleProperty().bind(
-                    searchField.textProperty().isNotEmpty()
-            );
-            clearSearchButton.managedProperty().bind(
-                    searchField.textProperty().isNotEmpty()
-            );
-
-            // Xử lý khi người dùng xóa nhanh bằng tay: gọi hàm tìm kiếm để xóa Grid
-            searchField.textProperty().addListener((obs, oldVal, newVal) -> {
-                if (newVal.isEmpty() && !oldVal.isEmpty()) {
-                    // Kích hoạt lại hành động search khi text trở thành rỗng
-                    handleSearchAction();
-                }
-            });
         }
     }
 
@@ -248,21 +225,15 @@ public class MainController {
     private void bindDataFlow() {
         // --- Flow 1: Tree -> Grid ---
         libraryTreeViewModel.selectedTreeItemProperty().addListener((obs, oldVal, newVal) -> {
-
-            // (*** ĐÃ SỬA LỖI ***) Bỏ qua kiểm tra isSearching().
-            // Giờ đây, chọn một mục trong Tree View sẽ LUÔN tải lại nội dung thư viện,
-            // đồng thời ItemGridViewModel sẽ tự động thoát chế độ tìm kiếm.
-
             if (newVal != null && newVal.getValue() != null) {
                 BaseItemDto selectedDto = newVal.getValue();
                 String parentId = selectedDto.getId();
 
-                // Tải Grid (ItemGridViewModel sẽ tự reset trạng thái tìm kiếm)
+                // Tải Grid
                 itemGridController.loadItemsByParentId(parentId);
 
             } else {
-                // Nếu selectedTreeItem bị xóa (ví dụ: khi search được kích hoạt)
-                itemGridController.loadItemsByParentId(null);
+                itemGridController.loadItemsByParentId(null); // Xóa Grid
             }
         });
 
@@ -360,10 +331,11 @@ public class MainController {
         }
     }
 
-    // --- Các hàm lưu/tải vị trí SplitPane ---
+    // --- (CẬP NHẬT) Các hàm lưu/tải vị trí SplitPane ---
 
     /**
      * Lưu vị trí hiện tại của các thanh chia SplitPane.
+     * (*** FIX LỖI COMPILE ***)
      */
     private void saveDividerPositions() {
         if (mainSplitPane != null && prefs != null && mainSplitPane.getDividers().size() >= 2) {
@@ -397,6 +369,8 @@ public class MainController {
 
 
     /**
+     * (*** HÀM MỚI HOÀN TOÀN ***)
+     *
      * Hiển thị một cửa sổ (Stage) pop-out không-modal,
      * hiển thị cùng một ItemDetailView và binding vào cùng một ItemDetailViewModel.
      * Cửa sổ này được tạo một lần và ẩn/hiện khi cần (để giữ state).
@@ -496,25 +470,11 @@ public class MainController {
         if (keywords != null && !keywords.trim().isEmpty()) {
             // Chuyển sang ItemGridViewModel để thực hiện tìm kiếm
             itemGridViewModel.searchItemsByKeywords(keywords.trim());
-
-            // (MỚI) Bỏ chọn node trong TreeView khi tìm kiếm
-            libraryTreeViewModel.selectedTreeItemProperty().set(null);
-
         } else {
-            // Nếu ô tìm kiếm rỗng, quay về trạng thái ban đầu (grid trống)
+            // Nếu ô tìm kiếm rỗng, hiển thị thông báo và xóa kết quả tìm kiếm
+            viewModel.statusMessageProperty().set("Vui lòng nhập từ khóa tìm kiếm.");
+            // Quay về trạng thái ban đầu (grid trống)
             itemGridViewModel.loadItemsByParentId(null);
-            viewModel.statusMessageProperty().set("Sẵn sàng.");
-        }
-    }
-
-    /**
-     * (MỚI) Xử lý sự kiện nhấn nút Clear (✕) trong ô tìm kiếm.
-     */
-    @FXML
-    private void handleClearSearchAction() {
-        if (searchField != null) {
-            searchField.clear(); // Xóa nội dung
-            // Listener sẽ tự kích hoạt handleSearchAction khi text trở thành rỗng
         }
     }
 }

@@ -227,14 +227,14 @@
     -fx-translate-y: 1px;
 }
 .tag-label-key {
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
+    -fx-text-fill: #e0e0e0;
+    -fx-font-size: 16px;
+    -fx-font-style: italic;
 }
 .tag-label-value {
-    -fx-text-fill: #e0e0e0;
-    -fx-font-size: 14px;
-    -fx-font-style: italic;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
 }
 .tag-delete-button {
     -fx-background-color: #555555;

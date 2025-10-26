@@ -12,10 +12,19 @@ import java.io.FileWriter;
 import java.io.Reader;
 import java.io.Writer;
 
+// === IMPORT MỚI ĐỂ SỬA LỖI JSON ===
+import java.time.OffsetDateTime;
+import embyclient.JSON.OffsetDateTimeTypeAdapter;
+// ===================================
+
 public class JsonFileHandler {
 
-    // Khởi tạo Gson (đã có trong pom.xml)
-    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    // === SỬA DÒNG KHỞI TẠO GSON NÀY ===
+    private static final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeTypeAdapter()) // <-- THÊM DÒNG NÀY
+            .setPrettyPrinting()
+            .create();
+    // ==================================
 
     /**
      * Hiển thị cửa sổ MỞ file JSON.
@@ -52,6 +61,7 @@ public class JsonFileHandler {
      */
     public static BaseItemDto readJsonFileToObject(File file) throws Exception {
         try (Reader reader = new FileReader(file)) {
+            // Giờ đây gson đã biết cách đọc chuỗi ngày tháng nhờ adapter
             return gson.fromJson(reader, BaseItemDto.class);
         }
     }

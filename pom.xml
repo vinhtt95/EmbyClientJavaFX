@@ -12,8 +12,12 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.10.0</junit.version>
-        <javafx.version>21</javafx.version> <maven.compiler.source>21</maven.compiler.source> <maven.compiler.target>21</maven.compiler.target> <emby.sdk.version>1.0.1</emby.sdk.version>
-        <okhttp2.version>2.7.5</okhttp2.version> <gson.version>2.10.1</gson.version>
+        <javafx.version>21</javafx.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <emby.sdk.version>1.0.1</emby.sdk.version>
+        <okhttp2.version>2.7.5</okhttp2.version>
+        <gson.version>2.10.1</gson.version>
         <threetenbp.version>1.6.8</threetenbp.version>
         <gsonfire.version>1.9.0</gsonfire.version>
     </properties>
@@ -42,7 +46,10 @@
 
 
         <dependency>
-            <groupId>com.vinhtt95.emby</groupId> <artifactId>eemby-sdk-java</artifactId> <version>${emby.sdk.version}</version> </dependency>
+            <groupId>com.vinhtt95.emby</groupId>
+            <artifactId>eemby-sdk-java</artifactId>
+            <version>${emby.sdk.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.squareup.okhttp</groupId>
@@ -80,8 +87,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version> <configuration>
-            </configuration>
+                <version>3.11.0</version>
+                <configuration>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.openjfx</groupId>

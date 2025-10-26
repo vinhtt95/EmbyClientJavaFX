@@ -16,9 +16,11 @@ import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
+
 import java.io.IOException;
 import java.util.UUID;
 import java.util.prefs.Preferences;
+
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -77,6 +79,7 @@ public class EmbyService {
     }
 
     // (*** THÊM HÀM GETTER NÀY ***)
+
     /**
      * Trả về một instance mới của interceptor xác thực.
      * Dùng để tạo các OkHttpClient tùy chỉnh (ví dụ: upload file).
@@ -106,16 +109,28 @@ public class EmbyService {
     }
 
     // Other getters
-    public ApiClient getApiClient() { return apiClient; }
-    public AuthenticationAuthenticationResult getCurrentAuthResult() { return currentAuthResult; } // <- Dùng class đã import
+    public ApiClient getApiClient() {
+        return apiClient;
+    }
+
+    public AuthenticationAuthenticationResult getCurrentAuthResult() {
+        return currentAuthResult;
+    } // <- Dùng class đã import
+
     public String getCurrentUserId() {
         if (currentAuthResult != null && currentAuthResult.getUser() != null) {
             return currentAuthResult.getUser().getId();
         }
         return null;
     }
-    public ReadOnlyBooleanProperty loggedInProperty() { return loggedIn; }
-    public boolean isLoggedIn() { return loggedIn.get(); }
+
+    public ReadOnlyBooleanProperty loggedInProperty() {
+        return loggedIn;
+    }
+
+    public boolean isLoggedIn() {
+        return loggedIn.get();
+    }
 
 
     // --- Session Management ---
@@ -251,7 +266,9 @@ public class EmbyService {
 
             } catch (ApiException e) {
                 System.err.println("API Exception during session restore (Code: " + e.getCode() + "): " + e.getMessage());
-                if (e.getCode() != 0) { clearSession(); }
+                if (e.getCode() != 0) {
+                    clearSession();
+                }
             } catch (Exception e) {
                 System.err.println("Non-API Exception during session restore: " + e.getMessage());
                 e.printStackTrace();
@@ -298,14 +315,19 @@ public class EmbyService {
         }
         return userServiceApi;
     }
+
     public synchronized ItemsServiceApi getItemsServiceApi() {
-        if (!isLoggedIn()) { System.err.println("Attempted to get ItemsServiceApi while not logged in."); return null; }
+        if (!isLoggedIn()) {
+            System.err.println("Attempted to get ItemsServiceApi while not logged in.");
+            return null;
+        }
         if (itemsServiceApi == null) {
             System.out.println("Creating ItemsServiceApi");
             itemsServiceApi = new ItemsServiceApi(apiClient);
         }
         return itemsServiceApi;
     }
+
     public synchronized SystemServiceApi getSystemServiceApi() {
         // SystemServiceApi can be used before login (for restore check)
         if (systemServiceApi == null) {
@@ -314,14 +336,19 @@ public class EmbyService {
         }
         return systemServiceApi;
     }
+
     public synchronized ItemUpdateServiceApi getItemUpdateServiceApi() {
-        if (!isLoggedIn()) { System.err.println("Attempted to get ItemUpdateServiceApi while not logged in."); return null; }
+        if (!isLoggedIn()) {
+            System.err.println("Attempted to get ItemUpdateServiceApi while not logged in.");
+            return null;
+        }
         if (itemUpdateServiceApi == null) {
             System.out.println("Creating ItemUpdateServiceApi");
             itemUpdateServiceApi = new ItemUpdateServiceApi(apiClient);
         }
         return itemUpdateServiceApi;
     }
+
     public synchronized ImageServiceApi getImageServiceApi() {
         if (!isLoggedIn()) {
             System.err.println("Attempted to get ImageServiceApi while not logged in.");

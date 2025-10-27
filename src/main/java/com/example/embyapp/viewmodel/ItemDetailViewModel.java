@@ -14,6 +14,9 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
+import com.google.gson.GsonBuilder;
+import java.time.OffsetDateTime;
+import embyclient.JSON.OffsetDateTimeTypeAdapter;
 
 // (*** THÊM IMPORT NÀY ***)
 import javafx.beans.property.ObjectProperty;
@@ -51,7 +54,9 @@ public class ItemDetailViewModel {
     private final ItemDetailDirtyTracker dirtyTracker;
     private final ItemDetailImportHandler importHandler;
     private final ItemImageUpdater imageUpdater;
-    private static final Gson gson = new Gson();
+    private static final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeTypeAdapter())
+            .create();
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
     private final I18nManager i18n; // <-- ADDED
 

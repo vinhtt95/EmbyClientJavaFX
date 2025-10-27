@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 /**
  * (CẬP NHẬT 30) Thêm Genres.
  * - Cập nhật SaveRequest để chứa Genres.
+ * (CẬP NHẬT MỚI) Thêm CriticRating.
  */
 public class ItemDetailSaver {
 
@@ -62,6 +63,8 @@ public class ItemDetailSaver {
         BaseItemDto dto = request.getOriginalDto();
 
         dto.setName(request.getTitle());
+        // (*** THÊM DÒNG NÀY ĐỂ SET RATING ***)
+        dto.setCriticRating(request.getCriticRating());
         dto.setOverview(request.getOverview());
 
         // (*** SỬA ĐỔI TAGS ***)
@@ -136,6 +139,8 @@ public class ItemDetailSaver {
         private final String itemId;
         private final String title;
         private final String overview;
+        // (*** THÊM FIELD CHO RATING ***)
+        private final Float criticRating;
         private final List<TagModel> tagItems;
         private final String releaseDate;
         private final List<TagModel> studioItems; // MODIFIED
@@ -145,7 +150,8 @@ public class ItemDetailSaver {
         public SaveRequest(BaseItemDto originalDto, String itemId, String title, String overview,
                            List<TagModel> tagItems,
                            String releaseDate, List<TagModel> studioItems, List<TagModel> peopleItems,
-                           List<TagModel> genreItems) { // (*** THÊM GENRE ***)
+                           List<TagModel> genreItems,
+                           Float criticRating) { // (*** THÊM THAM SỐ RATING ***)
             this.originalDto = originalDto;
             this.itemId = itemId;
             this.title = title;
@@ -155,6 +161,8 @@ public class ItemDetailSaver {
             this.studioItems = studioItems;
             this.peopleItems = peopleItems;
             this.genreItems = genreItems; // (*** MỚI ***)
+            // (*** THÊM DÒNG NÀY VÀO CONSTRUCTOR ***)
+            this.criticRating = criticRating;
         }
 
         // --- Getters ---
@@ -162,6 +170,8 @@ public class ItemDetailSaver {
         public String getItemId() { return itemId; }
         public String getTitle() { return title; }
         public String getOverview() { return overview; }
+        // (*** THÊM GETTER CHO RATING ***)
+        public Float getCriticRating() { return criticRating; }
         public List<TagModel> getTagItems() { return tagItems; }
         public String getReleaseDate() { return releaseDate; }
         public List<TagModel> getStudioItems() { return studioItems; }

@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 /**
  * (CẬP NHẬT 30) Thêm Genres.
  * - Thêm logic tải và chuyển đổi Genres sang List<TagModel>.
+ * (CẬP NHẬT MỚI) Thêm CriticRating.
  */
 public class ItemDetailLoader {
 
@@ -52,6 +53,8 @@ public class ItemDetailLoader {
 
         // ... (setText, setOverview, ... giữ nguyên) ...
         result.setTitleText(fullDetails.getName() != null ? fullDetails.getName() : "");
+        // (*** THÊM DÒNG NÀY ĐỂ LẤY RATING ***)
+        result.setCriticRating(fullDetails.getCriticRating());
         result.setYearText(fullDetails.getProductionYear() != null ? String.valueOf(fullDetails.getProductionYear()) : "");
         result.setOverviewText(fullDetails.getOverview() != null ? fullDetails.getOverview() : "");
         result.setTaglineText((fullDetails.getTaglines() != null && !fullDetails.getTaglines().isEmpty()) ? fullDetails.getTaglines().get(0) : "");
@@ -174,6 +177,8 @@ public class ItemDetailLoader {
         private String titleText, overviewText, releaseDateText;
         private List<TagModel> tagItems, studioItems, peopleItems;
         private List<TagModel> genreItems; // (*** MỚI ***)
+        // (*** THÊM FIELD CHO RATING ***)
+        private Float criticRating;
         private String yearText, taglineText, genresText, runtimeText, pathText;
         private String primaryImageUrl, originalTitleForExport;
         private boolean isFolder;
@@ -188,6 +193,7 @@ public class ItemDetailLoader {
             originals.put("title", titleText);
             originals.put("overview", overviewText);
             originals.put("releaseDate", releaseDateText);
+            // CriticRating là Float, không phải String, nó sẽ được xử lý riêng trong DirtyTracker
             return originals;
         }
 
@@ -195,6 +201,9 @@ public class ItemDetailLoader {
         public BaseItemDto getFullDetails() { return fullDetails; }
         public String getTitleText() { return titleText; }
         public void setTitleText(String titleText) { this.titleText = titleText; }
+        // (*** THÊM GETTER/SETTER CHO RATING ***)
+        public Float getCriticRating() { return criticRating; }
+        public void setCriticRating(Float criticRating) { this.criticRating = criticRating; }
         public String getOverviewText() { return overviewText; }
         public void setOverviewText(String overviewText) { this.overviewText = overviewText; }
         public List<TagModel> getTagItems() { return tagItems; }

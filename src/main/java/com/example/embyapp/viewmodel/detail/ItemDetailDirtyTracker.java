@@ -14,6 +14,7 @@ import java.util.Objects;
 /**
  * (CẬP NHẬT 30) Thêm Genres.
  * - Thêm theo dõi Genres.
+ * (CẬP NHẬT MỚI) Thêm CriticRating.
  */
 public class ItemDetailDirtyTracker {
 
@@ -23,6 +24,8 @@ public class ItemDetailDirtyTracker {
 
     // Snapshot gốc
     private String originalTitle, originalOverview, originalReleaseDate;
+    // (*** THÊM FIELD GỐC CHO RATING ***)
+    private Float originalCriticRating;
     private List<TagModel> originalTagItems;
     private List<TagModel> originalStudioItems;
     private List<TagModel> originalPeopleItems;
@@ -30,6 +33,8 @@ public class ItemDetailDirtyTracker {
 
     // Listeners
     private final ChangeListener<String> dirtyFlagListener = (obs, oldVal, newVal) -> checkForChanges();
+    // (*** THÊM LISTENER CHO RATING (Number) ***)
+    private final ChangeListener<Number> ratingListener = (obs, oldVal, newVal) -> checkForChanges();
     private final ListChangeListener<TagModel> tagsListener = (c) -> checkForChanges();
     private final ListChangeListener<TagModel> studioItemsListener = (c) -> checkForChanges();
     private final ListChangeListener<TagModel> peopleItemsListener = (c) -> checkForChanges();
@@ -49,6 +54,8 @@ public class ItemDetailDirtyTracker {
      */
     public void startTracking(Map<String, String> originalStrings) {
         updateOriginalStrings(originalStrings);
+        // (*** THÊM DÒNG NÀY ĐỂ LẤY RATING GỐC ***)
+        this.originalCriticRating = viewModel.criticRatingProperty().get();
         this.originalTagItems = new ArrayList<>(viewModel.getTagItems());
         this.originalStudioItems = new ArrayList<>(viewModel.getStudioItems());
         this.originalPeopleItems = new ArrayList<>(viewModel.getPeopleItems());
@@ -116,6 +123,8 @@ public class ItemDetailDirtyTracker {
 
     private void addListeners() {
         viewModel.titleProperty().addListener(dirtyFlagListener);
+        // (*** THÊM LISTENER CHO RATING ***)
+        viewModel.criticRatingProperty().addListener(ratingListener);
         viewModel.overviewProperty().addListener(dirtyFlagListener);
         viewModel.releaseDateProperty().addListener(dirtyFlagListener);
 
@@ -135,6 +144,8 @@ public class ItemDetailDirtyTracker {
 
     private void removeListeners() {
         viewModel.titleProperty().removeListener(dirtyFlagListener);
+        // (*** XÓA LISTENER CHO RATING ***)
+        viewModel.criticRatingProperty().removeListener(ratingListener);
         viewModel.overviewProperty().removeListener(dirtyFlagListener);
         viewModel.releaseDateProperty().removeListener(dirtyFlagListener);
 
@@ -177,13 +188,17 @@ public class ItemDetailDirtyTracker {
                 !Objects.equals(viewModel.overviewProperty().get(), originalOverview) ||
                 !Objects.equals(viewModel.releaseDateProperty().get(), originalReleaseDate);
 
+        // (*** THÊM CHECK THAY ĐỔI RATING ***)
+        boolean ratingChanges = !Objects.equals(viewModel.criticRatingProperty().get(), originalCriticRating);
+
         boolean tagChanges = !Objects.equals(viewModel.getTagItems(), originalTagItems);
 
         boolean studioChanges = !Objects.equals(viewModel.getStudioItems(), originalStudioItems);
         boolean peopleChanges = !Objects.equals(viewModel.getPeopleItems(), originalPeopleItems);
         boolean genreChanges = !Objects.equals(viewModel.getGenreItems(), originalGenreItems); // (*** MỚI ***)
 
-        isDirty.set(stringChanges || tagChanges || studioChanges || peopleChanges || genreChanges); // (*** THÊM GENRE ***)
+        // (*** THÊM RATING VÀO CHECK CUỐI CÙNG ***)
+        isDirty.set(stringChanges || ratingChanges || tagChanges || studioChanges || peopleChanges || genreChanges);
         // System.out.println("DirtyTracker: isDirty = " + isDirty.get()); // Debug
     }
 
@@ -225,6 +240,8 @@ public class ItemDetailDirtyTracker {
         this.originalTitle = viewModel.titleProperty().get();
         this.originalOverview = viewModel.overviewProperty().get();
         this.originalReleaseDate = viewModel.releaseDateProperty().get();
+        // (*** THÊM DÒNG NÀY ĐỂ CẬP NHẬT RATING GỐC ***)
+        this.originalCriticRating = viewModel.criticRatingProperty().get();
 
         this.originalTagItems = new ArrayList<>(viewModel.getTagItems());
         this.originalStudioItems = new ArrayList<>(viewModel.getStudioItems());
@@ -244,6 +261,8 @@ public class ItemDetailDirtyTracker {
         this.originalTitle = null;
         this.originalOverview = null;
         this.originalReleaseDate = null;
+        // (*** THÊM DÒNG NÀY ĐỂ XÓA RATING GỐC ***)
+        this.originalCriticRating = null;
 
         this.originalTagItems = null;
         this.originalStudioItems = null;

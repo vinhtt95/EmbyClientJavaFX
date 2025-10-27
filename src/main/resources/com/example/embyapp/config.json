@@ -53,10 +53,10 @@
     "pathLabel": "Đường dẫn trên máy",
     "openButtonFolder": "Mở trong Finder",
     "openButtonFile": "Phát (Mặc định)",
-    "tagsLabel": "Tags",
-    "genresLabel": "Genres",
-    "studiosLabel": "Studios",
-    "peopleLabel": "People",
+    "tagsLabel": "Dung nhan",
+    "genresLabel": "Trang phục",
+    "studiosLabel": "Kịch bản",
+    "peopleLabel": "Kiểu nga",
     "overviewLabel": "Mô tả",
     "overviewPrompt": "Mô tả chi tiết...",
     "backdropGalleryLabel": "Gallery Ảnh Nền (Backdrops)",
@@ -178,7 +178,7 @@
   },
   "mainApp": {
     "loginTitle": "Emby Login",
-    "mainTitle": "Emby Client"
+    "mainTitle": "Vườn địa đàng"
   },
   "itemImageUpdater": {
     "selectBackdropsTitle": "Chọn các ảnh Backdrop",

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Script để chạy ứng dụng EmbyClientJavaFX
+#./mvnw clean package
+
+echo "Đang khởi chạy EmbyClientJavaFX..."
+
+java \
+    --add-opens=java.base/java.time=com.google.gson \
+    --add-opens=eemby.sdk.java/com.example.emby.modelEmby=com.google.gson \
+    --add-opens=eemby.sdk.java/com.example.emby.EmbyClient=com.google.gson \
+    -jar target/emby-javafx-client-1.0-SNAPSHOT.jar

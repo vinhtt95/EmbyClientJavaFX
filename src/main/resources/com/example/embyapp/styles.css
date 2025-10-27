@@ -382,6 +382,42 @@
 }
 /* *** END REVIEW BUTTONS *** */
 
+
+/* (*** THÊM CÁC STYLE MỚI CHO RATING BUTTONS ***) */
+.rating-button {
+    -fx-font-size: 11px; /* Chữ nhỏ */
+    -fx-font-weight: bold;
+    -fx-background-radius: 50em; /* Hình tròn */
+    -fx-min-width: 30px;
+    -fx-min-height: 30px;
+    -fx-max-width: 30px;
+    -fx-max-height: 30px;
+    -fx-padding: 0;
+    -fx-border-width: 1px; /* Thêm viền nhẹ */
+
+    /* MÀU XÁM (mặc định) */
+    -fx-background-color: #383838;
+    -fx-text-fill: #e0e0e0;
+    -fx-border-color: #555555;
+    -fx-cursor: hand;
+}
+.rating-button:hover {
+    -fx-background-color: #4a4a4a;
+    -fx-border-color: #777777;
+}
+
+/* MÀU HỒNG (khi được chọn) */
+.rating-button.selected {
+    -fx-background-color: #E91E63; /* Màu hồng */
+    -fx-border-color: #F06292; /* Viền hồng nhạt */
+    -fx-text-fill: white;
+}
+.rating-button.selected:hover {
+    -fx-background-color: #d81b60; /* Hồng đậm hơn khi hover */
+}
+/* (*** KẾT THÚC STYLE MỚI ***) */
+
+
 .backdrop-view {
     -fx-background-color: #222;
     -fx-background-radius: 5px;

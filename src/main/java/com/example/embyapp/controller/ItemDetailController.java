@@ -15,6 +15,7 @@ import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node; // (*** THÊM IMPORT NÀY ***)
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -37,6 +38,7 @@ import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects; // (*** THÊM IMPORT NÀY ***)
 import java.util.stream.Collectors;
 
 /**
@@ -45,6 +47,7 @@ import java.util.stream.Collectors;
  * - Cập nhật logic binding để khớp với cấu trúc mới.
  * (FIX LỖI) Khắc phục lỗi statusLabel không mất đi sau khi tải xong và xóa binding cho actionStatusLabel.
  * (CẬP NHẬT MỚI) Thêm nút review cho Tags.
+ * (CẬP NHẬT MỚI) Thêm các nút chấm điểm (Rating).
  */
 public class ItemDetailController {
 
@@ -62,6 +65,13 @@ public class ItemDetailController {
 
     // (*** TRƯỜNG TEXT ***)
     @FXML private TextField titleTextField;
+
+    // (*** THÊM CÁC FXML FIELD CHO RATING ***)
+    @FXML private FlowPane criticRatingPane;
+    @FXML private HBox reviewCriticRatingContainer;
+    @FXML private Button acceptCriticRatingButton;
+    @FXML private Button rejectCriticRatingButton;
+
     @FXML private TextArea overviewTextArea;
     @FXML private Label genresLabel; // Giữ lại nhưng bị ẩn
     @FXML private Label overviewLabel; // <-- ADDED
@@ -143,6 +153,11 @@ public class ItemDetailController {
         // (Gán sự kiện onAction cho các nút (v/x) giữ nguyên)
         acceptTitleButton.setOnAction(e -> viewModel.acceptImportField("title"));
         rejectTitleButton.setOnAction(e -> viewModel.rejectImportField("title"));
+
+        // (*** THÊM SỰ KIỆN CHO NÚT REVIEW RATING ***)
+        acceptCriticRatingButton.setOnAction(e -> viewModel.acceptImportField("criticRating"));
+        rejectCriticRatingButton.setOnAction(e -> viewModel.rejectImportField("criticRating"));
+
         acceptOverviewButton.setOnAction(e -> viewModel.acceptImportField("overview"));
         rejectOverviewButton.setOnAction(e -> viewModel.rejectImportField("overview"));
         acceptReleaseDateButton.setOnAction(e -> viewModel.acceptImportField("releaseDate"));
@@ -193,6 +208,10 @@ public class ItemDetailController {
 
         acceptTitleButton.setText(i18n.getString("itemDetailView", "acceptButton"));
         rejectTitleButton.setText(i18n.getString("itemDetailView", "rejectButton"));
+
+        // (*** THÊM LOCALIZATION CHO NÚT REVIEW RATING ***)
+        acceptCriticRatingButton.setText(i18n.getString("itemDetailView", "acceptButton"));
+        rejectCriticRatingButton.setText(i18n.getString("itemDetailView", "rejectButton"));
 
         releaseDateLabel.setText(i18n.getString("itemDetailView", "releaseDateLabel"));
         releaseDateTextField.setPromptText(i18n.getString("itemDetailView", "releaseDatePrompt"));
@@ -251,6 +270,12 @@ public class ItemDetailController {
         // BINDING CHUNG
         statusLabel.textProperty().bind(viewModel.statusMessageProperty());
         titleTextField.textProperty().bindBidirectional(viewModel.titleProperty());
+
+        // (*** THÊM LOGIC SETUP VÀ BINDING CHO RATING ***)
+        setupCriticRatingButtons(); // Gọi hàm helper để tạo 10 nút
+        // Thêm listener: Khi property trong VM thay đổi, cập nhật UI
+        viewModel.criticRatingProperty().addListener((obs, oldVal, newVal) -> updateRatingButtonSelection());
+
         overviewTextArea.textProperty().bindBidirectional(viewModel.overviewProperty());
         releaseDateTextField.textProperty().bindBidirectional(viewModel.releaseDateProperty());
 
@@ -339,6 +364,8 @@ public class ItemDetailController {
 
         // 10. Binding Review Containers
         bindReviewContainer(reviewTitleContainer, viewModel.showTitleReviewProperty());
+        // (*** THÊM BINDING CHO NÚT REVIEW RATING ***)
+        bindReviewContainer(reviewCriticRatingContainer, viewModel.showCriticRatingReviewProperty());
         bindReviewContainer(reviewOverviewContainer, viewModel.showOverviewReviewProperty());
         bindReviewContainer(reviewReleaseDateContainer, viewModel.showReleaseDateReviewProperty());
         bindReviewContainer(reviewStudiosContainer, viewModel.showStudiosReviewProperty());
@@ -443,6 +470,75 @@ public class ItemDetailController {
         }
     }
 
+
+    /**
+     * (*** HÀM MỚI ***)
+     * Tạo 10 nút rating và thêm vào FlowPane.
+     */
+    private void setupCriticRatingButtons() {
+        if (criticRatingPane == null || viewModel == null) return;
+        criticRatingPane.getChildren().clear();
+
+        for (int i = 1; i <= 10; i++) {
+            final int ratingValue = i;
+            Button ratingButton = new Button(String.valueOf(ratingValue));
+            ratingButton.getStyleClass().add("rating-button");
+            ratingButton.setUserData(ratingValue); // Lưu giá trị (int) 1-10
+
+            // Xử lý click để CẬP NHẬT rating trong ViewModel
+            ratingButton.setOnAction(e -> {
+                // Chuyển đổi int (1-10) sang Float (1.0 - 10.0)
+                Float newRating = (float) ratingValue;
+
+                // Nếu click vào nút đang được chọn, set rating về null (bỏ chọn)
+                if (Objects.equals(viewModel.criticRatingProperty().get(), newRating)) {
+                    viewModel.criticRatingProperty().set(null);
+                } else {
+                    // Ngược lại, set rating mới
+                    viewModel.criticRatingProperty().set(newRating);
+                }
+            });
+
+            criticRatingPane.getChildren().add(ratingButton);
+        }
+        // Cập nhật selection lần đầu
+        updateRatingButtonSelection();
+    }
+
+    /**
+     * (*** HÀM MỚI ***)
+     * Cập nhật trạng thái selected của các nút rating dựa trên giá trị của ViewModel.
+     */
+    private void updateRatingButtonSelection() {
+        if (criticRatingPane == null || viewModel == null) return;
+
+        Float currentRating = viewModel.criticRatingProperty().get();
+
+        // Làm tròn rating về số nguyên gần nhất để so sánh
+        Integer selectedValue = null;
+        if (currentRating != null) {
+            // Emby lưu rating 0-10, ta dùng 1-10
+            selectedValue = Math.round(currentRating);
+        }
+
+        for (Node node : criticRatingPane.getChildren()) {
+            if (node instanceof Button && node.getUserData() instanceof Integer) {
+                Button button = (Button) node;
+                int buttonValue = (Integer) button.getUserData();
+
+                // Nếu giá trị của nút khớp với rating đã chọn (đã làm tròn)
+                if (selectedValue != null && buttonValue == selectedValue) {
+                    // Thêm class 'selected' (màu hồng) nếu chưa có
+                    if (!button.getStyleClass().contains("selected")) {
+                        button.getStyleClass().add("selected");
+                    }
+                } else {
+                    // Ngược lại, xóa class 'selected' (trở về màu xám)
+                    button.getStyleClass().remove("selected");
+                }
+            }
+        }
+    }
 
     /**
      * Helper chung để mở dialog thêm Studio/People/Tag/Genre.

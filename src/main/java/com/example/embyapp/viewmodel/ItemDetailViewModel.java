@@ -39,6 +39,7 @@ import java.time.ZoneId;
  * (FIX LỖI) Sửa constructor SaveRequest và lỗi thiếu symbol cho hàm ủy quyền.
  * (FIX LỖI) Sửa lỗi lưu Genres: Chuyển sang GenreItems (List<NameLongIdPair>).
  * (FIX LỖI LƯU) Chụp state khi nhấn Lưu để tránh lỗi "No item selected".
+ * (CẬP NHẬT MỚI) Thêm CriticRating (điểm 1-10).
  */
 public class ItemDetailViewModel {
 
@@ -63,6 +64,8 @@ public class ItemDetailViewModel {
     // --- Properties ---
     private final ReadOnlyBooleanWrapper loading = new ReadOnlyBooleanWrapper(false);
     private final StringProperty title = new SimpleStringProperty("");
+    // (*** THÊM MỚI PROPERTY CHO RATING ***)
+    private final ObjectProperty<Float> criticRating = new SimpleObjectProperty<>(null);
     private final StringProperty overview = new SimpleStringProperty("");
     private final ObservableList<TagModel> tagItems = FXCollections.observableArrayList();
     private final StringProperty releaseDate = new SimpleStringProperty("");
@@ -141,6 +144,8 @@ public class ItemDetailViewModel {
                     this.exportFileNameTitle = result.getOriginalTitleForExport();
 
                     title.set(result.getTitleText());
+                    // (*** THÊM DÒNG NÀY ĐỂ SET RATING ***)
+                    criticRating.set(result.getCriticRating());
                     overview.set(result.getOverviewText());
                     tagItems.setAll(result.getTagItems());
                     releaseDate.set(result.getReleaseDateText());
@@ -190,6 +195,8 @@ public class ItemDetailViewModel {
     private void clearAllDetailsUI() {
         dirtyTracker.stopTracking();
         title.set("");
+        // (*** THÊM DÒNG NÀY ĐỂ CLEAR RATING ***)
+        criticRating.set(null);
         year.set("");
         overview.set("");
         tagline.set("");
@@ -228,6 +235,8 @@ public class ItemDetailViewModel {
 
         // Capture UI state (as before, using current property values)
         final String finalTitle = this.title.get();
+        // (*** THÊM DÒNG NÀY ĐỂ LẤY RATING ***)
+        final Float finalCriticRating = this.criticRating.get();
         final String finalOverview = this.overview.get();
         final String finalReleaseDate = this.releaseDate.get();
         final List<TagModel> finalTagItems = List.copyOf(this.tagItems);
@@ -253,7 +262,8 @@ public class ItemDetailViewModel {
                             idAtSaveTime,  // Use captured ID
                             finalTitle, finalOverview,
                             finalTagItems, finalReleaseDate, finalStudiosItems, finalPeopleItems,
-                            finalGenresItems
+                            finalGenresItems,
+                            finalCriticRating // (*** THÊM THAM SỐ RATING VÀO ĐÂY ***)
                     );
                     // parseUiToDto already makes its own copy/modifies the passed DTO
                     dtoToSendToApi = saver.parseUiToDto(manualSaveRequest);
@@ -317,6 +327,8 @@ public class ItemDetailViewModel {
 
         // Apply accepted changes based on current UI state (title.get(), overview.get(), etc.)
         if (acceptedFields.contains("title")) { dtoCopy.setName(title.get()); }
+        // (*** THÊM LOGIC ACCEPT CHO RATING ***)
+        if (acceptedFields.contains("criticRating")) { dtoCopy.setCriticRating(criticRating.get()); }
         if (acceptedFields.contains("overview")) { dtoCopy.setOverview(overview.get()); }
         if (acceptedFields.contains("tags")) {
             List<NameLongIdPair> tagItemsToSave = tagItems.stream()
@@ -598,6 +610,8 @@ public class ItemDetailViewModel {
 
 
     // (Getters cho Controller/Properties)
+    // (*** THÊM GETTER CHO RATING ***)
+    public ObjectProperty<Float> criticRatingProperty() { return criticRating; }
     public ObservableList<TagModel> getGenreItems() { return genresItems; } // (*** MỚI ***)
     public String getCurrentItemId() { return currentItemId; }
     public EmbyService getEmbyService() { return embyService; }
@@ -628,4 +642,6 @@ public class ItemDetailViewModel {
     public ReadOnlyBooleanProperty showPeopleReviewProperty() { return importHandler.showPeopleReviewProperty(); }
     public ReadOnlyBooleanProperty showGenresReviewProperty() { return importHandler.showGenresReviewProperty(); } // (*** MỚI ***)
     public ReadOnlyBooleanProperty showTagsReviewProperty() { return importHandler.showTagsReviewProperty(); } // (*** MỚI (THÊM CHO TAGS) ***)
+    // (*** THÊM GETTER CHO NÚT REVIEW RATING ***)
+    public ReadOnlyBooleanProperty showCriticRatingReviewProperty() { return importHandler.showCriticRatingReviewProperty(); }
 }

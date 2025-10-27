@@ -27,6 +27,7 @@ import java.time.OffsetDateTime;
  * (CẬP NHẬT 30) Thêm Genres.
  * - Thêm logic cho Genres (state, import, accept/reject).
  * (CẬP NHẬT MỚI) Thêm Tags.
+ * (CẬP NHẬT MỚI) Thêm CriticRating.
  */
 public class ItemDetailImportHandler {
 
@@ -48,6 +49,8 @@ public class ItemDetailImportHandler {
     private final ReadOnlyBooleanWrapper showStudiosReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showPeopleReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showGenresReview = new ReadOnlyBooleanWrapper(false); // (*** MỚI ***)
+    // (*** THÊM NÚT REVIEW CHO RATING ***)
+    private final ReadOnlyBooleanWrapper showCriticRatingReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showTagsReview = new ReadOnlyBooleanWrapper(false); // (*** MỚI (THÊM CHO TAGS) ***)
 
     public ItemDetailImportHandler(ItemDetailViewModel viewModel, ItemDetailDirtyTracker dirtyTracker) {
@@ -75,6 +78,11 @@ public class ItemDetailImportHandler {
             preImportState.put("title", viewModel.titleProperty().get());
             viewModel.titleProperty().set(importedDto.getName() != null ? importedDto.getName() : "");
             showTitleReview.set(true);
+
+            // (*** THÊM LOGIC IMPORT CHO RATING (NGAY SAU TITLE) ***)
+            preImportState.put("criticRating", viewModel.criticRatingProperty().get());
+            viewModel.criticRatingProperty().set(importedDto.getCriticRating() != null ? importedDto.getCriticRating() : null);
+            showCriticRatingReview.set(true);
 
             // 2. Overview
             preImportState.put("overview", viewModel.overviewProperty().get());
@@ -176,6 +184,10 @@ public class ItemDetailImportHandler {
                 case "title":
                     viewModel.titleProperty().set((String) preImportState.get("title"));
                     break;
+                // (*** THÊM LOGIC REJECT CHO RATING ***)
+                case "criticRating":
+                    viewModel.criticRatingProperty().set((Float) preImportState.get("criticRating"));
+                    break;
                 case "overview":
                     viewModel.overviewProperty().set((String) preImportState.get("overview"));
                     break;
@@ -218,6 +230,8 @@ public class ItemDetailImportHandler {
     private void hideReviewButton(String fieldName) {
         switch (fieldName) {
             case "title": showTitleReview.set(false); break;
+            // (*** THÊM CASE CHO RATING ***)
+            case "criticRating": showCriticRatingReview.set(false); break;
             case "overview": showOverviewReview.set(false); break;
             case "tags": showTagsReview.set(false); break; // (*** THÊM DÒNG NÀY ***)
             case "releaseDate": showReleaseDateReview.set(false); break;
@@ -229,6 +243,8 @@ public class ItemDetailImportHandler {
 
     public void hideAllReviewButtons() {
         showTitleReview.set(false);
+        // (*** THÊM DÒNG NÀY ***)
+        showCriticRatingReview.set(false);
         showOverviewReview.set(false);
         showReleaseDateReview.set(false);
         showStudiosReview.set(false);
@@ -287,6 +303,8 @@ public class ItemDetailImportHandler {
 
     // --- Getters cho các BooleanProperty (v/x) ---
     public ReadOnlyBooleanProperty showTitleReviewProperty() { return showTitleReview.getReadOnlyProperty(); }
+    // (*** THÊM GETTER NÀY ***)
+    public ReadOnlyBooleanProperty showCriticRatingReviewProperty() { return showCriticRatingReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showOverviewReviewProperty() { return showOverviewReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showReleaseDateReviewProperty() { return showReleaseDateReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showStudiosReviewProperty() { return showStudiosReview.getReadOnlyProperty(); }

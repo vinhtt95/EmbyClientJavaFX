@@ -1,15 +1,3 @@
-/* ... (phần đầu file giữ nguyên) ... */
-
-/* --- (CẬP NHẬT 33): Thống nhất style các nút Add (+), Accept (✓), Reject (✕) thành hình tròn và màu sắc theo yêu cầu.
- * (CẬP NHẬT MỚI): Thêm style cho nút xóa tìm kiếm.
- */
-
-/* ... (phần đầu file giữ nguyên) ... */
-
-/* --- (CẬP NHẬT 33): Thống nhất style các nút Add (+), Accept (✓), Reject (✕) thành hình tròn và màu sắc theo yêu cầu.
- * (CẬP NHẬT MỚI): Thêm style cho nút xóa tìm kiếm.
- */
-
 /* --- DARK MODE GLOBAL STYLES --- */
 .root, .vbox, .hbox, .anchor-pane, .stack-pane, .dialog-pane {
     -fx-background-color: #121212;
@@ -60,12 +48,10 @@
     -fx-border-color: #3a3a3a;
     -fx-border-radius: 5px;
     -fx-padding: 8px;
-    /* THÊM MỚI */
     -fx-font-size: 20px;
 }
 .text-area .content {
     -fx-background-color: #1e1e1e;
-    /* THÊM MỚI */
     -fx-line-spacing: 0.5em;
 }
 
@@ -98,7 +84,6 @@
 }
 
 /* TreeView */
-/* ... (phần còn lại của file giữ nguyên) ... */
 .tree-view {
     -fx-background-color: #1e1e1e;
     -fx-border-width: 0;
@@ -196,7 +181,7 @@
     -fx-opacity: 0.5;
 }
 
-/* --- (CẬP NHẬT 9) TAG STYLES --- */
+/* --- TAG STYLES --- */
 .tag-view {
     -fx-background-color: #383838;
     -fx-background-radius: 15px;
@@ -259,7 +244,7 @@
     -fx-text-fill: #ffffff;
 }
 
-/* --- (CẬP NHẬT 17) POPUP & SUGGESTION TAG STYLES (2 DÒNG) --- */
+/* --- POPUP & SUGGESTION TAG STYLES --- */
 
 /* Style cho nút gợi ý tag (dùng cho CỘT VALUE và TAG ĐƠN GIẢN) */
 .suggested-tag-button {
@@ -294,7 +279,7 @@
     -fx-text-fill: white;
 }
 
-/* (*** SỬA: Style cho DÒNG KEY (trên) ***) */
+/* Style cho DÒNG KEY (trên) */
 .suggestion-key-button {
     -fx-background-color: #004d80; /* Màu xanh */
     -fx-border-color: #007acc;
@@ -306,11 +291,11 @@
     -fx-font-weight: bold; /* Thêm bold cho Key */
     -fx-cursor: hand;
 }
-/* (*** SỬA: Hover cho Key ***) */
+/* Hover cho Key */
 .suggestion-key-button:hover {
     -fx-background-color: #005f9e;
 }
-/* MÀU HỒNG KHI CHỌN KEY (Giữ nguyên) */
+/* MÀU HỒNG KHI CHỌN KEY */
 .suggestion-key-button:selected {
     -fx-background-color: #E91E63; /* Màu hồng */
     -fx-border-color: #F06292;
@@ -318,7 +303,7 @@
 }
 
 
-/* --- (CẬP NHẬT 18) IMAGE UPDATE STYLES --- */
+/* --- IMAGE UPDATE STYLES --- */
 .image-save-button {
     -fx-background-color: #28a745;
     -fx-text-fill: white;
@@ -383,52 +368,42 @@
 /* *** END REVIEW BUTTONS *** */
 
 
-/* (*** THAY ĐỔI STYLE NÚT RATING ***) */
+/* RATING BUTTONS */
 .rating-button {
-    /* (*** THAY ĐỔI FONT: 11px -> 16px ***) */
     -fx-font-size: 16px; /* Chữ lớn hơn */
     -fx-font-weight: bold;
     -fx-background-radius: 50em; /* Hình tròn */
-    /* (*** THAY ĐỔI KÍCH THƯỚC: 30px -> 50px ***) */
     -fx-min-width: 50px;
     -fx-min-height: 50px;
     -fx-max-width: 50px;
     -fx-max-height: 50px;
     -fx-padding: 0;
-    /* (*** THAY ĐỔI VIỀN: 1px -> 0 ***) */
     -fx-border-width: 0; /* Thêm viền nhẹ */
 
     /* MÀU XÁM (mặc định) */
     -fx-background-color: #383838;
     -fx-text-fill: #e0e0e0;
-    /* (*** THAY ĐỔI VIỀN: Xóa border-color ***) */
-    /* -fx-border-color: #555555; */
     -fx-cursor: hand;
 
-    /* (*** THÊM MỚI: Xóa viền mờ và insets ***) */
     -fx-background-insets: 0;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
 }
 .rating-button:hover {
     -fx-background-color: #4a4a4a;
-    /* (*** THAY ĐỔI VIỀN: Xóa/Set transparent border-color ***) */
     -fx-border-color: transparent;
 }
 
 /* MÀU HỒNG (khi được chọn) */
 .rating-button.selected {
     -fx-background-color: #E91E63; /* Màu hồng */
-    /* (*** THAY ĐỔI VIỀN: Xóa/Set transparent border-color ***) */
     -fx-border-color: transparent; /* Viền hồng nhạt */
     -fx-text-fill: white;
 }
 .rating-button.selected:hover {
     -fx-background-color: #d81b60; /* Hồng đậm hơn khi hover */
-    /* (*** THÊM MỚI: Đảm bảo hover cũng không có viền ***) */
     -fx-border-color: transparent;
 }
-/* (*** KẾT THÚC STYLE MỚI ***) */
 
 
 .backdrop-view {
@@ -455,4 +430,55 @@
 }
 .backdrop-delete-button:hover {
     -fx-background-color: rgba(200, 33, 49, 1.0);
+}
+
+/* --- CONTEXT MENU STYLES --- */
+
+/* Style cho toàn bộ khung menu */
+.context-menu {
+    -fx-background-color: #2b2b2b; /* Màu nền tối (hơi sáng hơn #121212) */
+    -fx-background-insets: 0;
+    -fx-padding: 6px; /* Padding xung quanh tất cả các items */
+    -fx-background-radius: 8px; /* Bo góc kiểu macOS */
+    -fx-min-width: 220px; /* (Rộng ra chút) */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 20, 0.1, 0, 5);
+}
+
+/* Style cho từng mục (item) trong menu */
+.menu-item {
+    -fx-background-color: transparent;
+    -fx-padding: 8px 12px; /* (Nút nhỏ đi chút - padding dọc ít hơn) */
+    -fx-background-radius: 5px; /* Bo góc cho item khi hover */
+}
+
+/* Style cho chữ (label) bên trong item */
+.menu-item .label {
+    -fx-font-size: 15px; /* (Font nhỏ hơn 18px mặc định) */
+    -fx-text-fill: #e0e0e0; /* Màu chữ sáng */
+    -fx-font-family: "System"; /* Font hệ thống */
+}
+
+/* Style khi di chuột (hover) hoặc focus vào item */
+.menu-item:focused {
+    -fx-background-color: #007acc; /* Màu xanh Emby khi chọn */
+}
+
+/* Style cho chữ khi di chuột/focus */
+.menu-item:focused .label {
+    -fx-text-fill: white;
+}
+
+/* Tắt viền focus (thường là viền nét đứt) */
+.menu-item:focused {
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+/* Style cho dấu phân cách (nếu có) */
+.context-menu .separator {
+    -fx-padding: 5px 0 5px 0;
+}
+.context-menu .separator .line {
+    -fx-border-color: #444444;
+    -fx-border-width: 1 0 0 0;
 }

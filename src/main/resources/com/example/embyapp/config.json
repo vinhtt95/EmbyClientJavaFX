@@ -190,5 +190,8 @@
   "itemImageUpdater": {
     "selectBackdropsTitle": "Chọn các ảnh Backdrop",
     "selectPrimaryTitle": "Chọn ảnh Primary"
+  },
+  "contextMenu": {
+    "copyId": "Sao chép ID"
   }
 }

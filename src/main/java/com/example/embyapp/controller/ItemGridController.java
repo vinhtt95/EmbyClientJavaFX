@@ -2,7 +2,7 @@ package com.example.embyapp.controller;
 
 import embyclient.model.BaseItemDto;
 import com.example.embyapp.service.EmbyService;
-import com.example.embyapp.service.I18nManager; // <-- IMPORT
+import com.example.embyapp.service.I18nManager;
 import com.example.embyapp.viewmodel.ItemDetailViewModel;
 import com.example.embyapp.viewmodel.ItemGridViewModel;
 import com.example.embyapp.viewmodel.ItemGridViewModel.ScrollAction;
@@ -12,14 +12,18 @@ import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Alert; // THÊM IMPORT
-import javafx.scene.control.Alert.AlertType; // THÊM IMPORT
-import javafx.scene.control.ButtonType; // THÊM IMPORT
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -29,12 +33,12 @@ import javafx.scene.text.TextAlignment;
 import java.util.Map;
 import java.awt.Desktop;
 import java.io.File;
-import java.util.Optional; // THÊM IMPORT
+import java.util.Optional;
 
 
 /**
- * (SỬA ĐỔI) Controller cho ItemGridView (Cột giữa).
- * (CẬP NHẬT MỚI) Khôi phục FlowPane + ScrollPane, áp dụng logic Page Replacement, và FIX LỖI LOOP.
+ * Controller cho ItemGridView (Cột giữa).
+ * Áp dụng logic Page Replacement, và Context Menu.
  */
 public class ItemGridController {
 
@@ -47,48 +51,40 @@ public class ItemGridController {
     private ItemGridViewModel viewModel;
     private ItemDetailViewModel itemDetailViewModel;
 
-    private boolean ignoreNextScrollEvent = false; // MỚI: Cờ chống loop khi cuộn chương trình
+    private boolean ignoreNextScrollEvent = false;
 
-    // Thêm Service và Repository để thực hiện API call ngay tại đây
     private final EmbyService embyService = EmbyService.getInstance();
     private final ItemRepository itemRepository = new ItemRepository();
 
-    // Kích thước cố định cho mỗi ô (cell) - Tỷ lệ 16:9
     private static final double CELL_HEIGHT = 320;
     private static final double CELL_WIDTH = CELL_HEIGHT * 16 / 9;
     private static final double IMAGE_HEIGHT = CELL_HEIGHT;
 
     @FXML
     public void initialize() {
-        // Cấu hình FlowPane
         itemFlowPane.setPadding(new Insets(20));
         itemFlowPane.setHgap(20);
         itemFlowPane.setVgap(20);
-
         itemFlowPane.setAlignment(Pos.CENTER);
 
-        // Đảm bảo ScrollPane fit chiều rộng (chỉ scroll dọc)
         gridScrollPane.setFitToWidth(true);
 
-        // (MỚI) Thêm listener cho ScrollPane để thực hiện Page Replacement
         gridScrollPane.vvalueProperty().addListener((obs, oldVal, newVal) -> {
             if (viewModel == null || viewModel.loadingProperty().get()) return;
 
-            // FIX LOOP: Bỏ qua sự kiện cuộn nếu nó được kích hoạt bởi chương trình (sau khi load trang)
             if (ignoreNextScrollEvent) {
                 return;
             }
 
             // 1. SCROLL TỚI CUỐI (Load Trang Kế Tiếp)
-            if (newVal.doubleValue() > 0.95 && oldVal.doubleValue() < 0.95) { // Chỉ kích hoạt khi đang cuộn xuống
+            if (newVal.doubleValue() > 0.95 && oldVal.doubleValue() < 0.95) {
                 if (viewModel.hasNextPageProperty().get()) {
                     int nextPageDisplay = viewModel.getCurrentPageIndex() + 2;
                     int totalPages = viewModel.getTotalPages();
 
-                    // MỞ POPUP CONFIRM
                     if (showConfirmationDialog(
-                            I18nManager.getInstance().getString("itemGridView", "confirmDialogTitle"), // <-- UPDATE
-                            I18nManager.getInstance().getString("itemGridView", "confirmNextPage", nextPageDisplay, totalPages) // <-- UPDATE
+                            I18nManager.getInstance().getString("itemGridView", "confirmDialogTitle"),
+                            I18nManager.getInstance().getString("itemGridView", "confirmNextPage", nextPageDisplay, totalPages)
                     )) {
                         viewModel.loadNextPage();
                     }
@@ -96,15 +92,14 @@ public class ItemGridController {
             }
 
             // 2. SCROLL LÊN ĐẦU (Load Trang Trước Đó)
-            else if (newVal.doubleValue() < 0.05 && oldVal.doubleValue() > 0.05) { // Chỉ kích hoạt khi đang cuộn lên
+            else if (newVal.doubleValue() < 0.05 && oldVal.doubleValue() > 0.05) {
                 if (viewModel.hasPreviousPageProperty().get()) {
                     int prevPageDisplay = viewModel.getCurrentPageIndex();
                     int totalPages = viewModel.getTotalPages();
 
-                    // MỞ POPUP CONFIRM
                     if (showConfirmationDialog(
-                            I18nManager.getInstance().getString("itemGridView", "confirmDialogTitle"), // <-- UPDATE
-                            I18nManager.getInstance().getString("itemGridView", "confirmPrevPage", prevPageDisplay, totalPages) // <-- UPDATE
+                            I18nManager.getInstance().getString("itemGridView", "confirmDialogTitle"),
+                            I18nManager.getInstance().getString("itemGridView", "confirmPrevPage", prevPageDisplay, totalPages)
                     )) {
                         viewModel.loadPreviousPage();
                     }
@@ -112,35 +107,27 @@ public class ItemGridController {
             }
         });
 
-        // <-- ADDED: Set default text for statusLabel -->
         statusLabel.setText(I18nManager.getInstance().getString("itemGridView", "statusDefault"));
     }
 
     public void setViewModel(ItemGridViewModel viewModel) {
         this.viewModel = viewModel;
 
-        // --- Binding UI với ViewModel ---
-
-        // 1. Binding trạng thái Loading
         loadingIndicator.visibleProperty().bind(viewModel.loadingProperty());
         loadingIndicator.managedProperty().bind(viewModel.loadingProperty());
 
-        // 2. Binding trạng thái Status Message
         statusLabel.visibleProperty().bind(viewModel.showStatusMessageProperty());
         statusLabel.managedProperty().bind(viewModel.showStatusMessageProperty());
         statusLabel.textProperty().bind(viewModel.statusMessageProperty());
 
-        // 3. Ẩn/hiện ScrollPane (Grid)
         gridScrollPane.visibleProperty().bind(
                 viewModel.loadingProperty().not().and(viewModel.showStatusMessageProperty().not())
         );
         gridScrollPane.managedProperty().bind(gridScrollPane.visibleProperty());
 
 
-        // 4. Lắng nghe thay đổi danh sách items và Cập nhật Grid
         viewModel.getItems().addListener((ListChangeListener<BaseItemDto>) c -> {
             Platform.runLater(() -> {
-                // Với Page Replacement, luôn thay thế toàn bộ nội dung
                 itemFlowPane.getChildren().clear();
                 for (BaseItemDto item : viewModel.getItems()) {
                     itemFlowPane.getChildren().add(createItemCell(item));
@@ -148,24 +135,21 @@ public class ItemGridController {
             });
         });
 
-        // (SỬA LỖI LOOP) 5. Lắng nghe yêu cầu cuộn từ ViewModel (sau khi load trang)
         viewModel.scrollActionProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal == ScrollAction.SCROLL_TO_TOP) {
-                ignoreNextScrollEvent = true; // Bắt đầu bỏ qua sự kiện cuộn
+                ignoreNextScrollEvent = true;
                 Platform.runLater(() -> {
                     gridScrollPane.setVvalue(0.0);
-                    // Đặt lại cờ ignore sau khi sự kiện cuộn đã kết thúc (rất quan trọng)
                     Platform.runLater(() -> ignoreNextScrollEvent = false);
                 });
-                viewModel.scrollActionProperty().set(ScrollAction.NONE); // Reset
+                viewModel.scrollActionProperty().set(ScrollAction.NONE);
             } else if (newVal == ScrollAction.SCROLL_TO_BOTTOM) {
-                ignoreNextScrollEvent = true; // Bắt đầu bỏ qua sự kiện cuộn
+                ignoreNextScrollEvent = true;
                 Platform.runLater(() -> {
                     gridScrollPane.setVvalue(1.0);
-                    // Đặt lại cờ ignore sau khi sự kiện cuộn đã kết thúc (rất quan trọng)
                     Platform.runLater(() -> ignoreNextScrollEvent = false);
                 });
-                viewModel.scrollActionProperty().set(ScrollAction.NONE); // Reset
+                viewModel.scrollActionProperty().set(ScrollAction.NONE);
             }
         });
     }
@@ -190,7 +174,6 @@ public class ItemGridController {
         cellContainer.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         cellContainer.getStyleClass().add("item-cell");
 
-        // --- (Logic tạo ImageView) ---
         ImageView imageView = new ImageView();
         imageView.setFitWidth(CELL_WIDTH);
         imageView.setFitHeight(IMAGE_HEIGHT);
@@ -246,20 +229,33 @@ public class ItemGridController {
 
         overlay.getChildren().add(titleLabel);
         cellContainer.getChildren().addAll(imageView, overlay);
-        // --- (End Logic tạo ImageView) ---
 
 
-        // 4. Xử lý sự kiện click (SINGLE-CLICK và DOUBLE-CLICK)
         cellContainer.setOnMouseClicked(event -> {
-            // Logic Single-Click (Duy trì chọn item cho cột Detail)
             if (viewModel != null) {
                 viewModel.selectedItemProperty().set(item);
             }
 
-            // Logic Double-Click (Mở/Phát File)
             if (event.getClickCount() == 2) {
                 handleDoubleClick(item);
             }
+        });
+
+        final ContextMenu contextMenu = new ContextMenu();
+        final MenuItem copyIdItem = new MenuItem(I18nManager.getInstance().getString("contextMenu", "copyId"));
+        copyIdItem.setOnAction(e -> {
+            if (item != null && item.getId() != null) {
+                final Clipboard clipboard = Clipboard.getSystemClipboard();
+                final ClipboardContent content = new ClipboardContent();
+                content.putString(item.getId());
+                clipboard.setContent(content);
+            }
+        });
+        contextMenu.getItems().add(copyIdItem);
+
+        cellContainer.setOnContextMenuRequested(event -> {
+            contextMenu.show(cellContainer, event.getScreenX(), event.getScreenY());
+            event.consume();
         });
 
         return cellContainer;
@@ -269,68 +265,61 @@ public class ItemGridController {
      * Hàm xử lý logic Mở/Phát khi Double-Click.
      */
     private void handleDoubleClick(BaseItemDto item) {
-        // 1. Báo trạng thái (Clear lỗi cũ)
-        I18nManager i18n = I18nManager.getInstance(); // <-- Get I18n
+        I18nManager i18n = I18nManager.getInstance();
         if (itemDetailViewModel != null) {
             itemDetailViewModel.clearActionError();
-            itemDetailViewModel.reportActionError(i18n.getString("itemGridController", "statusGetPath")); // <-- UPDATE
+            itemDetailViewModel.reportActionError(i18n.getString("itemGridController", "statusGetPath"));
         } else {
-            System.err.println(i18n.getString("itemGridController", "errorDetailVMNull")); // <-- UPDATE
+            System.err.println(i18n.getString("itemGridController", "errorDetailVMNull"));
         }
 
-        // --- Bắt đầu chạy luồng nền để gọi API ---
         new Thread(() -> {
             try {
                 String userId = embyService.getCurrentUserId();
                 if (userId == null) {
-                    throw new IllegalStateException(i18n.getString("itemGridController", "errorNoLogin")); // <-- UPDATE
+                    throw new IllegalStateException(i18n.getString("itemGridController", "errorNoLogin"));
                 }
 
-                // 1. Gọi API để lấy DTO chi tiết (có Path)
                 BaseItemDto fullDetails = itemRepository.getFullItemDetails(userId, item.getId());
 
-                // 2. KIỂM TRA FOLDER (FIX LỖI)
                 if (fullDetails.isIsFolder() != null && fullDetails.isIsFolder()) {
                     if (itemDetailViewModel != null) {
-                        itemDetailViewModel.reportActionError(i18n.getString("itemGridController", "errorFolderDoubleClick")); // <-- UPDATE
+                        itemDetailViewModel.reportActionError(i18n.getString("itemGridController", "errorFolderDoubleClick"));
                     }
-                    return; // Dừng lại nếu là Folder
+                    return;
                 }
 
-                // 3. Xử lý Path (Chỉ cho file)
                 String path = fullDetails.getPath();
                 if (path == null || path.isEmpty()) {
-                    throw new IllegalStateException(i18n.getString("itemGridController", "errorNoPath")); // <-- UPDATE
+                    throw new IllegalStateException(i18n.getString("itemGridController", "errorNoPath"));
                 }
 
-                // 4. Thực hiện hành động mở file
                 if (!Desktop.isDesktopSupported()) {
-                    throw new UnsupportedOperationException(i18n.getString("itemGridController", "errorNoDesktopSupport")); // <-- UPDATE
+                    throw new UnsupportedOperationException(i18n.getString("itemGridController", "errorNoDesktopSupport"));
                 }
 
                 File fileOrDir = new File(path);
                 if (!fileOrDir.exists()) {
-                    throw new java.io.FileNotFoundException(i18n.getString("itemGridController", "errorPathNotExist", path)); // <-- UPDATE
+                    throw new java.io.FileNotFoundException(i18n.getString("itemGridController", "errorPathNotExist", path));
                 }
 
                 Desktop.getDesktop().open(fileOrDir);
 
-                // 5. Báo cáo thành công
                 if (itemDetailViewModel != null) {
-                    itemDetailViewModel.reportActionError(i18n.getString("itemGridController", "statusPlayFile", item.getName())); // <-- UPDATE
+                    itemDetailViewModel.reportActionError(i18n.getString("itemGridController", "statusPlayFile", item.getName()));
                 }
 
             } catch (Exception e) {
                 System.err.println("Lỗi khi Phát từ Grid: " + e.getMessage());
                 if (itemDetailViewModel != null) {
-                    itemDetailViewModel.reportActionError(i18n.getString("itemGridController", "errorPlayFile", e.getMessage())); // <-- UPDATE
+                    itemDetailViewModel.reportActionError(i18n.getString("itemGridController", "errorPlayFile", e.getMessage()));
                 }
             }
         }).start();
     }
 
     /**
-     * (HÀM MỚI) Hiển thị hộp thoại xác nhận.
+     * Hiển thị hộp thoại xác nhận.
      * @return true nếu người dùng chọn Yes, false nếu chọn No/Cancel.
      */
     private boolean showConfirmationDialog(String title, String content) {
@@ -339,7 +328,6 @@ public class ItemGridController {
         alert.setHeaderText(null);
         alert.setContentText(content);
 
-        // Tùy chỉnh nút thành CÓ/KHÔNG
         alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
 
         Optional<ButtonType> result = alert.showAndWait();

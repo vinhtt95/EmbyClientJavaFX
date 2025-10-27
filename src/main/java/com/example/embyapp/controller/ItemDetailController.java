@@ -96,6 +96,14 @@ public class ItemDetailController {
     @FXML private Label releaseDateLabel; // <-- ADDED
     @FXML private TextField releaseDateTextField;
 
+    // (*** MỚI: ORIGINAL TITLE & FETCH BUTTON ***)
+    @FXML private Label originalTitleLabel;
+    @FXML private TextField originalTitleTextField;
+    @FXML private Button fetchReleaseDateButton;
+    @FXML private HBox reviewOriginalTitleContainer;
+    @FXML private Button acceptOriginalTitleButton;
+    @FXML private Button rejectOriginalTitleButton;
+
     // (*** TAGS ***)
     @FXML private Label tagsLabel; // <-- ADDED
     @FXML private FlowPane tagsFlowPane;
@@ -175,6 +183,10 @@ public class ItemDetailController {
         rejectOverviewButton.setOnAction(e -> viewModel.rejectImportField("overview"));
         acceptReleaseDateButton.setOnAction(e -> viewModel.acceptImportField("releaseDate"));
         rejectReleaseDateButton.setOnAction(e -> viewModel.rejectImportField("releaseDate"));
+
+        acceptOriginalTitleButton.setOnAction(e -> viewModel.acceptImportField("originalTitle"));
+        rejectOriginalTitleButton.setOnAction(e -> viewModel.rejectImportField("originalTitle"));
+
         acceptStudiosButton.setOnAction(e -> viewModel.acceptImportField("studios"));
         rejectStudiosButton.setOnAction(e -> viewModel.rejectImportField("studios"));
         acceptPeopleButton.setOnAction(e -> viewModel.acceptImportField("people"));
@@ -231,6 +243,12 @@ public class ItemDetailController {
         acceptReleaseDateButton.setText(i18n.getString("itemDetailView", "acceptButton"));
         rejectReleaseDateButton.setText(i18n.getString("itemDetailView", "rejectButton"));
 
+        originalTitleLabel.setText(i18n.getString("itemDetailView", "originalTitleLabel"));
+        originalTitleTextField.setPromptText(i18n.getString("itemDetailView", "originalTitlePrompt"));
+        fetchReleaseDateButton.setText(i18n.getString("itemDetailView", "fetchReleaseDateButton"));
+        acceptOriginalTitleButton.setText(i18n.getString("itemDetailView", "acceptButton"));
+        rejectOriginalTitleButton.setText(i18n.getString("itemDetailView", "rejectButton"));
+
         pathLabel.setText(i18n.getString("itemDetailView", "pathLabel"));
         // openButton text is handled by binding
 
@@ -283,6 +301,7 @@ public class ItemDetailController {
         // BINDING CHUNG
         statusLabel.textProperty().bind(viewModel.statusMessageProperty());
         titleTextField.textProperty().bindBidirectional(viewModel.titleProperty());
+        originalTitleTextField.textProperty().bindBidirectional(viewModel.originalTitleProperty());
 
         // (*** THÊM LOGIC SETUP VÀ BINDING CHO RATING ***)
         setupCriticRatingButtons(); // Gọi hàm helper để tạo 10 nút
@@ -381,6 +400,7 @@ public class ItemDetailController {
         bindReviewContainer(reviewCriticRatingContainer, viewModel.showCriticRatingReviewProperty());
         bindReviewContainer(reviewOverviewContainer, viewModel.showOverviewReviewProperty());
         bindReviewContainer(reviewReleaseDateContainer, viewModel.showReleaseDateReviewProperty());
+        bindReviewContainer(reviewOriginalTitleContainer, viewModel.showOriginalTitleReviewProperty());
         bindReviewContainer(reviewStudiosContainer, viewModel.showStudiosReviewProperty());
         bindReviewContainer(reviewPeopleContainer, viewModel.showPeopleReviewProperty());
         bindReviewContainer(reviewGenresContainer, viewModel.showGenresReviewProperty());
@@ -682,6 +702,12 @@ public class ItemDetailController {
         }).start();
     }
 
+    @FXML
+    private void handleFetchReleaseDateAction() {
+        if (viewModel != null) {
+            viewModel.fetchReleaseDate();
+        }
+    }
 
     /**
      * Mở dialog thêm Tag.

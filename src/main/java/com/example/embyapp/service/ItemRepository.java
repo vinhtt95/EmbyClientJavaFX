@@ -11,6 +11,7 @@ import embyclient.model.QueryResultBaseItemDto;
 
 import java.util.Collections;
 import java.util.List;
+import java.time.OffsetDateTime;
 import java.util.stream.Collectors; // (CẬP NHẬT) Thêm import (từ lần sửa trước)
 
 /**
@@ -28,10 +29,12 @@ public class ItemRepository {
     // (CẬP NHẬT) Cache các API service mới
     private UserLibraryServiceApi userLibraryServiceApi;
     private ImageServiceApi imageServiceApi;
+    private RequestEmby requestEmby; // (*** MỚI ***)
 
     // SỬA LỖI: Constructor rỗng, tự lấy Singleton
     public ItemRepository() {
         this.embyService = EmbyService.getInstance();
+        this.requestEmby = new RequestEmby();
     }
 
     // --- Private Helper Getters cho API Services ---
@@ -281,5 +284,15 @@ public class ItemRepository {
     public List<SuggestionItemModel> getPeopleSuggestions(embyclient.ApiClient apiClient) throws ApiException {
         List<BaseItemDto> dtoList = new RequestEmby().getListPeoples(apiClient);
         return SuggestionItemModel.fromBaseItemDtoList(dtoList);
+    }
+
+    /**
+     * (MỚI) Lấy ngày phát hành từ code (OriginalTitle).
+     * @param code OriginalTitle (ví dụ: "ABP-123")
+     * @return OffsetDateTime hoặc null.
+     */
+    public OffsetDateTime fetchReleaseDateByCode(String code) {
+        // requestEmby đã được khởi tạo trong constructor
+        return requestEmby.getDateRelease(code);
     }
 }

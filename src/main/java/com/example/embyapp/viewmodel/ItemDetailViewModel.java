@@ -69,6 +69,7 @@ public class ItemDetailViewModel {
     // --- Properties ---
     private final ReadOnlyBooleanWrapper loading = new ReadOnlyBooleanWrapper(false);
     private final StringProperty title = new SimpleStringProperty("");
+    private final StringProperty originalTitle = new SimpleStringProperty("");
     // (*** THÊM MỚI PROPERTY CHO RATING ***)
     private final ObjectProperty<Float> criticRating = new SimpleObjectProperty<>(null);
     private final StringProperty overview = new SimpleStringProperty("");
@@ -149,6 +150,7 @@ public class ItemDetailViewModel {
                     this.exportFileNameTitle = result.getOriginalTitleForExport();
 
                     title.set(result.getTitleText());
+                    originalTitle.set(result.getOriginalTitleForExport());
                     // (*** THÊM DÒNG NÀY ĐỂ SET RATING ***)
                     criticRating.set(result.getCriticRating());
                     overview.set(result.getOverviewText());
@@ -200,6 +202,7 @@ public class ItemDetailViewModel {
     private void clearAllDetailsUI() {
         dirtyTracker.stopTracking();
         title.set("");
+        originalTitle.set("");
         // (*** THÊM DÒNG NÀY ĐỂ CLEAR RATING ***)
         criticRating.set(null);
         year.set("");
@@ -240,6 +243,7 @@ public class ItemDetailViewModel {
 
         // Capture UI state (as before, using current property values)
         final String finalTitle = this.title.get();
+        final String finalOriginalTitle = this.originalTitle.get();
         // (*** THÊM DÒNG NÀY ĐỂ LẤY RATING ***)
         final Float finalCriticRating = this.criticRating.get();
         final String finalOverview = this.overview.get();
@@ -268,7 +272,8 @@ public class ItemDetailViewModel {
                             finalTitle, finalOverview,
                             finalTagItems, finalReleaseDate, finalStudiosItems, finalPeopleItems,
                             finalGenresItems,
-                            finalCriticRating // (*** THÊM THAM SỐ RATING VÀO ĐÂY ***)
+                            finalCriticRating,
+                            finalOriginalTitle// (*** THÊM THAM SỐ RATING VÀO ĐÂY ***)
                     );
                     // parseUiToDto already makes its own copy/modifies the passed DTO
                     dtoToSendToApi = saver.parseUiToDto(manualSaveRequest);
@@ -332,6 +337,7 @@ public class ItemDetailViewModel {
 
         // Apply accepted changes based on current UI state (title.get(), overview.get(), etc.)
         if (acceptedFields.contains("title")) { dtoCopy.setName(title.get()); }
+        if (acceptedFields.contains("originalTitle")) { dtoCopy.setOriginalTitle(originalTitle.get()); }
         // (*** THÊM LOGIC ACCEPT CHO RATING ***)
         if (acceptedFields.contains("criticRating")) { dtoCopy.setCriticRating(criticRating.get()); }
         if (acceptedFields.contains("overview")) { dtoCopy.setOverview(overview.get()); }
@@ -403,6 +409,55 @@ public class ItemDetailViewModel {
         }
 
         return dtoCopy;
+    }
+
+    /**
+     * Sao chép hàm helper từ Loader để dùng nội bộ.
+     */
+    private String dateToString(OffsetDateTime date) {
+        if (date == null) return "";
+        try {
+            return dateFormat.format(new java.util.Date(date.toInstant().toEpochMilli()));
+        } catch (Exception e) { return ""; }
+    }
+
+    /**
+     * Được gọi từ Controller, dùng OriginalTitle để lấy ngày phát hành.
+     */
+    public void fetchReleaseDate() {
+        final String code = originalTitle.get();
+        if (code == null || code.trim().isEmpty()) {
+            reportActionError("Tiêu đề gốc rỗng, không thể tìm ngày.");
+            return;
+        }
+
+        reportActionError(i18n.getString("itemDetailView", "statusFetchingDate", code));
+
+        new Thread(() -> {
+            try {
+                // Sử dụng hàm mới trong ItemRepository
+                OffsetDateTime resultDate = itemRepository.fetchReleaseDateByCode(code);
+
+                if (resultDate != null) {
+                    // Chuyển đổi OffsetDateTime sang String "dd/MM/yyyy"
+                    String dateString = dateToString(resultDate);
+
+                    Platform.runLater(() -> {
+                        this.releaseDate.set(dateString);
+                        reportActionError(i18n.getString("itemDetailView", "statusFetchDateSuccess"));
+                    });
+                } else {
+                    Platform.runLater(() -> {
+                        reportActionError(i18n.getString("itemDetailView", "statusFetchDateNotFound"));
+                    });
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> {
+                    reportActionError(i18n.getString("itemDetailView", "errorFetchDate", e.getMessage()));
+                });
+            }
+        }).start();
     }
 
 
@@ -617,10 +672,12 @@ public class ItemDetailViewModel {
     // (Getters cho Controller/Properties)
     // (*** THÊM GETTER CHO RATING ***)
     public ObjectProperty<Float> criticRatingProperty() { return criticRating; }
+
     public ObservableList<TagModel> getGenreItems() { return genresItems; } // (*** MỚI ***)
     public String getCurrentItemId() { return currentItemId; }
     public EmbyService getEmbyService() { return embyService; }
     public StringProperty titleProperty() { return title; }
+    public StringProperty originalTitleProperty() { return originalTitle; }
     public StringProperty overviewProperty() { return overview; }
     public ObservableList<TagModel> getTagItems() { return tagItems; }
     public StringProperty releaseDateProperty() { return releaseDate; }
@@ -643,6 +700,7 @@ public class ItemDetailViewModel {
     public ReadOnlyBooleanProperty showTitleReviewProperty() { return importHandler.showTitleReviewProperty(); }
     public ReadOnlyBooleanProperty showOverviewReviewProperty() { return importHandler.showOverviewReviewProperty(); }
     public ReadOnlyBooleanProperty showReleaseDateReviewProperty() { return importHandler.showReleaseDateReviewProperty(); }
+    public ReadOnlyBooleanProperty showOriginalTitleReviewProperty() { return importHandler.showOriginalTitleReviewProperty(); }
     public ReadOnlyBooleanProperty showStudiosReviewProperty() { return importHandler.showStudiosReviewProperty(); }
     public ReadOnlyBooleanProperty showPeopleReviewProperty() { return importHandler.showPeopleReviewProperty(); }
     public ReadOnlyBooleanProperty showGenresReviewProperty() { return importHandler.showGenresReviewProperty(); } // (*** MỚI ***)

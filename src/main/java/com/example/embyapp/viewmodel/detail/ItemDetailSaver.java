@@ -63,6 +63,7 @@ public class ItemDetailSaver {
         BaseItemDto dto = request.getOriginalDto();
 
         dto.setName(request.getTitle());
+        dto.setOriginalTitle(request.getOriginalTitle());
         // (*** THÊM DÒNG NÀY ĐỂ SET RATING ***)
         dto.setCriticRating(request.getCriticRating());
         dto.setOverview(request.getOverview());
@@ -138,6 +139,7 @@ public class ItemDetailSaver {
         private final BaseItemDto originalDto;
         private final String itemId;
         private final String title;
+        private final String originalTitle;
         private final String overview;
         // (*** THÊM FIELD CHO RATING ***)
         private final Float criticRating;
@@ -151,10 +153,11 @@ public class ItemDetailSaver {
                            List<TagModel> tagItems,
                            String releaseDate, List<TagModel> studioItems, List<TagModel> peopleItems,
                            List<TagModel> genreItems,
-                           Float criticRating) { // (*** THÊM THAM SỐ RATING ***)
+                           Float criticRating, String originalTitle) { // (*** THÊM THAM SỐ RATING ***)
             this.originalDto = originalDto;
             this.itemId = itemId;
             this.title = title;
+            this.originalTitle = originalTitle;
             this.overview = overview;
             this.tagItems = tagItems;
             this.releaseDate = releaseDate;
@@ -169,6 +172,7 @@ public class ItemDetailSaver {
         public BaseItemDto getOriginalDto() { return originalDto; }
         public String getItemId() { return itemId; }
         public String getTitle() { return title; }
+        public String getOriginalTitle() { return originalTitle; }
         public String getOverview() { return overview; }
         // (*** THÊM GETTER CHO RATING ***)
         public Float getCriticRating() { return criticRating; }

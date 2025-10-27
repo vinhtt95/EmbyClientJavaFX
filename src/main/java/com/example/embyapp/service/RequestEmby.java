@@ -179,7 +179,7 @@ public class RequestEmby {
         return Collections.emptyList(); // Trả về list rỗng thay vì null
     }
 
-    private OffsetDateTime getDateRelease(String code) {
+    public OffsetDateTime getDateRelease(String code) {
         // API này là của đồng chí, tôi giữ nguyên
         String apiUrl = "http://localhost:8081/movies/movie/date/?movieCode=" + code;
         HttpURLConnection connection = null; // Khai báo bên ngoài để đóng trong finally

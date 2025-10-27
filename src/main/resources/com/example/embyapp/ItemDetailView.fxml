@@ -88,28 +88,56 @@
                                 <children>
                                     <VBox spacing="5.0" HBox.hgrow="ALWAYS">
 
+
                                         <children>
                                             <HBox alignment="CENTER_LEFT" spacing="10.0">
+
 
                                                 <Label fx:id="releaseDateLabel" textFill="WHITE" style="-fx-font-weight: bold;
 -fx-font-size: 14px;" />
                                                 <HBox fx:id="reviewReleaseDateContainer" alignment="CENTER" spacing="5.0">
 
+
                                                     <children>
                                                         <Button fx:id="acceptReleaseDateButton" styleClass="review-button-round accept-button"/>
+
 
                                                         <Button fx:id="rejectReleaseDateButton" styleClass="review-button-round reject-button"/>
                                                     </children>
 
+
                                                 </HBox>
                                             </HBox>
+
 
                                             <TextField fx:id="releaseDateTextField" />
                                         </children>
                                     </VBox>
 
+                                    <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+                                        <children>
+                                            <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                                <Label fx:id="originalTitleLabel" textFill="WHITE" style="-fx-font-weight: bold; -fx-font-size: 14px;" />
+                                                <HBox fx:id="reviewOriginalTitleContainer" alignment="CENTER" spacing="5.0">
+                                                    <children>
+                                                        <Button fx:id="acceptOriginalTitleButton" styleClass="review-button-round accept-button"/>
+                                                        <Button fx:id="rejectOriginalTitleButton" styleClass="review-button-round reject-button"/>
+                                                    </children>
+                                                </HBox>
+                                            </HBox>
+                                            <TextField fx:id="originalTitleTextField" />
+                                        </children>
+                                    </VBox>
+
+                                    <Button fx:id="fetchReleaseDateButton" onAction="#handleFetchReleaseDateAction" minWidth="120.0" style="-fx-padding: 8px 10px; -fx-font-size: 14px;" HBox.hgrow="NEVER">
+                                        <HBox.margin>
+                                            <Insets top="25.0" /> </HBox.margin>
+                                    </Button>
+
+
                                 </children>
                             </HBox>
+
 
                             <VBox>
 

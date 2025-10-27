@@ -50,6 +50,9 @@
     "titlePrompt": "Tiêu đề",
     "releaseDateLabel": "Ngày phát hành",
     "releaseDatePrompt": "Định dạng dd/MM/yyyy",
+    "originalTitleLabel": "Tiêu đề gốc",
+    "originalTitlePrompt": "Tiêu đề gốc (dùng để lấy ngày)",
+    "fetchReleaseDateButton": "Lấy ngày P.H",
     "pathLabel": "Đường dẫn trên máy",
     "openButtonFolder": "Mở trong Finder",
     "openButtonFile": "Phát (Mặc định)",
@@ -79,7 +82,11 @@
     "errorExportNoData": "Lỗi: Không có dữ liệu item để export.",
     "errorExportWriteThread": "Lỗi khi Export (luồng nền): {0}",
     "errorExportDialog": "Lỗi khi Export (hiển thị dialog): {0}",
-    "exportSuccess": "Đã export thành công ra {0}"
+    "exportSuccess": "Đã export thành công ra {0}",
+    "statusFetchingDate": "Đang tìm ngày phát hành cho: {0}...",
+    "errorFetchDate": "Lỗi khi lấy ngày: {0}",
+    "statusFetchDateSuccess": "Lấy ngày P.H thành công!",
+    "statusFetchDateNotFound": "Không tìm thấy ngày phát hành."
   },
   "addTagDialog": {
     "addTagTitle": "Thêm Tag Mới",

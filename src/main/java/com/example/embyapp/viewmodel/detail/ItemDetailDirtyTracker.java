@@ -23,7 +23,7 @@ public class ItemDetailDirtyTracker {
     private final BooleanProperty isDirty = new SimpleBooleanProperty(false);
 
     // Snapshot gốc
-    private String originalTitle, originalOverview, originalReleaseDate;
+    private String originalTitle, originalOverview, originalReleaseDate, originalOriginalTitle;
     // (*** THÊM FIELD GỐC CHO RATING ***)
     private Float originalCriticRating;
     private List<TagModel> originalTagItems;
@@ -54,6 +54,7 @@ public class ItemDetailDirtyTracker {
      */
     public void startTracking(Map<String, String> originalStrings) {
         updateOriginalStrings(originalStrings);
+        this.originalOriginalTitle = viewModel.originalTitleProperty().get();
         // (*** THÊM DÒNG NÀY ĐỂ LẤY RATING GỐC ***)
         this.originalCriticRating = viewModel.criticRatingProperty().get();
         this.originalTagItems = new ArrayList<>(viewModel.getTagItems());
@@ -127,6 +128,7 @@ public class ItemDetailDirtyTracker {
         viewModel.criticRatingProperty().addListener(ratingListener);
         viewModel.overviewProperty().addListener(dirtyFlagListener);
         viewModel.releaseDateProperty().addListener(dirtyFlagListener);
+        viewModel.originalTitleProperty().addListener(dirtyFlagListener);
 
         if (viewModel.getTagItems() != null) {
             viewModel.getTagItems().addListener(tagsListener);
@@ -148,6 +150,7 @@ public class ItemDetailDirtyTracker {
         viewModel.criticRatingProperty().removeListener(ratingListener);
         viewModel.overviewProperty().removeListener(dirtyFlagListener);
         viewModel.releaseDateProperty().removeListener(dirtyFlagListener);
+        viewModel.originalTitleProperty().removeListener(dirtyFlagListener);
 
         if (viewModel.getTagItems() != null) {
             viewModel.getTagItems().removeListener(tagsListener);
@@ -186,7 +189,8 @@ public class ItemDetailDirtyTracker {
 
         boolean stringChanges = !Objects.equals(viewModel.titleProperty().get(), originalTitle) ||
                 !Objects.equals(viewModel.overviewProperty().get(), originalOverview) ||
-                !Objects.equals(viewModel.releaseDateProperty().get(), originalReleaseDate);
+                !Objects.equals(viewModel.releaseDateProperty().get(), originalReleaseDate) ||
+                !Objects.equals(viewModel.originalTitleProperty().get(), originalOriginalTitle);
 
         // (*** THÊM CHECK THAY ĐỔI RATING ***)
         boolean ratingChanges = !Objects.equals(viewModel.criticRatingProperty().get(), originalCriticRating);
@@ -238,6 +242,7 @@ public class ItemDetailDirtyTracker {
     public void updateOriginalStringsFromCurrent() {
         System.out.println("DirtyTracker: Updating originals from current UI after save.");
         this.originalTitle = viewModel.titleProperty().get();
+        this.originalOriginalTitle = viewModel.originalTitleProperty().get();
         this.originalOverview = viewModel.overviewProperty().get();
         this.originalReleaseDate = viewModel.releaseDateProperty().get();
         // (*** THÊM DÒNG NÀY ĐỂ CẬP NHẬT RATING GỐC ***)
@@ -259,6 +264,7 @@ public class ItemDetailDirtyTracker {
      */
     private void clearOriginals() {
         this.originalTitle = null;
+        this.originalOriginalTitle = null;
         this.originalOverview = null;
         this.originalReleaseDate = null;
         // (*** THÊM DÒNG NÀY ĐỂ XÓA RATING GỐC ***)

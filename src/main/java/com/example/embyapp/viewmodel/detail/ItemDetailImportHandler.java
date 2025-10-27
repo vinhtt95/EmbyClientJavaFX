@@ -46,6 +46,7 @@ public class ItemDetailImportHandler {
     private final ReadOnlyBooleanWrapper showTitleReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showOverviewReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showReleaseDateReview = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyBooleanWrapper showOriginalTitleReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showStudiosReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showPeopleReview = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper showGenresReview = new ReadOnlyBooleanWrapper(false); // (*** MỚI ***)
@@ -88,6 +89,11 @@ public class ItemDetailImportHandler {
             preImportState.put("overview", viewModel.overviewProperty().get());
             viewModel.overviewProperty().set(importedDto.getOverview() != null ? importedDto.getOverview() : "");
             showOverviewReview.set(true);
+
+            // 3. Original Title
+            preImportState.put("originalTitle", viewModel.originalTitleProperty().get());
+            viewModel.originalTitleProperty().set(importedDto.getOriginalTitle() != null ? importedDto.getOriginalTitle() : "");
+            showOriginalTitleReview.set(true);
 
             // 3. Tags (*** SỬA LỖI LOGIC: KHÔNG TỰ ĐỘNG ACCEPT ***)
             preImportState.put("tags", new ArrayList<>(viewModel.getTagItems()));
@@ -191,6 +197,9 @@ public class ItemDetailImportHandler {
                 case "overview":
                     viewModel.overviewProperty().set((String) preImportState.get("overview"));
                     break;
+                case "originalTitle": // (*** MỚI ***)
+                    viewModel.originalTitleProperty().set((String) preImportState.get("originalTitle"));
+                    break;
                 case "tags": // (*** LOGIC NÀY GIỜ ĐÃ CÓ TÁC DỤNG ***)
                     List<TagModel> originalTags = (List<TagModel>) preImportState.get("tags");
                     if (originalTags != null) {
@@ -233,6 +242,7 @@ public class ItemDetailImportHandler {
             // (*** THÊM CASE CHO RATING ***)
             case "criticRating": showCriticRatingReview.set(false); break;
             case "overview": showOverviewReview.set(false); break;
+            case "originalTitle": showOriginalTitleReview.set(false); break;
             case "tags": showTagsReview.set(false); break; // (*** THÊM DÒNG NÀY ***)
             case "releaseDate": showReleaseDateReview.set(false); break;
             case "studios": showStudiosReview.set(false); break;
@@ -247,6 +257,7 @@ public class ItemDetailImportHandler {
         showCriticRatingReview.set(false);
         showOverviewReview.set(false);
         showReleaseDateReview.set(false);
+        showOriginalTitleReview.set(false);
         showStudiosReview.set(false);
         showPeopleReview.set(false);
         showGenresReview.set(false); // (*** MỚI ***)
@@ -307,6 +318,7 @@ public class ItemDetailImportHandler {
     public ReadOnlyBooleanProperty showCriticRatingReviewProperty() { return showCriticRatingReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showOverviewReviewProperty() { return showOverviewReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showReleaseDateReviewProperty() { return showReleaseDateReview.getReadOnlyProperty(); }
+    public ReadOnlyBooleanProperty showOriginalTitleReviewProperty() { return showOriginalTitleReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showStudiosReviewProperty() { return showStudiosReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showPeopleReviewProperty() { return showPeopleReview.getReadOnlyProperty(); }
     public ReadOnlyBooleanProperty showGenresReviewProperty() { return showGenresReview.getReadOnlyProperty(); } // (*** MỚI ***)

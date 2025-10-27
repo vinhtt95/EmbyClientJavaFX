@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
  * - Cập nhật SuggestionContext và loadSuggestedTags.
  * (CẬP NHẬT 34) Thêm chức năng tìm kiếm nhanh trong các gợi ý (3 ô tìm kiếm).
  * (FIX LỖI) Sửa ClassCastException và Lỗi biên dịch rawName.
+ * (CẬP NHẬT 35) Gộp ô tìm kiếm nhanh vào ô nhập liệu chính.
  */
 public class AddTagDialogController {
 
@@ -44,38 +45,41 @@ public class AddTagDialogController {
         TAG, STUDIO, PEOPLE, GENRE
     }
 
-    @FXML private Label titleLabel; // <-- ADDED
+    @FXML private Label titleLabel;
     @FXML private ToggleGroup tagTypeGroup;
     @FXML private RadioButton simpleTagRadio;
     @FXML private RadioButton jsonTagRadio;
 
     @FXML private GridPane simpleTagPane;
-    @FXML private Label contentLabel; // <-- ADDED
-    @FXML private TextField simpleNameField;
+    @FXML private Label contentLabel;
+    @FXML private TextField simpleNameField; // (*** DÙNG LÀM TÌM KIẾM ***)
 
     @FXML private GridPane jsonTagPane;
-    @FXML private Label keyLabel; // <-- ADDED
-    @FXML private TextField keyField;
-    @FXML private Label valueLabel; // <-- ADDED
-    @FXML private TextField valueField;
+    @FXML private Label keyLabel;
+    @FXML private TextField keyField; // (*** DÙNG LÀM TÌM KIẾM ***)
+    @FXML private Label valueLabel;
+    @FXML private TextField valueField; // (*** DÙNG LÀM TÌM KIẾM ***)
 
-    // (*** THÊM MỚI: 3 ô Search ***)
-    @FXML private Label suggestionKeyLabel; // <-- ADDED
-    @FXML private TextField keySearchField;
-    @FXML private Label suggestionValueLabel; // <-- ADDED
-    @FXML private TextField valueSearchField;
-    @FXML private Label suggestionSimpleLabel; // <-- ADDED
-    @FXML private TextField simpleSearchField;
+    // (*** XÓA BỎ: 3 ô Search và Label của chúng ***)
+    // @FXML private Label suggestionKeyLabel;
+    // @FXML private TextField keySearchField;
+    // @FXML private Label suggestionValueLabel;
+    // @FXML private TextField valueSearchField;
+    // @FXML private Label suggestionSimpleLabel; // (Label này vẫn tồn tại trong FXML, nhưng là header)
+    // @FXML private TextField simpleSearchField;
 
     @FXML private VBox suggestionJsonContainer;
+    @FXML private Label suggestionKeyLabel; // (*** GIỮ LẠI: Label header ***)
     @FXML private FlowPane suggestionKeysPane;
+    @FXML private Label suggestionValueLabel; // (*** GIỮ LẠI: Label header ***)
     @FXML private FlowPane suggestionValuesPane;
 
     @FXML private VBox suggestionSimpleContainer;
+    @FXML private Label suggestionSimpleLabel; // (*** GIỮ LẠI: Label header ***)
     @FXML private FlowPane suggestionSimplePane;
 
-    @FXML private Button cancelButton; // <-- ADDED
-    @FXML private Button okButton; // <-- ADDED
+    @FXML private Button cancelButton;
+    @FXML private Button okButton;
 
     private final ToggleGroup keySuggestionGroup = new ToggleGroup();
     private final ToggleGroup valueSuggestionGroup = new ToggleGroup();
@@ -129,30 +133,27 @@ public class AddTagDialogController {
                 valueSuggestionGroup.selectToggle(null);
             }
             // Gọi hàm populateValues để lọc và hiển thị
-            if (valueSearchField != null) {
-                populateValues(newToggle, valueSearchField.getText());
-            } else {
-                populateValues(newToggle, "");
-            }
+            // (*** CẬP NHẬT: Đọc từ valueField ***)
+            populateValues(newToggle, valueField.getText());
         });
 
-        // (*** THÊM MỚI: 3 Listener cho 3 ô Search ***)
-        if (keySearchField != null) {
-            keySearchField.textProperty().addListener((obs, oldVal, newVal) -> {
-                applyFiltersAndPopulate(true, false, false); // Chỉ lọc Keys
-            });
-        }
-        if (valueSearchField != null) {
-            valueSearchField.textProperty().addListener((obs, oldVal, newVal) -> {
-                // Chỉ lọc Values (chỉ cần gọi populateValues lại)
-                populateValues(keySuggestionGroup.getSelectedToggle(), newVal);
-            });
-        }
-        if (simpleSearchField != null) {
-            simpleSearchField.textProperty().addListener((obs, oldVal, newVal) -> {
-                applyFiltersAndPopulate(false, false, true); // Chỉ lọc Simple
-            });
-        }
+        // (*** CẬP NHẬT: Gộp listener tìm kiếm vào ô nhập liệu ***)
+        keyField.textProperty().addListener((obs, oldVal, newVal) -> {
+            populateKeys(newVal); // Lọc Keys
+            // Khi key thay đổi, value cũng phải cập nhật (dựa trên key đang chọn)
+            populateValues(keySuggestionGroup.getSelectedToggle(), valueField.getText());
+            updateContainerVisibility(); // Cập nhật hiển thị
+        });
+
+        valueField.textProperty().addListener((obs, oldVal, newVal) -> {
+            populateValues(keySuggestionGroup.getSelectedToggle(), newVal); // Lọc Values
+            updateContainerVisibility(); // Cập nhật hiển thị
+        });
+
+        simpleNameField.textProperty().addListener((obs, oldVal, newVal) -> {
+            populateSimpleTags(newVal); // Lọc Simple
+            updateContainerVisibility(); // Cập nhật hiển thị
+        });
     }
 
     // <-- ADD THIS NEW METHOD -->
@@ -164,21 +165,22 @@ public class AddTagDialogController {
         jsonTagRadio.setText(i18n.getString("addTagDialog", "labelJson"));
 
         contentLabel.setText(i18n.getString("addTagDialog", "contentLabel"));
-        simpleNameField.setPromptText(i18n.getString("addTagDialog", "contentPrompt"));
+        // (*** THAY ĐỔI: Dùng prompt tìm kiếm ***)
+        simpleNameField.setPromptText(i18n.getString("addTagDialog", "suggestionSimplePrompt"));
 
         keyLabel.setText(i18n.getString("addTagDialog", "keyLabel"));
-        keyField.setPromptText(i18n.getString("addTagDialog", "keyPrompt"));
+        // (*** THAY ĐỔI: Dùng prompt tìm kiếm ***)
+        keyField.setPromptText(i18n.getString("addTagDialog", "suggestionKeyPrompt"));
+
         valueLabel.setText(i18n.getString("addTagDialog", "valueLabel"));
-        valueField.setPromptText(i18n.getString("addTagDialog", "valuePrompt"));
+        // (*** THAY ĐỔI: Dùng prompt tìm kiếm ***)
+        valueField.setPromptText(i18n.getString("addTagDialog", "suggestionValuePrompt"));
 
+        // (*** XÓA BỎ CÁC TRƯỜNG TÌM KIẾM CŨ ***)
         suggestionKeyLabel.setText(i18n.getString("addTagDialog", "suggestionKeyLabel"));
-        keySearchField.setPromptText(i18n.getString("addTagDialog", "suggestionKeyPrompt"));
         suggestionValueLabel.setText(i18n.getString("addTagDialog", "suggestionValueLabel"));
-        valueSearchField.setPromptText(i18n.getString("addTagDialog", "suggestionValuePrompt"));
 
-        // suggestionSimpleLabel is set in setContext
-
-        simpleSearchField.setPromptText(i18n.getString("addTagDialog", "suggestionSimplePrompt"));
+        // suggestionSimpleLabel is set in setContext (sẽ được set ở setContext)
 
         cancelButton.setText(i18n.getString("addTagDialog", "cancelButton"));
         okButton.setText(i18n.getString("addTagDialog", "okButton"));
@@ -229,10 +231,10 @@ public class AddTagDialogController {
 
             // Đặt lại label cho Simple Suggestions
             // (*** ĐÃ SỬA LỖI CAST TẠI ĐÂY ***)
-            // Lấy HBox chứa Label và TextField (index 0 của suggestionSimpleContainer)
-            HBox headerHBox = (HBox) suggestionSimpleContainer.getChildren().get(0);
-            // Lấy Label (index 0 của headerHBox)
-            Label suggestionLabel = (Label) headerHBox.getChildren().get(0);
+            // (*** CẬP NHẬT: Lấy Label trực tiếp, vì HBox đã bị xóa ***)
+            // Lấy Label (index 0 của suggestionSimpleContainer)
+            // (Đảm bảo FXML khớp, label là con đầu tiên)
+            Label suggestionLabel = (Label) suggestionSimpleContainer.getChildren().get(0);
 
             suggestionLabel.setText(simpleSuggestionLabelText); // <-- Set suggestion label text
 
@@ -287,21 +289,19 @@ public class AddTagDialogController {
                 this.allRawNames = rawNames;
                 prepareSuggestionLists(); // Chuẩn bị danh sách gốc
 
+                // (*** CẬP NHẬT: Đọc từ ô nhập liệu chính ***)
                 // Áp dụng filter ban đầu (đọc từ text fields, nếu có)
-                String keySearch = keySearchField != null ? keySearchField.getText() : "";
-                String valueSearch = valueSearchField != null ? valueSearchField.getText() : "";
-                String simpleSearch = simpleSearchField != null ? simpleSearchField.getText() : "";
+                String keySearch = keyField.getText();
+                String valueSearch = valueField.getText();
+                String simpleSearch = simpleNameField.getText();
 
-                // Gọi applyFiltersAndPopulate sau khi đã có dữ liệu gốc
+                // Gọi các hàm populate
                 populateKeys(keySearch);
                 populateSimpleTags(simpleSearch);
                 populateValues(keySuggestionGroup.getSelectedToggle(), valueSearch);
 
-                // Cập nhật hiển thị container (làm thủ công vì không gọi applyFiltersAndPopulate)
-                suggestionJsonContainer.setVisible(!jsonGroups.isEmpty());
-                suggestionJsonContainer.setManaged(!jsonGroups.isEmpty());
-                suggestionSimpleContainer.setVisible(!allSimpleTags.isEmpty());
-                suggestionSimpleContainer.setManaged(!allSimpleTags.isEmpty());
+                // Cập nhật hiển thị container
+                updateContainerVisibility(); // (*** Dùng hàm mới ***)
             });
         }).start();
     }
@@ -354,32 +354,20 @@ public class AddTagDialogController {
 
 
     /**
-     * (*** HÀM TỔNG HỢP: Gọi khi nhấn Enter/thay đổi Text (cho Keys/Simple) ***)
+     * (*** HÀM NÀY ĐÃ BỊ XÓA BỎ ***)
+     * private void applyFiltersAndPopulate(...) { ... }
      */
-    private void applyFiltersAndPopulate(boolean filterKeys, boolean filterValues, boolean filterSimple) {
-        if (filterKeys) {
-            populateKeys(keySearchField.getText());
-        }
 
-        if (filterValues) {
-            // Gọi populateValues cho Key đang được chọn
-            populateValues(keySuggestionGroup.getSelectedToggle(), valueSearchField.getText());
-        }
-
-        if (filterSimple) {
-            populateSimpleTags(simpleSearchField.getText());
-        }
-
-        // [CODE MỚI]
-// Cập nhật hiển thị container
+    /**
+     * (*** HÀM MỚI: Cập nhật hiển thị container ***)
+     */
+    private void updateContainerVisibility() {
         Platform.runLater(() -> {
             // Hiển thị/ẩn container JSON
             suggestionJsonContainer.setVisible(!jsonGroups.isEmpty());
             suggestionJsonContainer.setManaged(!jsonGroups.isEmpty());
 
             // Hiển thị/ẩn container Simple
-            // (*** SỬA LỖI UX: Luôn hiển thị container nếu danh sách gốc có
-            //     thay vì ẩn đi khi lọc không có kết quả ***)
             boolean hasOriginalSimpleSuggestions = allSimpleTags != null && !allSimpleTags.isEmpty();
             suggestionSimpleContainer.setVisible(hasOriginalSimpleSuggestions);
             suggestionSimpleContainer.setManaged(hasOriginalSimpleSuggestions);
@@ -388,7 +376,7 @@ public class AddTagDialogController {
 
     /**
      * Lọc và populate Keys dựa trên searchText.
-     * @param searchText Text từ keySearchField.
+     * @param searchText Text từ keyField. (*** THAY ĐỔI ***)
      */
     private void populateKeys(String searchText) {
         suggestionKeysPane.getChildren().clear();
@@ -429,7 +417,8 @@ public class AddTagDialogController {
                 keySuggestionGroup.selectToggle(keySuggestionGroup.getToggles().get(0));
             } else if (!filteredKeys.contains(selectedKey) && filteredKeys.isEmpty()) {
                 // Nếu không có key nào, clear values
-                populateValues(null, valueSearchField.getText());
+                // (*** CẬP NHẬT: Đọc từ valueField ***)
+                populateValues(null, valueField.getText());
             }
         }
     }
@@ -437,7 +426,7 @@ public class AddTagDialogController {
     /**
      * Lọc và populate Values của Key đang được chọn.
      * @param selectedKeyToggle Toggle của Key đang được chọn.
-     * @param searchText Text từ valueSearchField.
+     * @param searchText Text từ valueField. (*** THAY ĐỔI ***)
      */
     private void populateValues(Toggle selectedKeyToggle, String searchText) {
         suggestionValuesPane.getChildren().clear();
@@ -484,7 +473,7 @@ public class AddTagDialogController {
 
     /**
      * Lọc và Populate Simple Tags.
-     * @param searchText Text từ simpleSearchField.
+     * @param searchText Text từ simpleNameField. (*** THAY ĐỔI ***)
      */
     private void populateSimpleTags(String searchText) {
         suggestionSimplePane.getChildren().clear();

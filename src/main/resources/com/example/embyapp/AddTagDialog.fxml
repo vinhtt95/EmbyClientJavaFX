@@ -24,6 +24,7 @@
             <RadioButton fx:id="simpleTagRadio" selected="false"> <toggleGroup>
 
                 <ToggleGroup fx:id="tagTypeGroup"/>
+
             </toggleGroup>
             </RadioButton>
             <RadioButton fx:id="jsonTagRadio" selected="true" toggleGroup="$tagTypeGroup"/> </children>
@@ -36,6 +37,7 @@
                                                                                                     GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/> </GridPane>
 
         <GridPane fx:id="jsonTagPane" hgap="10.0" vgap="5.0" visible="true" managed="true">
+
             <Label fx:id="keyLabel" GridPane.rowIndex="0" GridPane.columnIndex="0"/>   <TextField fx:id="keyField" GridPane.rowIndex="0" GridPane.columnIndex="1"
                                                                                                   GridPane.hgrow="ALWAYS"/> <Label fx:id="valueLabel" GridPane.rowIndex="1" GridPane.columnIndex="0"/> <TextField fx:id="valueField" GridPane.rowIndex="1" GridPane.columnIndex="1"
                                                                                                                                                                                                                   GridPane.hgrow="ALWAYS"/> </GridPane>
@@ -47,11 +49,8 @@
         <children>
             <VBox spacing="5.0" VBox.vgrow="ALWAYS">
                 <children>
-                    <HBox alignment="CENTER_LEFT" spacing="10.0">
-                        <Label fx:id="suggestionKeyLabel" style="-fx-font-weight: bold;
--fx-font-size: 14px; -fx-font-style: italic;"/> <TextField fx:id="keySearchField" HBox.hgrow="ALWAYS"/> </HBox>
+                    <Label fx:id="suggestionKeyLabel" style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-font-style: italic;"/>
                     <ScrollPane fitToWidth="true" vbarPolicy="NEVER" hbarPolicy="AS_NEEDED" styleClass="scroll-pane"
-
                                 prefHeight="180.0"> <content>
                         <FlowPane fx:id="suggestionKeysPane" hgap="8.0" vgap="8.0">
                             <padding>
@@ -66,11 +65,8 @@
             </VBox>
             <VBox spacing="5.0" VBox.vgrow="ALWAYS">
                 <children>
-                    <HBox alignment="CENTER_LEFT" spacing="10.0">
-                        <Label fx:id="suggestionValueLabel" style="-fx-font-weight: bold;
--fx-font-size: 14px; -fx-font-style: italic;"/> <TextField fx:id="valueSearchField" HBox.hgrow="ALWAYS"/> </HBox>
+                    <Label fx:id="suggestionValueLabel" style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-font-style: italic;"/>
                     <ScrollPane fitToWidth="true" vbarPolicy="NEVER" hbarPolicy="AS_NEEDED" styleClass="scroll-pane"
-
                                 prefHeight="180.0"> <content>
                         <FlowPane fx:id="suggestionValuesPane" hgap="8.0" vgap="8.0">
                             <padding>
@@ -88,9 +84,7 @@
 
     <VBox fx:id="suggestionSimpleContainer" spacing="5.0" visible="false" managed="false" VBox.vgrow="ALWAYS">
         <children>
-            <HBox alignment="CENTER_LEFT" spacing="10.0">
-                <Label fx:id="suggestionSimpleLabel" style="-fx-font-weight: bold;
--fx-font-size: 14px; -fx-font-style: italic;"/> <TextField fx:id="simpleSearchField" HBox.hgrow="ALWAYS"/> </HBox>
+            <Label fx:id="suggestionSimpleLabel" style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-font-style: italic;"/>
             <ScrollPane fitToWidth="true" vbarPolicy="NEVER" hbarPolicy="AS_NEEDED" styleClass="scroll-pane"
                         prefHeight="180.0" VBox.vgrow="ALWAYS"> <content>
                 <FlowPane fx:id="suggestionSimplePane" hgap="8.0" vgap="8.0">
@@ -105,6 +99,7 @@
         </children>
     </VBox>
     <ButtonBar>
+
         <buttons>
             <Button fx:id="cancelButton" onAction="#handleCancel"/> <Button fx:id="okButton" onAction="#handleOk" defaultButton="true"/> </buttons>
     </ButtonBar>

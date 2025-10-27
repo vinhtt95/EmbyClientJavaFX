@@ -370,16 +370,19 @@ public class AddTagDialogController {
             populateSimpleTags(simpleSearchField.getText());
         }
 
-        // Cập nhật hiển thị container
+        // [CODE MỚI]
+// Cập nhật hiển thị container
         Platform.runLater(() -> {
             // Hiển thị/ẩn container JSON
             suggestionJsonContainer.setVisible(!jsonGroups.isEmpty());
             suggestionJsonContainer.setManaged(!jsonGroups.isEmpty());
 
             // Hiển thị/ẩn container Simple
-            boolean hasSimpleSuggestions = suggestionSimplePane.getChildren().size() > 0;
-            suggestionSimpleContainer.setVisible(hasSimpleSuggestions);
-            suggestionSimpleContainer.setManaged(hasSimpleSuggestions);
+            // (*** SỬA LỖI UX: Luôn hiển thị container nếu danh sách gốc có
+            //     thay vì ẩn đi khi lọc không có kết quả ***)
+            boolean hasOriginalSimpleSuggestions = allSimpleTags != null && !allSimpleTags.isEmpty();
+            suggestionSimpleContainer.setVisible(hasOriginalSimpleSuggestions);
+            suggestionSimpleContainer.setManaged(hasOriginalSimpleSuggestions);
         });
     }
 

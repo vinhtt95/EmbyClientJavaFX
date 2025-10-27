@@ -383,37 +383,50 @@
 /* *** END REVIEW BUTTONS *** */
 
 
-/* (*** THÊM CÁC STYLE MỚI CHO RATING BUTTONS ***) */
+/* (*** THAY ĐỔI STYLE NÚT RATING ***) */
 .rating-button {
-    -fx-font-size: 11px; /* Chữ nhỏ */
+    /* (*** THAY ĐỔI FONT: 11px -> 16px ***) */
+    -fx-font-size: 16px; /* Chữ lớn hơn */
     -fx-font-weight: bold;
     -fx-background-radius: 50em; /* Hình tròn */
-    -fx-min-width: 30px;
-    -fx-min-height: 30px;
-    -fx-max-width: 30px;
-    -fx-max-height: 30px;
+    /* (*** THAY ĐỔI KÍCH THƯỚC: 30px -> 50px ***) */
+    -fx-min-width: 50px;
+    -fx-min-height: 50px;
+    -fx-max-width: 50px;
+    -fx-max-height: 50px;
     -fx-padding: 0;
-    -fx-border-width: 1px; /* Thêm viền nhẹ */
+    /* (*** THAY ĐỔI VIỀN: 1px -> 0 ***) */
+    -fx-border-width: 0; /* Thêm viền nhẹ */
 
     /* MÀU XÁM (mặc định) */
     -fx-background-color: #383838;
     -fx-text-fill: #e0e0e0;
-    -fx-border-color: #555555;
+    /* (*** THAY ĐỔI VIỀN: Xóa border-color ***) */
+    /* -fx-border-color: #555555; */
     -fx-cursor: hand;
+
+    /* (*** THÊM MỚI: Xóa viền mờ và insets ***) */
+    -fx-background-insets: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
 }
 .rating-button:hover {
     -fx-background-color: #4a4a4a;
-    -fx-border-color: #777777;
+    /* (*** THAY ĐỔI VIỀN: Xóa/Set transparent border-color ***) */
+    -fx-border-color: transparent;
 }
 
 /* MÀU HỒNG (khi được chọn) */
 .rating-button.selected {
     -fx-background-color: #E91E63; /* Màu hồng */
-    -fx-border-color: #F06292; /* Viền hồng nhạt */
+    /* (*** THAY ĐỔI VIỀN: Xóa/Set transparent border-color ***) */
+    -fx-border-color: transparent; /* Viền hồng nhạt */
     -fx-text-fill: white;
 }
 .rating-button.selected:hover {
     -fx-background-color: #d81b60; /* Hồng đậm hơn khi hover */
+    /* (*** THÊM MỚI: Đảm bảo hover cũng không có viền ***) */
+    -fx-border-color: transparent;
 }
 /* (*** KẾT THÚC STYLE MỚI ***) */
 

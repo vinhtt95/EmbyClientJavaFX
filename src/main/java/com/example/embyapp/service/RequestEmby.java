@@ -3,10 +3,7 @@ package com.example.embyapp.service;
 import embyclient.ApiClient;
 import embyclient.ApiException;
 import embyclient.api.*;
-import embyclient.model.BaseItemDto;
-import embyclient.model.QueryResultBaseItemDto;
-import embyclient.model.QueryResultUserLibraryTagItem;
-import embyclient.model.UserLibraryTagItem;
+import embyclient.model.*;
 import com.example.embyapp.viewmodel.detail.SuggestionItemModel;
 
 import java.io.BufferedReader;
@@ -222,4 +219,200 @@ public class RequestEmby {
             }
         }
     }
+
+
+    public void copyTags(String itemCopyID, String parentID, String userID) {
+
+        ItemService itemService = new ItemService(userID);
+        // Bỏ dòng này
+        // ItemService itemService = new ItemService();
+        // Dùng this.itemService
+        BaseItemDto itemCopy = itemService.getInforItem(itemCopyID);
+
+        if(itemCopy == null){
+            System.out.println("Not found item copy");
+            return;
+        }else{
+            System.out.println("List Tags of Item copy:");
+            List<NameLongIdPair> listTagsItemCopy = itemCopy.getTagItems();
+            for (NameLongIdPair eachtags : listTagsItemCopy) {
+                System.out.println("ID: " + eachtags.getId() + " Name: " + eachtags.getName());
+            }
+        }
+
+        // Dùng this.itemService
+        List<BaseItemDto> listItemPaste = itemService.getListItemByParentID(parentID, null, null, true);
+        if (listItemPaste == null) {
+            System.out.println("Not found item paste");
+            return;
+        }
+
+        BaseItemDto itemPaste = null;
+        for (BaseItemDto eachItemPaste : listItemPaste) {
+            System.out.println("ID: " + eachItemPaste.getId()+ " Name: " + eachItemPaste.getName());
+            // Dùng this.itemService
+            itemPaste = itemService.getInforItem(eachItemPaste.getId());
+
+            List<NameLongIdPair> listTagsItemPaste = itemPaste.getTagItems();
+
+            itemPaste.getStudios().clear();
+
+            listTagsItemPaste.addAll(itemCopy.getTagItems());
+
+            for (NameLongIdPair eachTagsPaste : itemPaste.getStudios()) {
+                System.out.println(eachTagsPaste.toString());
+            }
+
+            // Dùng this.itemService
+            if(itemService.updateInforItem(itemPaste.getId(),itemPaste)) {
+                System.out.println("Update success "+eachItemPaste.getName());
+            }
+        }
+    }
+
+    public void copyStudio(String itemCopyID, String parentID, String userID) {
+
+        ItemService itemService = new ItemService(userID);
+        // Bỏ dòng này
+        // ItemService itemService = new ItemService();
+        // Dùng this.itemService
+        BaseItemDto itemCopy = itemService.getInforItem(itemCopyID);
+
+        if(itemCopy == null){
+            System.out.println("Not found item copy");
+            return;
+        }else{
+            System.out.println("List Studio of Item copy:");
+            List<NameLongIdPair> listStudoItemCopy = itemCopy.getStudios();
+            for (NameLongIdPair eachStudio : listStudoItemCopy) {
+                System.out.println("ID: " + eachStudio.getId() + " Name: " + eachStudio.getName());
+            }
+        }
+
+        // Dùng itemService
+        List<BaseItemDto> listItemPaste = itemService.getListItemByParentID(parentID, null, null, true);
+        if (listItemPaste == null) {
+            System.out.println("Not found item paste");
+            return;
+        }
+
+        BaseItemDto itemPaste = null;
+        for (BaseItemDto eachItemPaste : listItemPaste) {
+            System.out.println("ID: " + eachItemPaste.getId()+ " Name: " + eachItemPaste.getName());
+            // Dùng itemService
+            itemPaste = itemService.getInforItem(eachItemPaste.getId());
+
+            List<NameLongIdPair> listStudioItemPaste = itemPaste.getStudios();
+
+            itemPaste.getStudios().clear();
+
+            listStudioItemPaste.addAll(itemCopy.getStudios());
+
+            for (NameLongIdPair eachStudioPaste : itemPaste.getStudios()) {
+                System.out.println(eachStudioPaste.toString());
+            }
+
+            // Dùng itemService
+            if(itemService.updateInforItem(itemPaste.getId(),itemPaste)) {
+                System.out.println("Update success "+eachItemPaste.getName());
+            }
+        }
+    }
+
+    public void copyPeople(String itemCopyID, String parentID, String userID) {
+        ItemService itemService = new ItemService(userID);
+        // Bỏ dòng này
+        // ItemService itemService = new ItemService();
+        // Dùng itemService
+        BaseItemDto itemCopy = itemService.getInforItem(itemCopyID);
+
+        if(itemCopy == null){
+            System.out.println("Not found item copy");
+            return;
+        }else{
+            System.out.println("List People of Item copy:");
+            List<NameLongIdPair> listPeopleItemCopy = itemCopy.getStudios();
+            for (NameLongIdPair eachStudio : listPeopleItemCopy) {
+                System.out.println("ID: " + eachStudio.getId() + " Name: " + eachStudio.getName());
+            }
+        }
+
+        // Dùng itemService
+        List<BaseItemDto> listItemPaste = itemService.getListItemByParentID(parentID, null, null, true);
+        if (listItemPaste == null) {
+            System.out.println("Not found item paste");
+            return;
+        }
+
+        BaseItemDto itemPaste = null;
+        for (BaseItemDto eachItemPaste : listItemPaste) {
+            System.out.println("ID: " + eachItemPaste.getId()+ " Name: " + eachItemPaste.getName());
+            // Dùng itemService
+            itemPaste = itemService.getInforItem(eachItemPaste.getId());
+
+            List<BaseItemPerson> listPeopleItemPaste = itemPaste.getPeople();
+
+            itemPaste.getPeople().clear();
+
+            listPeopleItemPaste.addAll(itemCopy.getPeople());
+
+            for (BaseItemPerson eachPeoplePaste : itemPaste.getPeople()) {
+                System.out.println(eachPeoplePaste.toString());
+            }
+
+            // Dùng itemService
+            if(itemService.updateInforItem(itemPaste.getId(),itemPaste)) {
+                System.out.println("Update success "+eachItemPaste.getName());
+            }
+        }
+    }
+
+    public void copyGenres(String itemCopyID, String parentID, String userID) {
+        ItemService itemService = new ItemService(userID);
+        // Bỏ dòng này
+        // ItemService itemService = new ItemService();
+        // Dùng itemService
+        BaseItemDto itemCopy = itemService.getInforItem(itemCopyID);
+
+        if(itemCopy == null){
+            System.out.println("Not found item copy");
+            return;
+        }else{
+            System.out.println("List Genres of Item copy:");
+            List<NameLongIdPair> listGenresItemCopy = itemCopy.getGenreItems();
+            for (NameLongIdPair eachGenres : listGenresItemCopy) {
+                System.out.println("ID: " + eachGenres.getId() + " Name: " + eachGenres.getName());
+            }
+        }
+
+        // Dùng itemService
+        List<BaseItemDto> listItemPaste = itemService.getListItemByParentID(parentID, null, null, true);
+        if (listItemPaste == null) {
+            System.out.println("Not found item paste");
+            return;
+        }
+
+        BaseItemDto itemPaste = null;
+        for (BaseItemDto eachItemPaste : listItemPaste) {
+            System.out.println("ID: " + eachItemPaste.getId()+ " Name: " + eachItemPaste.getName());
+            // Dùng itemService
+            itemPaste = itemService.getInforItem(eachItemPaste.getId());
+
+            List<NameLongIdPair> listGenresItemPaste = itemPaste.getGenreItems();
+
+            itemPaste.getGenreItems().clear();
+
+            listGenresItemPaste.addAll(itemCopy.getGenreItems());
+
+            for (NameLongIdPair eachGenresPaste : itemPaste.getGenreItems()) {
+                System.out.println(eachGenresPaste.toString());
+            }
+
+            // Dùng itemService
+            if(itemService.updateInforItem(itemPaste.getId(),itemPaste)) {
+                System.out.println("Update success "+eachItemPaste.getName());
+            }
+        }
+    }
+
 }

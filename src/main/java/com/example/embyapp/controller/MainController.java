@@ -103,6 +103,8 @@ public class MainController {
     private static final String KEY_DIVIDER_2 = "dividerPos2";
     private static final String KEY_DIALOG_WIDTH = "dialogWidth";
     private static final String KEY_DIALOG_HEIGHT = "dialogHeight";
+    private static final String KEY_DIALOG_X = "dialogX";
+    private static final String KEY_DIALOG_Y = "dialogY";
 
     // (*** THÊM MỚI: Các trường để quản lý dialog pop-out ***)
     private Stage detailDialog;
@@ -489,6 +491,8 @@ public class MainController {
                 double savedWidth = prefs.getDouble(KEY_DIALOG_WIDTH, defaultWidth);
                 double savedHeight = prefs.getDouble(KEY_DIALOG_HEIGHT, defaultHeight);
 
+                double savedX = prefs.getDouble(KEY_DIALOG_X, -1);
+                double savedY = prefs.getDouble(KEY_DIALOG_Y, -1);
 
                 // Tạo Stage (Dialog)
                 detailDialog = new Stage();
@@ -497,6 +501,11 @@ public class MainController {
                 // Set loaded size
                 detailDialog.setWidth(savedWidth);
                 detailDialog.setHeight(savedHeight);
+
+                if (savedX != -1 && savedY != -1) {
+                    detailDialog.setX(savedX);
+                    detailDialog.setY(savedY);
+                }
 
                 // (*** QUAN TRỌNG ***) Không khóa cửa sổ chính
                 detailDialog.initModality(Modality.NONE);
@@ -507,6 +516,9 @@ public class MainController {
                     // (*** LƯU KÍCH THƯỚC HIỆN TẠI ***)
                     prefs.putDouble(KEY_DIALOG_WIDTH, detailDialog.getWidth());
                     prefs.putDouble(KEY_DIALOG_HEIGHT, detailDialog.getHeight());
+
+                    prefs.putDouble(KEY_DIALOG_X, detailDialog.getX());
+                    prefs.putDouble(KEY_DIALOG_Y, detailDialog.getY());
                     try {
                         prefs.flush();
                         System.out.println("Đã lưu kích thước Dialog: " + detailDialog.getWidth() + "x" + detailDialog.getHeight());
@@ -520,6 +532,17 @@ public class MainController {
                     e.consume(); // Ngăn dialog bị destroy
                 });
             }
+
+            // Giống hệt cách "Add Tag" dialog làm
+            double savedX = prefs.getDouble(KEY_DIALOG_X, -1);
+            double savedY = prefs.getDouble(KEY_DIALOG_Y, -1);
+
+            if (savedX != -1 && savedY != -1) {
+                // Chỉ áp dụng vị trí nếu nó hợp lệ (không phải lần đầu)
+                detailDialog.setX(savedX);
+                detailDialog.setY(savedY);
+            }
+
 
             // 2. Hiển thị dialog (cho dù nó mới được tạo hay đã bị ẩn)
             if (!detailDialog.isShowing()) {

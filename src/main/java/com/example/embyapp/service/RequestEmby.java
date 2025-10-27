@@ -9,8 +9,15 @@ import embyclient.model.QueryResultUserLibraryTagItem;
 import embyclient.model.UserLibraryTagItem;
 import com.example.embyapp.viewmodel.detail.SuggestionItemModel;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
+
+import org.json.JSONObject;
 
 public class RequestEmby {
 
@@ -170,5 +177,49 @@ public class RequestEmby {
         }
 
         return Collections.emptyList(); // Trả về list rỗng thay vì null
+    }
+
+    private OffsetDateTime getDateRelease(String code) {
+        // API này là của đồng chí, tôi giữ nguyên
+        String apiUrl = "http://localhost:8081/movies/movie/date/?movieCode=" + code;
+        HttpURLConnection connection = null; // Khai báo bên ngoài để đóng trong finally
+        try {
+            URL url = new URL(apiUrl);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setConnectTimeout(5000); // Thêm timeout
+            connection.setReadTimeout(5000);
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == 200) {
+                // Try-with-resources để tự động đóng BufferedReader
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+                    // Parse JSON response to extract "data"
+                    JSONObject jsonResponse = new JSONObject(response.toString());
+                    String dataValue = jsonResponse.optString("data", null);
+                    if (dataValue != null && !dataValue.equals("null")) {
+                        return OffsetDateTime.parse(dataValue);
+                    } else {
+                        return null; // API trả về data: null
+                    }
+                }
+            } else {
+                // System.out.println("API call failed for code: " + code + ". Response: " + responseCode);
+                return null;
+            }
+        } catch (Exception e) {
+            // System.out.println("Error calling API for code: " + code + " - " + e.getMessage());
+            return null;
+        } finally {
+            if (connection != null) {
+                connection.disconnect(); // Đảm bảo đóng connection
+            }
+        }
     }
 }

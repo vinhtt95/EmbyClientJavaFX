@@ -39,6 +39,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects; // (*** THÊM IMPORT NÀY ***)
+import java.util.prefs.Preferences; // (*** THÊM IMPORT MỚI ***)
 import java.util.stream.Collectors;
 
 /**
@@ -48,6 +49,7 @@ import java.util.stream.Collectors;
  * (FIX LỖI) Khắc phục lỗi statusLabel không mất đi sau khi tải xong và xóa binding cho actionStatusLabel.
  * (CẬP NHẬT MỚI) Thêm nút review cho Tags.
  * (CẬP NHẬT MỚI) Thêm các nút chấm điểm (Rating).
+ * (CẬP NHẬT MỚI) Thêm lưu vị trí AddTagDialog.
  */
 public class ItemDetailController {
 
@@ -145,10 +147,21 @@ public class ItemDetailController {
     private ItemDetailViewModel viewModel;
     private final ItemRepository itemRepository = new ItemRepository();
 
+    // (*** THÊM MỚI: Preferences ***)
+    private Preferences prefs;
+    private static final String PREF_NODE_PATH = "/com/example/embyapp/mainview"; // Dùng chung node với MainController
+    private static final String KEY_ADD_TAG_DIALOG_X = "addTagDialogX";
+    private static final String KEY_ADD_TAG_DIALOG_Y = "addTagDialogY";
+    // (*** KẾT THÚC THÊM MỚI ***)
+
     @FXML
     public void initialize() {
         // --- Setup Localization ---
         setupLocalization(); // <-- CALL NEW METHOD
+
+        // (*** THÊM MỚI: Khởi tạo Preferences ***)
+        prefs = Preferences.userRoot().node(PREF_NODE_PATH);
+        // (*** KẾT THÚC THÊM MỚI ***)
 
         // (Gán sự kiện onAction cho các nút (v/x) giữ nguyên)
         acceptTitleButton.setOnAction(e -> viewModel.acceptImportField("title"));
@@ -542,6 +555,7 @@ public class ItemDetailController {
 
     /**
      * Helper chung để mở dialog thêm Studio/People/Tag/Genre.
+     * (*** ĐÃ CẬP NHẬT ĐỂ LƯU VỊ TRÍ ***)
      */
     private void showAddTagDialog(AddTagDialogController.SuggestionContext context) {
         if (viewModel == null) return;
@@ -573,6 +587,31 @@ public class ItemDetailController {
             Scene scene = new Scene(page);
             scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
             dialogStage.setScene(scene);
+
+            // (*** THÊM MỚI: Tải và Lưu vị trí Dialog ***)
+            // 1. Tải vị trí đã lưu
+            // Dùng -1 làm giá trị mặc định (không thể có) để biết đây là lần đầu
+            double savedX = prefs.getDouble(KEY_ADD_TAG_DIALOG_X, -1);
+            double savedY = prefs.getDouble(KEY_ADD_TAG_DIALOG_Y, -1);
+
+            // 2. Áp dụng vị trí nếu nó hợp lệ (không phải lần đầu)
+            if (savedX != -1 && savedY != -1) {
+                dialogStage.setX(savedX);
+                dialogStage.setY(savedY);
+            }
+            // Nếu không (lần đầu), nó sẽ tự động căn giữa do initOwner()
+
+            // 3. Thêm listener để LƯU vị trí khi đóng
+            dialogStage.setOnCloseRequest(e -> {
+                try {
+                    prefs.putDouble(KEY_ADD_TAG_DIALOG_X, dialogStage.getX());
+                    prefs.putDouble(KEY_ADD_TAG_DIALOG_Y, dialogStage.getY());
+                    prefs.flush(); // Lưu ngay lập tức
+                } catch (Exception ex) {
+                    System.err.println("Lỗi khi lưu vị trí AddTagDialog: " + ex.getMessage());
+                }
+            });
+            // (*** KẾT THÚC THÊM MỚI ***)
 
             dialogStage.showAndWait();
 

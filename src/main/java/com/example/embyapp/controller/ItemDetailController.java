@@ -42,7 +42,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
-
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.ButtonType;
+import javafx.scene.layout.Region;
 /**
  * Controller for the Item Detail view (right pane).
  * Handles user interaction and binds UI elements to the ItemDetailViewModel.
@@ -184,17 +187,57 @@ public class ItemDetailController {
 
         // Assign actions to new clone buttons
         cloneTagButton.setOnAction(e -> {
-            if (viewModel != null) viewModel.clonePropertiesToTreeChildren(ItemDetailViewModel.CloneType.TAGS);
+            final ItemDetailViewModel.CloneType type = ItemDetailViewModel.CloneType.TAGS;
+            String typeName = getCloneTypeName(type);
+            String title = I18nManager.getInstance().getString("itemDetailView", "cloneConfirmTitle");
+            String content = I18nManager.getInstance().getString("itemDetailView", "cloneConfirmMessage", typeName);
+
+            if (showConfirmationDialog(title, content)) {
+                if (viewModel != null) viewModel.clonePropertiesToTreeChildren(type);
+            }
         });
         cloneGenreButton.setOnAction(e -> {
-            if (viewModel != null) viewModel.clonePropertiesToTreeChildren(ItemDetailViewModel.CloneType.GENRES);
+            final ItemDetailViewModel.CloneType type = ItemDetailViewModel.CloneType.GENRES;
+            String typeName = getCloneTypeName(type);
+            String title = I18nManager.getInstance().getString("itemDetailView", "cloneConfirmTitle");
+            String content = I18nManager.getInstance().getString("itemDetailView", "cloneConfirmMessage", typeName);
+
+            if (showConfirmationDialog(title, content)) {
+                if (viewModel != null) viewModel.clonePropertiesToTreeChildren(type);
+            }
         });
         cloneStudioButton.setOnAction(e -> {
-            if (viewModel != null) viewModel.clonePropertiesToTreeChildren(ItemDetailViewModel.CloneType.STUDIOS);
+            final ItemDetailViewModel.CloneType type = ItemDetailViewModel.CloneType.STUDIOS;
+            String typeName = getCloneTypeName(type);
+            String title = I18nManager.getInstance().getString("itemDetailView", "cloneConfirmTitle");
+            String content = I18nManager.getInstance().getString("itemDetailView", "cloneConfirmMessage", typeName);
+
+            if (showConfirmationDialog(title, content)) {
+                if (viewModel != null) viewModel.clonePropertiesToTreeChildren(type);
+            }
         });
         clonePeopleButton.setOnAction(e -> {
-            if (viewModel != null) viewModel.clonePropertiesToTreeChildren(ItemDetailViewModel.CloneType.PEOPLE);
+            final ItemDetailViewModel.CloneType type = ItemDetailViewModel.CloneType.PEOPLE;
+            String typeName = getCloneTypeName(type);
+            String title = I18nManager.getInstance().getString("itemDetailView", "cloneConfirmTitle");
+            String content = I18nManager.getInstance().getString("itemDetailView", "cloneConfirmMessage", typeName);
+
+            if (showConfirmationDialog(title, content)) {
+                if (viewModel != null) viewModel.clonePropertiesToTreeChildren(type);
+            }
         });
+    }
+
+    // Helper method to get localized name (needed for clone confirmation message)
+    private String getCloneTypeName(ItemDetailViewModel.CloneType type) {
+        I18nManager i18n = I18nManager.getInstance();
+        switch (type) {
+            case TAGS: return i18n.getString("itemDetailView", "tagsLabel");
+            case STUDIOS: return i18n.getString("itemDetailView", "studiosLabel");
+            case PEOPLE: return i18n.getString("itemDetailView", "peopleLabel");
+            case GENRES: return i18n.getString("itemDetailView", "genresLabel");
+            default: return "";
+        }
     }
 
     private void setupLocalization() {
@@ -758,5 +801,25 @@ public class ItemDetailController {
                 event.consume();
             });
         }
+    }
+
+    /**
+     * (HÀM MỚI) Hiển thị hộp thoại xác nhận.
+     * @param title Tiêu đề hộp thoại.
+     * @param content Nội dung thông báo.
+     * @return true nếu người dùng chọn Yes, false nếu chọn No/Cancel.
+     */
+    private boolean showConfirmationDialog(String title, String content) {
+        Alert alert = new Alert(AlertType.CONFIRMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+
+        if (rootPane.getScene() != null && rootPane.getScene().getStylesheets() != null) {
+            alert.getDialogPane().getStylesheets().addAll(rootPane.getScene().getStylesheets());
+        }
+        alert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.YES;
     }
 }

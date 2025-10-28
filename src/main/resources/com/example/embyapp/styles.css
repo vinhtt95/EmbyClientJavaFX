@@ -178,7 +178,6 @@
 .item-cell-selected .item-title-label{
     -fx-text-fill: #F06292;
     -fx-font-size: 18px;
-    -fx-font-weight: li;
 }
 
 .tag-view {

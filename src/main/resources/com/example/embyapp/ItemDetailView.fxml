@@ -11,6 +11,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
@@ -76,10 +77,12 @@
 
                                     </HBox>
                                 </children>
+
                                 <VBox.margin>
 
                                     <Insets top="5.0" />
                                 </VBox.margin>
+
                             </HBox>
 
 
@@ -177,6 +180,7 @@
                                         <Button fx:id="rejectTagsButton" styleClass="review-button-round reject-button"/>
                                     </children>
                                 </HBox>
+                                <Region HBox.hgrow="ALWAYS" />
                                 <Button fx:id="cloneTagButton" styleClass="clone-button" />
                             </HBox>
                             <FlowPane fx:id="tagsFlowPane" hgap="8.0" vgap="8.0" prefWrapLength="758.0" />
@@ -195,6 +199,7 @@
                                             <Button fx:id="rejectGenresButton" styleClass="review-button-round reject-button"/>
                                         </children>
                                     </HBox>
+                                    <Region HBox.hgrow="ALWAYS" />
                                     <Button fx:id="cloneGenreButton" styleClass="clone-button" />
                                 </children>
                             </HBox>
@@ -214,6 +219,7 @@
                                             <Button fx:id="rejectStudiosButton" styleClass="review-button-round reject-button"/>
                                         </children>
                                     </HBox>
+                                    <Region HBox.hgrow="ALWAYS" />
                                     <Button fx:id="cloneStudioButton" styleClass="clone-button" />
                                 </children>
                             </HBox>
@@ -233,6 +239,7 @@
                                             <Button fx:id="rejectPeopleButton" styleClass="review-button-round reject-button"/>
                                         </children>
                                     </HBox>
+                                    <Region HBox.hgrow="ALWAYS" />
                                     <Button fx:id="clonePeopleButton" styleClass="clone-button" />
                                 </children>
                             </HBox>

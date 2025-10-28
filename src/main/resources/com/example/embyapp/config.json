@@ -72,6 +72,8 @@
     "rejectButton": "✕",
     "errorOpenDialog": "Lỗi: Không thể mở dialog thêm {0}.",
     "errorOpenDialogGeneric": "Lỗi không xác định: {0}",
+    "cloneConfirmTitle": "Xác nhận Nhân bản",
+    "cloneConfirmMessage": "Bạn có chắc chắn muốn nhân bản thuộc tính {0} từ item hiện tại sang tất cả item con của thư mục đã chọn?",
     "errorInvalidPath": "Lỗi: Đường dẫn không hợp lệ.",
     "errorDesktopAPINotSupported": "Lỗi: Desktop API không được hỗ trợ.",
     "errorPathNotExist": "Lỗi: Đường dẫn không tồn tại.",

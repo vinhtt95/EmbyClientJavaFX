@@ -90,6 +90,10 @@ public class MainController implements NativeKeyListener {
     private Parent detailDialogRoot;
     private ItemDetailController detailDialogController;
 
+    // Biến cờ theo dõi trạng thái phím modifier toàn hệ thống
+    private volatile boolean isMetaPressed = false;
+    private volatile boolean isShiftPressed = false;
+
 
     public void setMainApp(MainApp mainApp) {
         this.mainApp = mainApp;
@@ -361,7 +365,6 @@ public class MainController implements NativeKeyListener {
                     scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
                 }
 
-                // (*** SỬA ĐỔI ***)
                 // Đăng ký TẤT CẢ hotkey cho scene của dialog
                 registerHotkeysForScene(scene);
 
@@ -387,7 +390,7 @@ public class MainController implements NativeKeyListener {
                     detailDialog.setY(savedY);
                 }
                 detailDialog.initModality(Modality.NONE);
-                detailDialog.setScene(scene); // (*** SỬA ĐỔI ***) Gán scene đã được đăng ký hotkey
+                detailDialog.setScene(scene); // Gán scene đã được đăng ký hotkey
 
                 detailDialog.setOnCloseRequest(e -> {
                     prefs.putDouble(KEY_DIALOG_WIDTH, detailDialog.getWidth());
@@ -426,7 +429,6 @@ public class MainController implements NativeKeyListener {
     }
 
     /**
-     * (*** SỬA ĐỔI ***)
      * Đăng ký Hotkeys (khi app được focus) trên Scene sau khi nó đã được load.
      * @param scene Scene của MainView.
      */
@@ -437,7 +439,6 @@ public class MainController implements NativeKeyListener {
     }
 
     /**
-     * (*** HÀM MỚI ***)
      * Hàm helper đăng ký tất cả các phím tắt cho một Scene cụ thể.
      * @param scene Scene (của cửa sổ chính HOẶC cửa sổ pop-out)
      */
@@ -502,7 +503,7 @@ public class MainController implements NativeKeyListener {
             }
         });
 
-        // --- (*** MỚI ***) Cmd + ENTER (Play Item) ---
+        // --- Cmd + ENTER (Play Item) ---
         final KeyCombination playShortcut = new KeyCodeCombination(KeyCode.ENTER, KeyCombination.SHORTCUT_DOWN);
         scene.getAccelerators().put(playShortcut, () -> {
             if (itemGridViewModel != null && itemGridController != null) {
@@ -567,11 +568,16 @@ public class MainController implements NativeKeyListener {
      */
     @Override
     public void nativeKeyPressed(NativeKeyEvent e) {
-        // Kiểm tra Cmd (Meta) + Shift
-        boolean isCmdShift = (e.getModifiers() & NativeInputEvent.META_MASK) != 0 &&
-                (e.getModifiers() & NativeInputEvent.SHIFT_MASK) != 0;
+        // Cập nhật cờ khi nhấn phím modifiers
+        // *** SỬA ĐỔI: Dùng hằng số đúng ***
+        if (e.getKeyCode() == NativeKeyEvent.VC_META) { // Dùng VC_META chung
+            isMetaPressed = true;
+        } else if (e.getKeyCode() == NativeKeyEvent.VC_SHIFT) { // Dùng VC_SHIFT chung
+            isShiftPressed = true;
+        }
 
-        if (isCmdShift) {
+        // Kiểm tra tổ hợp phím
+        if (isMetaPressed && isShiftPressed) {
             if (e.getKeyCode() == NativeKeyEvent.VC_N) {
                 // Hotkey: Cmd + Shift + N
                 System.out.println("Global Hotkey: Cmd+Shift+N (Next & Play) detected!");
@@ -594,7 +600,13 @@ public class MainController implements NativeKeyListener {
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent e) {
-        // Không sử dụng
+        // Cập nhật cờ khi *nhả* phím modifiers
+        // *** SỬA ĐỔI: Dùng hằng số đúng ***
+        if (e.getKeyCode() == NativeKeyEvent.VC_META) { // Dùng VC_META chung
+            isMetaPressed = false;
+        } else if (e.getKeyCode() == NativeKeyEvent.VC_SHIFT) { // Dùng VC_SHIFT chung
+            isShiftPressed = false;
+        }
     }
     // --- Kết thúc các hàm Hotkey Hệ Thống ---
 

@@ -39,14 +39,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
 /**
  * Controller for the Item Detail view (right pane).
  * Handles user interaction and binds UI elements to the ItemDetailViewModel.
- * (CẬP NHẬT 36) Thêm logic gọi Sao chép nhanh (Quick Copy).
- * (CẬP NHẬT 38) Lưu và khôi phục kích thước AddTagDialog.
  */
 public class ItemDetailController {
 
@@ -133,7 +132,6 @@ public class ItemDetailController {
     private static final String PREF_NODE_PATH = "/com/example/embyapp/mainview";
     private static final String KEY_ADD_TAG_DIALOG_X = "addTagDialogX";
     private static final String KEY_ADD_TAG_DIALOG_Y = "addTagDialogY";
-    // (*** THÊM KEYS MỚI CHO KÍCH THƯỚC ***)
     private static final String KEY_ADD_TAG_DIALOG_WIDTH = "addTagDialogWidth";
     private static final String KEY_ADD_TAG_DIALOG_HEIGHT = "addTagDialogHeight";
 
@@ -161,6 +159,11 @@ public class ItemDetailController {
         acceptTagsButton.setOnAction(e -> viewModel.acceptImportField("tags"));
         rejectTagsButton.setOnAction(e -> viewModel.rejectImportField("tags"));
 
+        // Setup Drag-and-Drop
+        setupBackdropDragAndDrop();
+        setupPrimaryImageDragAndDrop();
+
+        // Setup click actions
         primaryImageContainer.setOnMouseClicked(e -> {
             if (viewModel != null) {
                 viewModel.selectNewPrimaryImage((Stage) rootPane.getScene().getWindow());
@@ -174,8 +177,6 @@ public class ItemDetailController {
                 viewModel.selectNewBackdrops((Stage) rootPane.getScene().getWindow());
             }
         });
-
-        setupBackdropDragAndDrop();
 
         saveButton.setOnAction(e -> handleSaveButtonAction());
         importButton.setOnAction(e -> handleImportButtonAction());
@@ -462,11 +463,10 @@ public class ItemDetailController {
             dialogStage.setTitle(title);
             dialogStage.initModality(Modality.WINDOW_MODAL);
             dialogStage.initOwner((Stage) rootPane.getScene().getWindow());
-            Scene scene = new Scene(page); // Kích thước sẽ lấy từ FXML hoặc từ lần lưu trước
+            Scene scene = new Scene(page);
             scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
             dialogStage.setScene(scene);
 
-            // (*** BẮT ĐẦU KHÔI PHỤC VỊ TRÍ VÀ KÍCH THƯỚC ***)
             double savedX = prefs.getDouble(KEY_ADD_TAG_DIALOG_X, -1);
             double savedY = prefs.getDouble(KEY_ADD_TAG_DIALOG_Y, -1);
             double savedWidth = prefs.getDouble(KEY_ADD_TAG_DIALOG_WIDTH, -1);
@@ -476,19 +476,15 @@ public class ItemDetailController {
                 dialogStage.setX(savedX);
                 dialogStage.setY(savedY);
             }
-            // Chỉ set kích thước nếu có giá trị hợp lệ (>0)
             if (savedWidth > 0) {
                 dialogStage.setWidth(savedWidth);
             }
             if (savedHeight > 0) {
                 dialogStage.setHeight(savedHeight);
             }
-            // (*** KẾT THÚC KHÔI PHỤC ***)
-
 
             dialogStage.setOnCloseRequest(e -> {
                 try {
-                    // (*** LƯU CẢ VỊ TRÍ VÀ KÍCH THƯỚC ***)
                     prefs.putDouble(KEY_ADD_TAG_DIALOG_X, dialogStage.getX());
                     prefs.putDouble(KEY_ADD_TAG_DIALOG_Y, dialogStage.getY());
                     prefs.putDouble(KEY_ADD_TAG_DIALOG_WIDTH, dialogStage.getWidth());
@@ -499,20 +495,12 @@ public class ItemDetailController {
                 }
             });
 
-            // Hiển thị dialog và chờ
             dialogStage.showAndWait();
 
-            // (*** LOGIC MỚI SAU KHI DIALOG ĐÓNG ***)
-
-            // 1. Kiểm tra xem có phải là "Add" (Thêm) bình thường không
             TagModel newModel = controller.getResultTag();
-
-            // 2. Kiểm tra xem có phải là "Copy" (Sao chép) không
             String copyId = controller.copyTriggeredIdProperty().get();
 
-
             if (newModel != null) {
-                // Logic "Add" cũ
                 switch (context) {
                     case STUDIO: viewModel.addStudio(newModel); break;
                     case PEOPLE: viewModel.addPerson(newModel); break;
@@ -520,11 +508,8 @@ public class ItemDetailController {
                     case TAG: viewModel.addTag(newModel); break;
                 }
             } else if (copyId != null) {
-                // Logic "Copy" MỚI: Gọi ViewModel
                 viewModel.copyPropertiesFromItem(copyId, context);
             }
-
-            // (*** KẾT THÚC LOGIC MỚI ***)
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -675,42 +660,103 @@ public class ItemDetailController {
         }
     }
 
-    /** Sets up drag and drop functionality for the backdrop gallery. */
-    private void setupBackdropDragAndDrop() {
-        if (imageGalleryPane == null) return;
+    /**
+     * (HELPER) Kiểm tra xem file có phải là ảnh hợp lệ không.
+     */
+    private boolean isImageFile(File file) {
+        String name = file.getName().toLowerCase();
+        return name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".webp");
+    }
 
-        imageGalleryPane.setOnDragOver(event -> {
-            if (event.getGestureSource() != imageGalleryPane && event.getDragboard().hasFiles()) {
-                List<File> files = event.getDragboard().getFiles();
-                boolean hasImage = files.stream().anyMatch(f -> {
-                    String name = f.getName().toLowerCase();
-                    return name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".webp");
-                });
-                if (hasImage) {
+    /**
+     * (HELPER) Lấy danh sách file ảnh từ Dragboard.
+     */
+    private List<File> getImageFilesFromDragboard(Dragboard db) {
+        if (db.hasFiles()) {
+            return db.getFiles().stream()
+                    .filter(this::isImageFile)
+                    .collect(Collectors.toList());
+        }
+        return List.of();
+    }
+
+    /**
+     * (HELPER) Lấy file ảnh ĐẦU TIÊN từ Dragboard.
+     */
+    private Optional<File> getFirstImageFileFromDragboard(Dragboard db) {
+        if (db.hasFiles()) {
+            return db.getFiles().stream()
+                    .filter(this::isImageFile)
+                    .findFirst();
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * (HÀM MỚI) Sets up drag and drop functionality for the PRIMARY image.
+     */
+    private void setupPrimaryImageDragAndDrop() {
+        if (primaryImageContainer == null) return;
+
+        primaryImageContainer.setOnDragOver(event -> {
+            if (event.getGestureSource() != primaryImageContainer && event.getDragboard().hasFiles()) {
+                if (getFirstImageFileFromDragboard(event.getDragboard()).isPresent()) {
                     event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
                 }
             }
             event.consume();
         });
 
-        imageGalleryPane.setOnDragDropped(event -> {
+        primaryImageContainer.setOnDragDropped(event -> {
             Dragboard db = event.getDragboard();
             boolean success = false;
             if (db.hasFiles() && viewModel != null) {
-                List<File> imageFiles = db.getFiles().stream()
-                        .filter(f -> {
-                            String name = f.getName().toLowerCase();
-                            return name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".webp");
-                        })
-                        .collect(Collectors.toList());
+                Optional<File> imageFile = getFirstImageFileFromDragboard(db);
 
-                if (!imageFiles.isEmpty()) {
-                    viewModel.uploadDroppedBackdropFiles(imageFiles);
+                if (imageFile.isPresent()) {
+                    viewModel.setDroppedPrimaryImage(imageFile.get());
                     success = true;
                 }
             }
             event.setDropCompleted(success);
             event.consume();
         });
+    }
+
+
+    /**
+     * (SỬA ĐỔI) Sets up drag and drop functionality for the backdrop gallery.
+     */
+    private void setupBackdropDragAndDrop() {
+        if (imageGalleryPane == null) return;
+
+        Node[] dropTargets = {imageGalleryPane, imageGalleryScrollPane};
+
+        for (Node target : dropTargets) {
+            target.setOnDragOver(event -> {
+                if (event.getGestureSource() != target && event.getDragboard().hasFiles()) {
+                    List<File> files = getImageFilesFromDragboard(event.getDragboard());
+                    if (!files.isEmpty()) {
+                        event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+                    }
+                }
+                event.consume();
+            });
+
+            target.setOnDragDropped(event -> {
+                Dragboard db = event.getDragboard();
+                boolean success = false;
+                if (db.hasFiles() && viewModel != null) {
+                    List<File> imageFiles = getImageFilesFromDragboard(db);
+
+                    if (!imageFiles.isEmpty()) {
+                        viewModel.uploadDroppedBackdropFiles(imageFiles);
+                        success = true;
+                    }
+                }
+                event.setDropCompleted(success);
+                event.consume();
+            });
+        }
     }
 }

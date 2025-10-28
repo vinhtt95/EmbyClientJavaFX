@@ -64,7 +64,7 @@
     "overviewPrompt": "Mô tả chi tiết...",
     "backdropGalleryLabel": "Gallery Ảnh Nền (Backdrops)",
     "addButton": "+",
-    "cloneButton": "Nhân bản",
+    "cloneButton": ".",
     "saveButton": "Lưu thay đổi",
     "importButton": "Import JSON",
     "exportButton": "Export JSON",

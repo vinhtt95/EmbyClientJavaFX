@@ -3,12 +3,12 @@ package com.example.embyapp.viewmodel;
 import embyclient.ApiException;
 import embyclient.api.ItemUpdateServiceApi;
 import embyclient.model.*;
-import com.example.embyapp.controller.AddTagDialogController; // <-- THÊM IMPORT
+import com.example.embyapp.controller.AddTagDialogController;
 import com.example.embyapp.service.EmbyService;
 import com.example.embyapp.service.I18nManager;
 import com.example.embyapp.service.ItemRepository;
-import com.example.embyapp.service.ItemService; // Import ItemService
-import com.example.embyapp.service.RequestEmby; // Import RequestEmby
+import com.example.embyapp.service.ItemService;
+import com.example.embyapp.service.RequestEmby;
 import com.example.embyapp.viewmodel.detail.*;
 import com.google.gson.Gson;
 import javafx.application.Platform;
@@ -16,7 +16,7 @@ import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.image.Image;
-import javafx.scene.control.TreeItem; // Import TreeItem
+import javafx.scene.control.TreeItem;
 import javafx.stage.Stage;
 import com.google.gson.GsonBuilder;
 import java.time.OffsetDateTime;
@@ -26,7 +26,6 @@ import javafx.beans.property.ObjectProperty;
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-// (*** THÊM CÁC IMPORT CẦN THIẾT CHO LOGIC MỚI ***)
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -36,12 +35,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
 /**
  * ViewModel for the Item Detail view.
- * (CẬP NHẬT 36) Thêm logic Sao chép nhanh (Quick Copy).
  */
 public class ItemDetailViewModel {
 
@@ -462,7 +459,6 @@ public class ItemDetailViewModel {
         }).start();
     }
 
-    // (*** BẮT ĐẦU PHƯƠNG THỨC MỚI CHO SAO CHÉP NHANH ***)
     /**
      * Lấy thuộc tính từ một item nguồn (theo ID) và merge (trộn) vào
      * item hiện tại đang hiển thị trên UI.
@@ -480,18 +476,15 @@ public class ItemDetailViewModel {
             reportActionError(i18n.getString("itemDetailViewModel", "errorSave"));
             return;
         }
-        // Báo cáo trạng thái đang tải
         reportActionError(i18n.getString("addTagDialog", "copyStatusLoading", sourceItemId));
 
         new Thread(() -> {
             try {
-                // 1. Lấy thông tin đầy đủ của item NGUỒN
                 BaseItemDto sourceDto = itemRepository.getFullItemDetails(userId, sourceItemId);
                 if (sourceDto == null) {
                     throw new Exception(i18n.getString("addTagDialog", "copyErrorNotFound"));
                 }
 
-                // 2. Phân tích (Parse) danh sách thuộc tính liên quan từ DTO nguồn
                 List<TagModel> sourceTagsToCopy = new ArrayList<>();
 
                 switch (context) {
@@ -532,45 +525,36 @@ public class ItemDetailViewModel {
                         break;
                 }
 
-                final List<TagModel> finalSourceTags = sourceTagsToCopy; // Biến final để dùng trong lambda
+                final List<TagModel> finalSourceTags = sourceTagsToCopy;
 
-                // 3. Quay lại UI Thread để merge (trộn)
                 Platform.runLater(() -> {
                     ObservableList<TagModel> destinationList;
-                    // Chọn đúng danh sách ĐÍCH (của item hiện tại đang sửa)
                     switch (context) {
                         case TAG: destinationList = tagItems; break;
                         case STUDIO: destinationList = studiosItems; break;
                         case PEOPLE: destinationList = peopleItems; break;
                         case GENRE: destinationList = genresItems; break;
-                        default: return; // Không làm gì nếu context lạ
+                        default: return;
                     }
 
-                    // Dùng Set để lọc trùng lặp
                     Set<TagModel> existingTags = new HashSet<>(destinationList);
                     int addedCount = 0;
 
                     for (TagModel newTag : finalSourceTags) {
-                        // Phương thức .add() của Set trả về true nếu tag đó chưa tồn tại
                         if (existingTags.add(newTag)) {
-                            destinationList.add(newTag); // Thêm vào danh sách UI
+                            destinationList.add(newTag);
                             addedCount++;
                         }
                     }
-
-                    // Báo cáo thành công
                     reportActionError(i18n.getString("addTagDialog", "copySuccessStatus", addedCount, sourceItemId));
                 });
 
             } catch (Exception e) {
                 e.printStackTrace();
-                // Báo cáo lỗi
                 Platform.runLater(() -> reportActionError(i18n.getString("addTagDialog", "copyErrorStatus", sourceItemId, e.getMessage())));
             }
         }).start();
     }
-    // (*** KẾT THÚC PHƯƠNG THỨC MỚI ***)
-
 
     public void importAndPreview(BaseItemDto importedDto) { if (originalItemDto == null) return; importHandler.importAndPreview(importedDto); }
     public void acceptImportField(String fieldName) { importHandler.acceptImportField(fieldName); }
@@ -590,18 +574,36 @@ public class ItemDetailViewModel {
     public void clearActionError() { Platform.runLater(() -> this.actionStatusMessage.set("")); }
 
 
+    /**
+     * (HÀM MỚI)
+     * Đặt ảnh primary từ file (do kéo thả hoặc chọn file).
+     * Hàm này cập nhật bản xem trước; việc lưu vẫn cần người dùng nhấn nút "Lưu ảnh".
+     */
+    public void setDroppedPrimaryImage(File imageFile) {
+        if (imageFile == null || currentItemId == null) {
+            return;
+        }
+
+        newPrimaryImageFile.set(imageFile);
+        try {
+            Image localImage = new Image(imageFile.toURI().toString());
+            primaryImage.set(localImage);
+        } catch (Exception e) {
+            reportActionError(i18n.getString("itemDetailViewModel", "errorImagePreview"));
+        }
+    }
+
+
+    /**
+     * (SỬA ĐỔI)
+     * Mở FileChooser để chọn ảnh primary mới.
+     */
     public void selectNewPrimaryImage(Stage ownerStage) {
         if (currentItemId == null) return;
         List<File> files = imageUpdater.chooseImages(ownerStage, false);
         if (files != null && !files.isEmpty()) {
             File selectedFile = files.get(0);
-            newPrimaryImageFile.set(selectedFile);
-            try {
-                Image localImage = new Image(selectedFile.toURI().toString());
-                primaryImage.set(localImage);
-            } catch (Exception e) {
-                reportActionError(i18n.getString("itemDetailViewModel", "errorImagePreview"));
-            }
+            setDroppedPrimaryImage(selectedFile);
         }
     }
 

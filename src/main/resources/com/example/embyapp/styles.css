@@ -295,6 +295,12 @@
 .suggestion-key-button:hover {
     -fx-background-color: #005f9e;
 }
+/* Style để highlight key đang được dùng để lọc value (không phải selected) */
+.suggestion-key-button.filtering-key {
+    -fx-background-color: #005f9e; /* Màu xanh đậm hơn chút so với mặc định */
+    -fx-border-color: #009cff; /* Viền sáng hơn để nổi bật */
+}
+
 /* MÀU HỒNG KHI CHỌN KEY */
 .suggestion-key-button:selected {
     -fx-background-color: #E91E63; /* Màu hồng */

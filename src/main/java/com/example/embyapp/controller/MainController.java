@@ -29,6 +29,12 @@ import javafx.scene.control.TreeItem;
 import java.io.IOException;
 import java.net.URL;
 import java.util.prefs.Preferences;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.control.TextInputControl; // Import được bao gồm trong javafx.scene.control.*
+
 
 /**
  * Controller Điều Phối (Coordinator) cho MainView.
@@ -394,6 +400,66 @@ public class MainController {
             e.printStackTrace();
             statusLabel.setText(I18nManager.getInstance().getString("mainView", "errorDialog") + e.getMessage());
         }
+    }
+
+    /**
+     * (*** MỚI - HOTKEY LOGIC ***)
+     * Đăng ký Hotkeys toàn cục trên Scene sau khi nó đã được load.
+     * @param scene Scene của MainView.
+     */
+    public void registerGlobalHotkeys(Scene scene) {
+        if (scene == null) return;
+
+        // --- Request 1: Lặp lại dialog Add Tag (Phím ENTER) ---
+        // Chỉ dùng phím ENTER, không kèm modifier nào khác, và không focus vào input control.
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            // Kiểm tra: phím ENTER được nhấn VÀ không có modifier nào (như Shift/Ctrl/Cmd/Alt/Meta)
+            if (event.getCode() == KeyCode.ENTER && !event.isShiftDown() && !event.isControlDown() && !event.isAltDown() && !event.isMetaDown()) {
+
+                Node focusedNode = scene.getFocusOwner();
+
+                // Các control chặn hotkey (vì ENTER sẽ kích hoạt hành động của chúng)
+                boolean isBlockingControl = focusedNode instanceof TextInputControl // Covers TextField, TextArea, PasswordField
+                        || focusedNode instanceof Button
+                        || focusedNode instanceof ToggleButton;
+
+                // Chỉ kích hoạt khi không có focus (null) hoặc focus không nằm trên control chặn
+                if (focusedNode == null || !isBlockingControl) {
+                    if (itemDetailController != null) {
+                        itemDetailController.handleRepeatAddTagDialog();
+                        event.consume(); // Ngăn sự kiện ENTER lan truyền tiếp
+                    }
+                }
+            }
+        });
+
+
+        // --- Request 2: Cmd + S (Save) ---
+        // SHORTCUT_DOWN là Ctrl trên Windows/Linux và Command trên Mac
+        final KeyCombination saveShortcut = new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN);
+        scene.getAccelerators().put(saveShortcut, () -> {
+            if (itemDetailController != null) {
+                itemDetailController.handleSaveHotkey();
+            }
+        });
+
+        // --- Request 3: Cmd + N (Next Item) ---
+        final KeyCombination nextShortcut = new KeyCodeCombination(KeyCode.N, KeyCombination.SHORTCUT_DOWN);
+        scene.getAccelerators().put(nextShortcut, () -> {
+            if (itemGridViewModel != null) {
+                itemGridViewModel.selectNextItem();
+            }
+        });
+
+        // --- Request 4: Cmd + P (Previous Item) ---
+        final KeyCombination prevShortcut = new KeyCodeCombination(KeyCode.P, KeyCombination.SHORTCUT_DOWN);
+        scene.getAccelerators().put(prevShortcut, () -> {
+            if (itemGridViewModel != null) {
+                itemGridViewModel.selectPreviousItem();
+            }
+        });
+
+        System.out.println("Global hotkeys registered.");
     }
 
     @FXML

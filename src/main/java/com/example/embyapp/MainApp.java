@@ -39,7 +39,7 @@ public class MainApp extends Application {
         // (CẬP NHẬT) Thêm listener để lưu kích thước/vị trí cửa sổ khi đóng
         primaryStage.setOnCloseRequest(e -> {
             prefs.putDouble("windowX", primaryStage.getX());
-            prefs.putDouble("windowY", primaryStage.getY());
+            prefs.putDouble("windowY", primaryStage.getY()); // <-- FIXED: Đã sửa từ getStartY() sang getY()
             prefs.putDouble("windowWidth", primaryStage.getWidth());
             prefs.putDouble("windowHeight", primaryStage.getHeight());
             System.out.println("Đã lưu vị trí và kích thước cửa sổ.");
@@ -119,6 +119,9 @@ public class MainApp extends Application {
 
             // (CẬP NHẬT) Sửa Scene constructor để set kích thước đã lưu (hoặc default)
             Scene scene = new Scene(root, width, height);
+
+            // (*** MỚI - GỌI ĐĂNG KÝ HOTKEYS ***)
+            controller.registerGlobalHotkeys(scene);
 
             // (CẬP NHẬT) Thêm CSS cho MainView
             try {

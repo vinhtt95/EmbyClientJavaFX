@@ -138,6 +138,10 @@ public class ItemDetailController {
     private static final String KEY_ADD_TAG_DIALOG_WIDTH = "addTagDialogWidth";
     private static final String KEY_ADD_TAG_DIALOG_HEIGHT = "addTagDialogHeight";
 
+    // (*** MỚI - LƯU CONTEXT VỪA CHỌN CHO HOTKEY ENTER ***)
+    private AddTagDialogController.SuggestionContext lastAddContext = null;
+
+
     @FXML
     public void initialize() {
         setupLocalization();
@@ -539,6 +543,18 @@ public class ItemDetailController {
             });
 
             dialogStage.showAndWait();
+            Platform.runLater(() -> {
+                // Đặt focus về rootPane của ItemDetailController để đảm bảo không có input field nào đang focus,
+                // cho phép global hotkey ENTER được kích hoạt.
+                if (rootPane != null) {
+                    rootPane.requestFocus();
+                    // Log này có thể giúp bạn debug nếu cần
+                    // System.out.println("Focus set to rootPane after dialog close.");
+                }
+            });
+
+            // (*** LƯU CONTEXT VỪA CHỌN SAU KHI DIALOG ĐÓNG ***)
+            this.lastAddContext = context;
 
             TagModel newModel = controller.getResultTag();
             String copyId = controller.copyTriggeredIdProperty().get();
@@ -636,6 +652,44 @@ public class ItemDetailController {
             viewModel.saveChanges();
         }
     }
+
+    /**
+     * (*** MỚI - HOTKEY LOGIC - Request 1 ***)
+     * Mở lại dialog "Add Tag" gần nhất (dùng cho phím ENTER).
+     */
+    public void handleRepeatAddTagDialog() {
+        // Kiểm tra xem có item nào đang được hiển thị không
+        if (viewModel == null || viewModel.getCurrentItemId() == null) {
+            // Chỉ báo lỗi nếu có viewModel (không phải dialog pop-out)
+            if (rootPane.getScene() != null && rootPane.getScene().getWindow() instanceof Stage && ((Stage)rootPane.getScene().getWindow()).getModality() != Modality.NONE) {
+                // Nếu là dialog pop-out thì bỏ qua
+            } else {
+                viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailViewModel", "errorSave")); // Dùng lại thông báo lỗi không có item
+            }
+            return;
+        }
+        // Kiểm tra xem đã mở dialog nào trước đó chưa
+        if (lastAddContext != null) {
+            showAddTagDialog(lastAddContext);
+        } else {
+            // Nếu chưa mở lần nào, mặc định mở dialog Add Tag
+            showAddTagDialog(AddTagDialogController.SuggestionContext.TAG);
+        }
+    }
+
+    /**
+     * (*** MỚI - HOTKEY LOGIC - Request 2 ***)
+     * Xử lý hotkey Cmd+S (Save) từ MainController.
+     */
+    public void handleSaveHotkey() {
+        if (saveButton.disableProperty().get() == false) {
+            handleSaveButtonAction();
+        } else {
+            // Có thể báo lỗi nhẹ nếu cần, nhưng thường chỉ cần bỏ qua
+            System.out.println("Hotkey Save bị chặn: Không có thay đổi.");
+        }
+    }
+
 
     /** Handles the Import JSON button action. */
     @FXML

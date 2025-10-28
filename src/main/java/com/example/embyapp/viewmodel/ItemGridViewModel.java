@@ -19,6 +19,7 @@ import java.util.List;
  * (CẬP NHẬT MỚI) Chuyển sang logic PHÂN TRANG THAY THẾ (Page Replacement) khi cuộn.
  * (CẬP NHẬT TÌM KIẾM) Thêm logic cho tìm kiếm và phân trang kết quả tìm kiếm.
  * (CẬP NHẬT SẮP XẾP) Thêm logic cho tùy chọn sắp xếp.
+ * (CẬP NHẬT HOTKEY) Thêm logic chọn item trước/sau.
  */
 public class ItemGridViewModel {
 
@@ -118,6 +119,26 @@ public class ItemGridViewModel {
                 // Ghi nhận item hiện tại (vì đây là thay thế trang)
                 List<BaseItemDto> pageItems = result.getItems();
 
+                // (*** MỚI - LOGIC CHỌN ITEM SAU KHI TẢI ***)
+                BaseItemDto itemToSelect = null;
+                if (!pageItems.isEmpty()) {
+                    // Nếu là trang đầu tiên, chọn item đầu tiên
+                    if (pageIndex == 0) {
+                        itemToSelect = pageItems.get(0);
+                    }
+                    // Nếu là trang trước đó, chọn item cuối cùng
+                    else if (pageIndex < currentPageIndex) {
+                        itemToSelect = pageItems.get(pageItems.size() - 1);
+                    }
+                    // Nếu là trang tiếp theo, chọn item đầu tiên
+                    else if (pageIndex > currentPageIndex) {
+                        itemToSelect = pageItems.get(0);
+                    }
+                }
+                final BaseItemDto finalItemToSelect = itemToSelect;
+                // (*** KẾT THÚC LOGIC CHỌN ITEM ***)
+
+
                 Platform.runLater(() -> {
                     // 1. Cập nhật Pagination State
                     currentParentId = parentId;
@@ -142,9 +163,9 @@ public class ItemGridViewModel {
                         // Cập nhật status
                         statusMessage.set(i18n.getString("itemGridView", "statusDisplaying", (pageIndex + 1), totalPages, totalCount)); // <-- UPDATE
 
-                        // Nếu đang ở trang đầu tiên (0), tự động chọn item đầu tiên
-                        if (pageIndex == 0 && !pageItems.isEmpty()) {
-                            selectedItem.set(pageItems.get(0));
+                        // Set item được chọn
+                        if (finalItemToSelect != null) {
+                            selectedItem.set(finalItemToSelect);
                         }
                     }
 
@@ -202,6 +223,26 @@ public class ItemGridViewModel {
 
                 List<BaseItemDto> pageItems = result.getItems();
 
+                // (*** MỚI - LOGIC CHỌN ITEM SAU KHI TẢI ***)
+                BaseItemDto itemToSelect = null;
+                if (!pageItems.isEmpty()) {
+                    // Nếu là trang đầu tiên, chọn item đầu tiên
+                    if (pageIndex == 0) {
+                        itemToSelect = pageItems.get(0);
+                    }
+                    // Nếu là trang trước đó, chọn item cuối cùng
+                    else if (pageIndex < currentPageIndex) {
+                        itemToSelect = pageItems.get(pageItems.size() - 1);
+                    }
+                    // Nếu là trang tiếp theo, chọn item đầu tiên
+                    else if (pageIndex > currentPageIndex) {
+                        itemToSelect = pageItems.get(0);
+                    }
+                }
+                final BaseItemDto finalItemToSelect = itemToSelect;
+                // (*** KẾT THÚC LOGIC CHỌN ITEM ***)
+
+
                 Platform.runLater(() -> {
                     // 1. Cập nhật Pagination State & Search State
                     currentSearchKeywords = keywords;
@@ -225,8 +266,12 @@ public class ItemGridViewModel {
                         showStatusMessage.set(true);
                     } else {
                         statusMessage.set(i18n.getString("itemGridView", "statusSearchResult", (pageIndex + 1), totalPages, totalCount)); // <-- UPDATE
-                        // 3. (QUAN TRỌNG) Tự động chọn item đầu tiên
-                        selectedItem.set(pageItems.get(0));
+                        // 3. (QUAN TRỌNG) Tự động chọn item đầu tiên (hoặc item đã được tính toán)
+                        if (finalItemToSelect != null) {
+                            selectedItem.set(finalItemToSelect);
+                        } else if (!pageItems.isEmpty()) {
+                            selectedItem.set(pageItems.get(0));
+                        }
                     }
 
                     // 4. Hoàn thành loading
@@ -395,6 +440,48 @@ public class ItemGridViewModel {
 
         // Tải lại trang 0 (để đảm bảo tính nhất quán của danh sách)
         loadPage(0, currentParentId);
+    }
+
+    // --- (*** LOGIC HOTKEY MỚI ***) ---
+
+    /**
+     * (*** MỚI - HOTKEY LOGIC ***)
+     * Chọn item tiếp theo trong danh sách hiện tại.
+     * Nếu là item cuối cùng của trang, tự động chuyển trang tiếp theo.
+     */
+    public void selectNextItem() {
+        if (items.isEmpty() || loading.get()) return;
+        BaseItemDto current = selectedItem.get();
+        int currentIndex = items.indexOf(current);
+
+        if (currentIndex != -1 && currentIndex < items.size() - 1) {
+            // Chọn item tiếp theo trong trang
+            selectedItem.set(items.get(currentIndex + 1));
+        } else if (currentIndex == items.size() - 1 && hasNextPage.get()) {
+            // Nếu là item cuối cùng và có trang tiếp theo, chuyển sang trang tiếp theo
+            // loadNextPage() sẽ tự động chọn item đầu tiên của trang mới
+            loadNextPage();
+        }
+    }
+
+    /**
+     * (*** MỚI - HOTKEY LOGIC ***)
+     * Chọn item liền trước trong danh sách hiện tại.
+     * Nếu là item đầu tiên của trang, tự động chuyển về trang trước đó.
+     */
+    public void selectPreviousItem() {
+        if (items.isEmpty() || loading.get()) return;
+        BaseItemDto current = selectedItem.get();
+        int currentIndex = items.indexOf(current);
+
+        if (currentIndex > 0) {
+            // Chọn item liền trước trong trang
+            selectedItem.set(items.get(currentIndex - 1));
+        } else if (currentIndex == 0 && hasPreviousPage.get()) {
+            // Nếu là item đầu tiên và có trang trước đó, chuyển sang trang trước đó
+            // loadPreviousPage() sẽ tự động chọn item cuối cùng của trang mới
+            loadPreviousPage();
+        }
     }
 
 

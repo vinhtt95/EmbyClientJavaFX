@@ -45,6 +45,8 @@ import java.util.stream.Collectors;
 /**
  * Controller for the Item Detail view (right pane).
  * Handles user interaction and binds UI elements to the ItemDetailViewModel.
+ * (CẬP NHẬT 36) Thêm logic gọi Sao chép nhanh (Quick Copy).
+ * (CẬP NHẬT 38) Lưu và khôi phục kích thước AddTagDialog.
  */
 public class ItemDetailController {
 
@@ -131,6 +133,9 @@ public class ItemDetailController {
     private static final String PREF_NODE_PATH = "/com/example/embyapp/mainview";
     private static final String KEY_ADD_TAG_DIALOG_X = "addTagDialogX";
     private static final String KEY_ADD_TAG_DIALOG_Y = "addTagDialogY";
+    // (*** THÊM KEYS MỚI CHO KÍCH THƯỚC ***)
+    private static final String KEY_ADD_TAG_DIALOG_WIDTH = "addTagDialogWidth";
+    private static final String KEY_ADD_TAG_DIALOG_HEIGHT = "addTagDialogHeight";
 
     @FXML
     public void initialize() {
@@ -457,38 +462,70 @@ public class ItemDetailController {
             dialogStage.setTitle(title);
             dialogStage.initModality(Modality.WINDOW_MODAL);
             dialogStage.initOwner((Stage) rootPane.getScene().getWindow());
-            Scene scene = new Scene(page);
+            Scene scene = new Scene(page); // Kích thước sẽ lấy từ FXML hoặc từ lần lưu trước
             scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
             dialogStage.setScene(scene);
 
+            // (*** BẮT ĐẦU KHÔI PHỤC VỊ TRÍ VÀ KÍCH THƯỚC ***)
             double savedX = prefs.getDouble(KEY_ADD_TAG_DIALOG_X, -1);
             double savedY = prefs.getDouble(KEY_ADD_TAG_DIALOG_Y, -1);
+            double savedWidth = prefs.getDouble(KEY_ADD_TAG_DIALOG_WIDTH, -1);
+            double savedHeight = prefs.getDouble(KEY_ADD_TAG_DIALOG_HEIGHT, -1);
+
             if (savedX != -1 && savedY != -1) {
                 dialogStage.setX(savedX);
                 dialogStage.setY(savedY);
             }
+            // Chỉ set kích thước nếu có giá trị hợp lệ (>0)
+            if (savedWidth > 0) {
+                dialogStage.setWidth(savedWidth);
+            }
+            if (savedHeight > 0) {
+                dialogStage.setHeight(savedHeight);
+            }
+            // (*** KẾT THÚC KHÔI PHỤC ***)
+
 
             dialogStage.setOnCloseRequest(e -> {
                 try {
+                    // (*** LƯU CẢ VỊ TRÍ VÀ KÍCH THƯỚC ***)
                     prefs.putDouble(KEY_ADD_TAG_DIALOG_X, dialogStage.getX());
                     prefs.putDouble(KEY_ADD_TAG_DIALOG_Y, dialogStage.getY());
+                    prefs.putDouble(KEY_ADD_TAG_DIALOG_WIDTH, dialogStage.getWidth());
+                    prefs.putDouble(KEY_ADD_TAG_DIALOG_HEIGHT, dialogStage.getHeight());
                     prefs.flush();
                 } catch (Exception ex) {
-                    System.err.println("Lỗi khi lưu vị trí AddTagDialog: " + ex.getMessage());
+                    System.err.println("Lỗi khi lưu vị trí/kích thước AddTagDialog: " + ex.getMessage());
                 }
             });
 
+            // Hiển thị dialog và chờ
             dialogStage.showAndWait();
 
+            // (*** LOGIC MỚI SAU KHI DIALOG ĐÓNG ***)
+
+            // 1. Kiểm tra xem có phải là "Add" (Thêm) bình thường không
             TagModel newModel = controller.getResultTag();
+
+            // 2. Kiểm tra xem có phải là "Copy" (Sao chép) không
+            String copyId = controller.copyTriggeredIdProperty().get();
+
+
             if (newModel != null) {
+                // Logic "Add" cũ
                 switch (context) {
                     case STUDIO: viewModel.addStudio(newModel); break;
                     case PEOPLE: viewModel.addPerson(newModel); break;
                     case GENRE: viewModel.addGenre(newModel); break;
                     case TAG: viewModel.addTag(newModel); break;
                 }
+            } else if (copyId != null) {
+                // Logic "Copy" MỚI: Gọi ViewModel
+                viewModel.copyPropertiesFromItem(copyId, context);
             }
+
+            // (*** KẾT THÚC LOGIC MỚI ***)
+
         } catch (IOException e) {
             e.printStackTrace();
             viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorOpenDialog", context.name().toLowerCase()));

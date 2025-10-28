@@ -122,7 +122,14 @@
     "suggestionSimplePrompt": "Tìm Tag...",
     "cancelButton": "Hủy",
     "okButton": "Đồng ý",
-    "errorInvalid": "Dữ liệu tag không hợp lệ."
+    "errorInvalid": "Dữ liệu tag không hợp lệ.",
+    "quickCopyLabel": "Sao chép nhanh từ ID:",
+    "copyButton": "Sao chép",
+    "copyIdPrompt": "Nhập Item ID nguồn...",
+    "copyStatusLoading": "Đang lấy thông tin từ ID: {0}...",
+    "copySuccessStatus": "Đã sao chép và thêm mới {0} thuộc tính từ ID: {1}.",
+    "copyErrorNotFound": "Không tìm thấy Item.",
+    "copyErrorStatus": "Lỗi sao chép từ ID: {0} - {1}"
   },
   "loginViewModel": {
     "errorEmptyFields": "Please enter Server URL, Username, and Password.",

@@ -3,6 +3,7 @@ package com.example.embyapp.viewmodel;
 import embyclient.ApiException;
 import embyclient.api.ItemUpdateServiceApi;
 import embyclient.model.*;
+import com.example.embyapp.controller.AddTagDialogController; // <-- THÊM IMPORT
 import com.example.embyapp.service.EmbyService;
 import com.example.embyapp.service.I18nManager;
 import com.example.embyapp.service.ItemRepository;
@@ -25,9 +26,13 @@ import javafx.beans.property.ObjectProperty;
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+// (*** THÊM CÁC IMPORT CẦN THIẾT CHO LOGIC MỚI ***)
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.time.Instant;
@@ -36,6 +41,7 @@ import java.time.ZoneId;
 
 /**
  * ViewModel for the Item Detail view.
+ * (CẬP NHẬT 36) Thêm logic Sao chép nhanh (Quick Copy).
  */
 public class ItemDetailViewModel {
 
@@ -455,6 +461,115 @@ public class ItemDetailViewModel {
             }
         }).start();
     }
+
+    // (*** BẮT ĐẦU PHƯƠNG THỨC MỚI CHO SAO CHÉP NHANH ***)
+    /**
+     * Lấy thuộc tính từ một item nguồn (theo ID) và merge (trộn) vào
+     * item hiện tại đang hiển thị trên UI.
+     *
+     * @param sourceItemId ID của item nguồn (để sao chép TỪ)
+     * @param context Loại thuộc tính cần sao chép (TAG, STUDIO, v.v.)
+     */
+    public void copyPropertiesFromItem(String sourceItemId, AddTagDialogController.SuggestionContext context) {
+        final String userId = embyService.getCurrentUserId();
+        if (userId == null) {
+            reportActionError(i18n.getString("itemDetailViewModel", "errorNoUser"));
+            return;
+        }
+        if (currentItemId == null) {
+            reportActionError(i18n.getString("itemDetailViewModel", "errorSave"));
+            return;
+        }
+        // Báo cáo trạng thái đang tải
+        reportActionError(i18n.getString("addTagDialog", "copyStatusLoading", sourceItemId));
+
+        new Thread(() -> {
+            try {
+                // 1. Lấy thông tin đầy đủ của item NGUỒN
+                BaseItemDto sourceDto = itemRepository.getFullItemDetails(userId, sourceItemId);
+                if (sourceDto == null) {
+                    throw new Exception(i18n.getString("addTagDialog", "copyErrorNotFound"));
+                }
+
+                // 2. Phân tích (Parse) danh sách thuộc tính liên quan từ DTO nguồn
+                List<TagModel> sourceTagsToCopy = new ArrayList<>();
+
+                switch (context) {
+                    case TAG:
+                        if (sourceDto.getTagItems() != null) {
+                            for (NameLongIdPair tagPair : sourceDto.getTagItems()) {
+                                if (tagPair.getName() != null) {
+                                    sourceTagsToCopy.add(TagModel.parse(tagPair.getName()));
+                                }
+                            }
+                        }
+                        break;
+                    case STUDIO:
+                        if (sourceDto.getStudios() != null) {
+                            sourceTagsToCopy = sourceDto.getStudios().stream()
+                                    .map(NameLongIdPair::getName)
+                                    .filter(Objects::nonNull)
+                                    .map(TagModel::parse)
+                                    .collect(Collectors.toList());
+                        }
+                        break;
+                    case PEOPLE:
+                        if (sourceDto.getPeople() != null) {
+                            sourceTagsToCopy = sourceDto.getPeople().stream()
+                                    .map(BaseItemPerson::getName)
+                                    .filter(Objects::nonNull)
+                                    .map(TagModel::parse)
+                                    .collect(Collectors.toList());
+                        }
+                        break;
+                    case GENRE:
+                        if (sourceDto.getGenres() != null) {
+                            sourceTagsToCopy = sourceDto.getGenres().stream()
+                                    .filter(Objects::nonNull)
+                                    .map(TagModel::parse)
+                                    .collect(Collectors.toList());
+                        }
+                        break;
+                }
+
+                final List<TagModel> finalSourceTags = sourceTagsToCopy; // Biến final để dùng trong lambda
+
+                // 3. Quay lại UI Thread để merge (trộn)
+                Platform.runLater(() -> {
+                    ObservableList<TagModel> destinationList;
+                    // Chọn đúng danh sách ĐÍCH (của item hiện tại đang sửa)
+                    switch (context) {
+                        case TAG: destinationList = tagItems; break;
+                        case STUDIO: destinationList = studiosItems; break;
+                        case PEOPLE: destinationList = peopleItems; break;
+                        case GENRE: destinationList = genresItems; break;
+                        default: return; // Không làm gì nếu context lạ
+                    }
+
+                    // Dùng Set để lọc trùng lặp
+                    Set<TagModel> existingTags = new HashSet<>(destinationList);
+                    int addedCount = 0;
+
+                    for (TagModel newTag : finalSourceTags) {
+                        // Phương thức .add() của Set trả về true nếu tag đó chưa tồn tại
+                        if (existingTags.add(newTag)) {
+                            destinationList.add(newTag); // Thêm vào danh sách UI
+                            addedCount++;
+                        }
+                    }
+
+                    // Báo cáo thành công
+                    reportActionError(i18n.getString("addTagDialog", "copySuccessStatus", addedCount, sourceItemId));
+                });
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                // Báo cáo lỗi
+                Platform.runLater(() -> reportActionError(i18n.getString("addTagDialog", "copyErrorStatus", sourceItemId, e.getMessage())));
+            }
+        }).start();
+    }
+    // (*** KẾT THÚC PHƯƠNG THỨC MỚI ***)
 
 
     public void importAndPreview(BaseItemDto importedDto) { if (originalItemDto == null) return; importHandler.importAndPreview(importedDto); }

@@ -8,6 +8,8 @@ import com.example.embyapp.viewmodel.detail.SuggestionItemModel;
 import com.example.embyapp.viewmodel.detail.TagModel;
 import embyclient.model.UserLibraryTagItem;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty; // <-- THÊM IMPORT
+import javafx.beans.property.StringProperty; // <-- THÊM IMPORT
 import javafx.fxml.FXML;
 import javafx.scene.control.Button; // <-- IMPORT
 import javafx.scene.control.Label;
@@ -38,6 +40,8 @@ import java.util.stream.Collectors;
  * (CẬP NHẬT 34) Thêm chức năng tìm kiếm nhanh trong các gợi ý (3 ô tìm kiếm).
  * (FIX LỖI) Sửa ClassCastException và Lỗi biên dịch rawName.
  * (CẬP NHẬT 35) Gộp ô tìm kiếm nhanh vào ô nhập liệu chính.
+ * (CẬP NHẬT 36) Thêm chức năng Sao chép nhanh (Quick Copy).
+ * (FIX LỖI 37) Sửa NullPointerException do quickCopyLabel bị xóa khỏi FXML.
  */
 public class AddTagDialogController {
 
@@ -78,6 +82,12 @@ public class AddTagDialogController {
     @FXML private Label suggestionSimpleLabel; // (*** GIỮ LẠI: Label header ***)
     @FXML private FlowPane suggestionSimplePane;
 
+    // (*** THÊM CÁC TRƯỜNG MỚI CHO SAO CHÉP NHANH ***)
+    // @FXML private Label quickCopyLabel; // <<<==== ĐÃ BỊ XÓA KHỎI FXML
+    @FXML private TextField copyIdField;
+    @FXML private Button copyButton;
+    // (*** KẾT THÚC THÊM MỚI ***)
+
     @FXML private Button cancelButton;
     @FXML private Button okButton;
 
@@ -86,6 +96,8 @@ public class AddTagDialogController {
 
     private Stage dialogStage;
     private TagModel resultTag = null;
+    // (*** THÊM PROPERTY MỚI ĐỂ GIAO TIẾP ***)
+    private StringProperty copyTriggeredId = new SimpleStringProperty(null);
 
     private ItemRepository itemRepository;
     private SuggestionContext currentContext = SuggestionContext.TAG;
@@ -154,6 +166,9 @@ public class AddTagDialogController {
             populateSimpleTags(newVal); // Lọc Simple
             updateContainerVisibility(); // Cập nhật hiển thị
         });
+
+        // (*** THÊM HANDLER CHO NÚT SAO CHÉP MỚI ***)
+        copyButton.setOnAction(e -> handleCopyAction());
     }
 
     // <-- ADD THIS NEW METHOD -->
@@ -181,6 +196,12 @@ public class AddTagDialogController {
         suggestionValueLabel.setText(i18n.getString("addTagDialog", "suggestionValueLabel"));
 
         // suggestionSimpleLabel is set in setContext (sẽ được set ở setContext)
+
+        // (*** THÊM CÁC TRƯỜNG SAO CHÉP MỚI ***)
+        // quickCopyLabel.setText(i18n.getString("addTagDialog", "quickCopyLabel")); // <<<==== DÒNG GÂY LỖI ĐÃ BỊ XÓA
+        copyIdField.setPromptText(i18n.getString("addTagDialog", "copyIdPrompt"));
+        copyButton.setText(i18n.getString("addTagDialog", "copyButton"));
+        // (*** KẾT THÚC THÊM MỚI ***)
 
         cancelButton.setText(i18n.getString("addTagDialog", "cancelButton"));
         okButton.setText(i18n.getString("addTagDialog", "okButton"));
@@ -534,6 +555,15 @@ public class AddTagDialogController {
         return resultTag;
     }
 
+    // (*** THÊM HÀM GETTER MỚI NÀY ***)
+    /**
+     * Property này sẽ được set khi người dùng nhấn nút "Sao chép".
+     * @return StringProperty chứa ID của item cần sao chép.
+     */
+    public StringProperty copyTriggeredIdProperty() {
+        return copyTriggeredId;
+    }
+
     /**
      * Logic handleOk không đổi: nó tạo TagModel.
      */
@@ -565,5 +595,22 @@ public class AddTagDialogController {
     @FXML
     private void handleCancel() {
         dialogStage.close();
+    }
+
+    // (*** THÊM HÀM HANDLER MỚI NÀY ***)
+    /**
+     * Xử lý khi nhấn nút "Sao chép".
+     * Nó chỉ set ID và đóng dialog.
+     */
+    @FXML
+    private void handleCopyAction() {
+        String id = copyIdField.getText();
+        if (id != null && !id.trim().isEmpty()) {
+            this.copyTriggeredId.set(id.trim()); // Set ID để ItemDetailController bắt
+            dialogStage.close(); // Đóng dialog
+        } else {
+            // (Tùy chọn: Có thể báo lỗi field rỗng)
+            copyIdField.requestFocus();
+        }
     }
 }

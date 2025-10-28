@@ -361,6 +361,11 @@ public class MainController implements NativeKeyListener {
                     scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
                 }
 
+                // (*** SỬA ĐỔI ***)
+                // Đăng ký TẤT CẢ hotkey cho scene của dialog
+                registerHotkeysForScene(scene);
+
+
                 double defaultWidth = 1000;
                 double defaultHeight = 800;
                 if (rootPane.getScene() != null && rootPane.getScene().getWindow() != null) {
@@ -382,7 +387,7 @@ public class MainController implements NativeKeyListener {
                     detailDialog.setY(savedY);
                 }
                 detailDialog.initModality(Modality.NONE);
-                detailDialog.setScene(scene);
+                detailDialog.setScene(scene); // (*** SỬA ĐỔI ***) Gán scene đã được đăng ký hotkey
 
                 detailDialog.setOnCloseRequest(e -> {
                     prefs.putDouble(KEY_DIALOG_WIDTH, detailDialog.getWidth());
@@ -421,10 +426,22 @@ public class MainController implements NativeKeyListener {
     }
 
     /**
+     * (*** SỬA ĐỔI ***)
      * Đăng ký Hotkeys (khi app được focus) trên Scene sau khi nó đã được load.
      * @param scene Scene của MainView.
      */
     public void registerGlobalHotkeys(Scene scene) {
+        if (scene == null) return;
+        // Chỉ cần gọi hàm helper
+        registerHotkeysForScene(scene);
+    }
+
+    /**
+     * (*** HÀM MỚI ***)
+     * Hàm helper đăng ký tất cả các phím tắt cho một Scene cụ thể.
+     * @param scene Scene (của cửa sổ chính HOẶC cửa sổ pop-out)
+     */
+    private void registerHotkeysForScene(Scene scene) {
         if (scene == null) return;
 
         // --- Lặp lại dialog Add Tag (Phím ENTER) ---
@@ -438,7 +455,16 @@ public class MainController implements NativeKeyListener {
                         || focusedNode instanceof ToggleButton;
 
                 if (focusedNode == null || !isBlockingControl) {
-                    if (itemDetailController != null) {
+                    // Dùng controller của cửa sổ chính hay của dialog?
+                    // Nếu detailDialog đang hiển thị VÀ scene này là scene của dialog
+                    if (detailDialog != null && detailDialog.isShowing() && scene == detailDialog.getScene()) {
+                        if (detailDialogController != null) {
+                            detailDialogController.handleRepeatAddTagDialog();
+                            event.consume();
+                        }
+                    }
+                    // Ngược lại, dùng controller của cửa sổ chính
+                    else if (itemDetailController != null) {
                         itemDetailController.handleRepeatAddTagDialog();
                         event.consume();
                     }
@@ -450,7 +476,12 @@ public class MainController implements NativeKeyListener {
         // --- Cmd + S (Save) ---
         final KeyCombination saveShortcut = new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN);
         scene.getAccelerators().put(saveShortcut, () -> {
-            if (itemDetailController != null) {
+            // Tương tự, kiểm tra xem controller nào đang active
+            if (detailDialog != null && detailDialog.isShowing() && scene == detailDialog.getScene()) {
+                if (detailDialogController != null) {
+                    detailDialogController.handleSaveHotkey();
+                }
+            } else if (itemDetailController != null) {
                 itemDetailController.handleSaveHotkey();
             }
         });
@@ -471,8 +502,23 @@ public class MainController implements NativeKeyListener {
             }
         });
 
-        System.out.println("Global hotkeys registered.");
+        // --- (*** MỚI ***) Cmd + ENTER (Play Item) ---
+        final KeyCombination playShortcut = new KeyCodeCombination(KeyCode.ENTER, KeyCombination.SHORTCUT_DOWN);
+        scene.getAccelerators().put(playShortcut, () -> {
+            if (itemGridViewModel != null && itemGridController != null) {
+                BaseItemDto selectedItem = itemGridViewModel.selectedItemProperty().get();
+                if (selectedItem != null) {
+                    System.out.println("Hotkey Cmd+ENTER: Playing item: " + selectedItem.getName());
+                    itemGridController.playItem(selectedItem);
+                } else {
+                    System.out.println("Hotkey Cmd+ENTER: No item selected to play.");
+                }
+            }
+        });
+
+        System.out.println("Hotkeys registered for scene: " + scene.hashCode());
     }
+
 
     // --- Các hàm cho Hotkey Hệ Thống (JNativeHook) ---
 

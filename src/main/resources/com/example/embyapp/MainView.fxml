@@ -24,15 +24,21 @@
     </top>
     <bottom>
         <HBox fx:id="statusBar" alignment="CENTER_LEFT" spacing="10.0" styleClass="status-bar" BorderPane.alignment="CENTER">
-            <padding>
 
+            <padding>
                 <Insets bottom="5.0" left="10.0" right="10.0" top="5.0"/>
             </padding>
             <children>
-                <Label fx:id="statusLabel" HBox.hgrow="ALWAYS"/> <ProgressIndicator fx:id="statusProgressIndicator" maxHeight="20.0" maxWidth="20.0" visible="false"/>
+                <Label fx:id="statusLabel" HBox.hgrow="ALWAYS"/>
+                <ProgressIndicator fx:id="statusProgressIndicator" maxHeight="20.0" maxWidth="20.0" visible="false"/>
+
+                <Region HBox.hgrow="ALWAYS" /> <StackPane fx:id="hotkeyIndicator" minHeight="12.0" minWidth="12.0" style="-fx-border-radius: 5em; -fx-background-radius: 5em;">
+                <HBox.margin>
+                    <Insets right="5.0" />
+                </HBox.margin>
+            </StackPane>
             </children>
         </HBox>
-
     </bottom>
     <center>
         <SplitPane fx:id="mainSplitPane" prefHeight="160.0" prefWidth="200.0" BorderPane.alignment="CENTER">

@@ -46,7 +46,7 @@ import com.github.kwhat.jnativehook.NativeHookException;
 import com.github.kwhat.jnativehook.NativeInputEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
-
+import javafx.scene.layout.StackPane; // <-- THÊM IMPORT NÀY
 
 /**
  * Controller Điều Phối (Coordinator) cho MainView.
@@ -69,6 +69,9 @@ public class MainController implements NativeKeyListener {
     @FXML private Button searchButton;
     @FXML private Button sortByButton;
     @FXML private ToggleButton sortOrderButton;
+
+    // --- THÊM DÒNG NÀY ---
+    @FXML private StackPane hotkeyIndicator;
 
     private MainApp mainApp;
     private EmbyService embyService;
@@ -95,7 +98,11 @@ public class MainController implements NativeKeyListener {
     private Parent detailDialogRoot;
     private ItemDetailController detailDialogController;
 
-    // (*** THÊM BIẾN CỜ DEBOUNCE NÀY ***)
+    // --- THÊM CÁC BIẾN TỪ BƯỚC TRƯỚC VÀ BIẾN MỚI ---
+    private final BooleanProperty hotkeyModifiersActive = new SimpleBooleanProperty(false);
+    private volatile boolean globalMetaPressed = false;
+    private volatile boolean globalShiftPressed = false;
+
     private volatile boolean processingHotkey = false;
     private final PauseTransition hotkeyDebounceTimer = new PauseTransition(Duration.millis(200)); // 200ms delay
 
@@ -107,6 +114,27 @@ public class MainController implements NativeKeyListener {
     @FXML
     public void initialize() {
         setupLocalization();
+
+        // --- THÊM ĐOẠN CODE NÀY ---
+        if (hotkeyIndicator != null) {
+            hotkeyModifiersActive.addListener((obs, oldVal, isActive) -> {
+                if (isActive) {
+                    hotkeyIndicator.getStyleClass().remove("hotkey-indicator-off");
+                    if (!hotkeyIndicator.getStyleClass().contains("hotkey-indicator-on")) {
+                        hotkeyIndicator.getStyleClass().add("hotkey-indicator-on");
+                    }
+                } else {
+                    hotkeyIndicator.getStyleClass().remove("hotkey-indicator-on");
+                    if (!hotkeyIndicator.getStyleClass().contains("hotkey-indicator-off")) {
+                        hotkeyIndicator.getStyleClass().add("hotkey-indicator-off");
+                    }
+                }
+            });
+            // Đặt trạng thái ban đầu
+            hotkeyIndicator.getStyleClass().add("hotkey-indicator-off");
+        }
+        // --- KẾT THÚC THÊM ---
+
 
         this.embyService = EmbyService.getInstance();
         this.itemRepository = new ItemRepository();
@@ -566,33 +594,53 @@ public class MainController implements NativeKeyListener {
         }
     }
 
+
+    /**
+     * (HÀM MỚI) Cập nhật trạng thái của BooleanProperty dựa trên
+     * các biến volatile globalMetaPressed và globalShiftPressed.
+     * Phải được gọi từ bên trong nativeKey...
+     */
+    private void updateHotkeyIndicatorState() {
+        boolean isActive = globalMetaPressed && globalShiftPressed;
+
+        // Chỉ cập nhật nếu trạng thái thay đổi
+        if (hotkeyModifiersActive.get() != isActive) {
+            // Đẩy việc cập nhật UI về luồng JavaFX
+            Platform.runLater(() -> hotkeyModifiersActive.set(isActive));
+        }
+    }
+
+
     @Override
     public void nativeKeyTyped(NativeKeyEvent e) {
         // Không sử dụng
     }
 
     /**
-     * (*** SỬA LỖI: LOGIC MỚI VỚI DEBOUNCE ***)
-     * Xử lý sự kiện nhấn phím toàn hệ thống.
+     * (SỬA ĐỔI) Xử lý sự kiện nhấn phím toàn hệ thống.
+     * Cập nhật trạng thái phím modifier VÀ gọi updateHotkeyIndicatorState.
      */
     @Override
     public void nativeKeyPressed(NativeKeyEvent e) {
-        // (*** THÊM KIỂM TRA CỜ DEBOUNCE ***)
-        if (processingHotkey) {
-            // System.out.println("Debounce: Ignored key press while processing hotkey");
-            return; // Bỏ qua nếu đang trong thời gian chờ debounce
+        // 1. Cập nhật trạng thái phím modifier
+        if (e.getKeyCode() == NativeKeyEvent.VC_META) {
+            globalMetaPressed = true;
+        }
+        if (e.getKeyCode() == NativeKeyEvent.VC_SHIFT) {
+            globalShiftPressed = true;
         }
 
-        // Lấy các modifier đang được nhấn TẠI THỜI ĐIỂM SỰ KIỆN NÀY
-        int modifiers = e.getModifiers();
+        // 2. Cập nhật đèn báo UI
+        updateHotkeyIndicatorState();
 
-        // Kiểm tra xem cả Meta (Cmd/Win) và Shift có đang được nhấn không
-        boolean metaPressed = (modifiers & NativeInputEvent.META_MASK) != 0;
-        boolean shiftPressed = (modifiers & NativeInputEvent.SHIFT_MASK) != 0;
+        // 3. Xử lý logic debounce (giữ nguyên)
+        if (processingHotkey) {
+            return;
+        }
 
-        // Kiểm tra tổ hợp phím
-        if (metaPressed && shiftPressed) {
-            Runnable action = null; // Hành động cần thực thi trên luồng JavaFX
+        // 4. Xử lý logic hotkey (dựa trên biến global, không dùng e.getModifiers())
+        if (globalMetaPressed && globalShiftPressed) {
+            Runnable action = null;
 
             if (e.getKeyCode() == NativeKeyEvent.VC_N) {
                 // Hotkey: Cmd + Shift + N
@@ -613,14 +661,10 @@ public class MainController implements NativeKeyListener {
                 };
             }
 
-            // Nếu có hành động cần thực thi
             if (action != null) {
-                // (*** ĐẶT CỜ VÀ CHẠY TIMER DEBOUNCE ***)
-                processingHotkey = true; // Đánh dấu bắt đầu xử lý
-                hotkeyDebounceTimer.stop(); // Dừng timer cũ (nếu có)
-                hotkeyDebounceTimer.playFromStart(); // Bắt đầu timer mới
-
-                // Thực thi hành động trên luồng JavaFX
+                processingHotkey = true;
+                hotkeyDebounceTimer.stop();
+                hotkeyDebounceTimer.playFromStart();
                 Platform.runLater(action);
             }
         }
@@ -629,7 +673,16 @@ public class MainController implements NativeKeyListener {
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent e) {
-        // Không cần làm gì ở đây nữa
+        // 1. Cập nhật trạng thái phím modifier
+        if (e.getKeyCode() == NativeKeyEvent.VC_META) {
+            globalMetaPressed = false;
+        }
+        if (e.getKeyCode() == NativeKeyEvent.VC_SHIFT) {
+            globalShiftPressed = false;
+        }
+
+        // 2. Cập nhật đèn báo UI
+        updateHotkeyIndicatorState();
     }
     // --- Kết thúc các hàm Hotkey Hệ Thống ---
 

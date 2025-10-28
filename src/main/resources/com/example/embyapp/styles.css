@@ -180,6 +180,26 @@
     -fx-font-size: 18px;
 }
 
+/* --- NEW STYLE FOR RATING BADGE --- */
+.parental-rating-badge {
+    -fx-background-color: transparent;
+    -fx-background-radius: 50em; /* Make it a circle */
+    -fx-border-color: F06292;
+    -fx-border-width: 2px;
+    -fx-border-radius: 50em; /* Make border circular */
+    -fx-text-fill: F06292;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-min-width: 30px;  /* Fixed size for circle */
+    -fx-min-height: 30px; /* Fixed size for circle */
+    -fx-max-width: 30px;
+    -fx-max-height: 30px;
+    -fx-padding: 0; /* Padding is handled by alignment */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.7), 2, 0.5, 0, 1); /* Add shadow like title */
+}
+/* --- END NEW STYLE --- */
+
 .tag-view {
     -fx-background-color: #383838;
     -fx-background-radius: 15px;

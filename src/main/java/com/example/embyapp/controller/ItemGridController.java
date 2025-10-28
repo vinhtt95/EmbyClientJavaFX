@@ -279,6 +279,22 @@ public class ItemGridController {
         cellContainer.getChildren().addAll(imageView, overlay);
 
 
+        // --- NEW: Add Parental Rating Badge ---
+        Float criticRating = item.getCriticRating();
+        if (criticRating != null && criticRating > 0) {
+            String ratingText = String.format("%.0f", criticRating);
+            Label ratingLabel = new Label(ratingText);
+            ratingLabel.getStyleClass().add("parental-rating-badge");
+
+            // Position it in the top-right corner
+            StackPane.setAlignment(ratingLabel, Pos.TOP_RIGHT);
+            StackPane.setMargin(ratingLabel, new Insets(8, 8, 8, 8)); // 8px margin
+
+            cellContainer.getChildren().add(ratingLabel); // Add badge on top of everything
+        }
+        // --- END NEW ---
+
+
         cellContainer.setOnMouseClicked(event -> {
             if (viewModel != null) {
                 viewModel.selectedItemProperty().set(item);

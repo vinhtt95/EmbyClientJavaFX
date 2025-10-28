@@ -12,6 +12,7 @@ import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
@@ -39,6 +40,7 @@ import java.util.Optional;
 /**
  * Controller cho ItemGridView (Cột giữa).
  * Áp dụng logic Page Replacement, và Context Menu.
+ * (CẬP NHẬT) Thêm logic highlight item được chọn.
  */
 public class ItemGridController {
 
@@ -76,7 +78,6 @@ public class ItemGridController {
                 return;
             }
 
-            // 1. SCROLL TỚI CUỐI (Load Trang Kế Tiếp)
             if (newVal.doubleValue() > 0.95 && oldVal.doubleValue() < 0.95) {
                 if (viewModel.hasNextPageProperty().get()) {
                     int nextPageDisplay = viewModel.getCurrentPageIndex() + 2;
@@ -91,7 +92,6 @@ public class ItemGridController {
                 }
             }
 
-            // 2. SCROLL LÊN ĐẦU (Load Trang Trước Đó)
             else if (newVal.doubleValue() < 0.05 && oldVal.doubleValue() > 0.05) {
                 if (viewModel.hasPreviousPageProperty().get()) {
                     int prevPageDisplay = viewModel.getCurrentPageIndex();
@@ -129,8 +129,20 @@ public class ItemGridController {
         viewModel.getItems().addListener((ListChangeListener<BaseItemDto>) c -> {
             Platform.runLater(() -> {
                 itemFlowPane.getChildren().clear();
+
+                BaseItemDto currentSelectedItem = viewModel.selectedItemProperty().get();
+                String selectedId = (currentSelectedItem != null) ? currentSelectedItem.getId() : null;
+
                 for (BaseItemDto item : viewModel.getItems()) {
-                    itemFlowPane.getChildren().add(createItemCell(item));
+                    StackPane cell = createItemCell(item);
+
+                    if (selectedId != null && item.getId() != null && item.getId().equals(selectedId)) {
+                        if (!cell.getStyleClass().contains("item-cell-selected")) {
+                            cell.getStyleClass().add("item-cell-selected");
+                        }
+                    }
+
+                    itemFlowPane.getChildren().add(cell);
                 }
             });
         });
@@ -152,6 +164,39 @@ public class ItemGridController {
                 viewModel.scrollActionProperty().set(ScrollAction.NONE);
             }
         });
+
+        viewModel.selectedItemProperty().addListener((obs, oldItem, newItem) -> {
+            Platform.runLater(() -> updateCellSelection(oldItem, newItem));
+        });
+    }
+
+    /**
+     * Cập nhật giao diện (CSS) cho các cell khi item được chọn thay đổi.
+     */
+    private void updateCellSelection(BaseItemDto oldItem, BaseItemDto newItem) {
+        if (itemFlowPane == null) return;
+
+        String oldId = (oldItem != null) ? oldItem.getId() : null;
+        String newId = (newItem != null) ? newItem.getId() : null;
+
+        for (Node node : itemFlowPane.getChildren()) {
+            if (node instanceof StackPane && node.getUserData() instanceof BaseItemDto) {
+                BaseItemDto itemDto = (BaseItemDto) node.getUserData();
+                if (itemDto.getId() == null) continue;
+
+                String cellItemId = itemDto.getId();
+
+                if (cellItemId.equals(oldId)) {
+                    node.getStyleClass().remove("item-cell-selected");
+                }
+
+                if (cellItemId.equals(newId)) {
+                    if (!node.getStyleClass().contains("item-cell-selected")) {
+                        node.getStyleClass().add("item-cell-selected");
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -174,6 +219,8 @@ public class ItemGridController {
         cellContainer.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         cellContainer.getStyleClass().add("item-cell");
 
+        cellContainer.setUserData(item);
+
         ImageView imageView = new ImageView();
         imageView.setFitWidth(CELL_WIDTH);
         imageView.setFitHeight(IMAGE_HEIGHT);
@@ -195,7 +242,7 @@ public class ItemGridController {
                         serverUrl, itemId, imageTag, (int)CELL_WIDTH * 2);
             }
         } catch (Exception e) {
-            // Lỗi này không nghiêm trọng
+
         }
 
         placeholderUrl = "https://placehold.co/" + (int)CELL_WIDTH + "x" + (int)IMAGE_HEIGHT + "/333/999?text=" + (item.getType() != null ? item.getType() : "Item");

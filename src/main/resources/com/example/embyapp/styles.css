@@ -1,4 +1,3 @@
-/* --- DARK MODE GLOBAL STYLES --- */
 .root, .vbox, .hbox, .anchor-pane, .stack-pane, .dialog-pane {
     -fx-background-color: #121212;
     -fx-text-fill: #e0e0e0;
@@ -13,8 +12,6 @@
 .dialog-pane .radio-button .text {
     -fx-fill: #e0e0e0;
 }
-
-/* Button mặc định (ĐÃ CHỈNH SỬA) */
 .button, .toggle-button {
     -fx-background-color: #383838;
     -fx-text-fill: #ffffff;
@@ -29,17 +26,13 @@
 .button:default {
     -fx-background-color: #007acc;
 }
-
-/* Thêm style cho ToggleButton khi được chọn */
 .toggle-button:selected {
-    -fx-background-color: #2e2e2e; /* Màu nền tối hơn khi được chọn */
+    -fx-background-color: #2e2e2e;
     -fx-border-color: #777777;
 }
 .toggle-button:selected:hover {
     -fx-background-color: #383838;
 }
-
-/* TextField và TextArea */
 .text-field, .text-area, .dialog-pane .text-field {
     -fx-background-color: #1e1e1e;
     -fx-text-fill: #e0e0e0;
@@ -54,17 +47,15 @@
     -fx-background-color: #1e1e1e;
     -fx-line-spacing: 0.5em;
 }
-
-/* --- (MỚI) SEARCH CLEAR BUTTON STYLES --- */
 .search-clear-button {
     -fx-background-color: transparent;
     -fx-text-fill: #999999;
     -fx-background-radius: 0;
     -fx-border-color: transparent;
-    -fx-padding: 0 5px 0 5px; /* Điều chỉnh padding để nó nhỏ và ở bên phải */
+    -fx-padding: 0 5px 0 5px;
     -fx-min-width: 25px;
     -fx-min-height: 25px;
-    -fx-font-size: 14px; /* Font nhỏ cho '✕' */
+    -fx-font-size: 14px;
     -fx-cursor: hand;
     -fx-opacity: 0.8;
 }
@@ -73,8 +64,6 @@
     -fx-opacity: 1.0;
     -fx-background-color: rgba(255, 255, 255, 0.1);
 }
-
-/* SplitPane */
 .split-pane {
     -fx-background-color: #121212;
 }
@@ -82,8 +71,6 @@
     -fx-background-color: #2e2e2e;
     -fx-padding: 0 0.5px 0 0.5px;
 }
-
-/* TreeView */
 .tree-view {
     -fx-background-color: #1e1e1e;
     -fx-border-width: 0;
@@ -102,8 +89,6 @@
     -fx-background-color: #2e2e2e;
     -fx-text-fill: #ffffff;
 }
-
-/* --- SCROLLPANE STYLES --- */
 .scroll-pane {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
@@ -118,8 +103,6 @@
 .dialog-pane .scroll-pane .vbox {
     -fx-background-color: transparent;
 }
-
-/* --- Các style Scrollbar còn lại --- */
 .scroll-bar .increment-button, .scroll-bar .decrement-button {
     -fx-background-color: transparent;
     -fx-padding: 0;
@@ -142,26 +125,25 @@
 .scroll-bar:vertical, .scroll-bar:horizontal {
     -fx-background-color: transparent;
 }
-
-/* --- STATUS BAR --- */
 #statusBar {
     -fx-background-color: #1e1e1e;
     -fx-border-color: #2e2e2e;
     -fx-border-width: 1 0 0 0;
 }
-
-/* --- ITEM GRID CELL STYLES --- */
 .item-cell {
     -fx-background-radius: 10px;
     -fx-border-radius: 10px;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 10, 0.2, 0, 3);
     -fx-transition: all 0.2s ease-in-out;
+    -fx-border-color: transparent;
+    -fx-border-width: 3px;
 }
 .item-image {
     -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
 }
 .item-title-overlay {
-    -fx-background-color: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 30%, rgba(0,0,0,0) 100%);
+    /*-fx-background-color: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 30%, rgba(0,0,0,0) 100%);*/
     -fx-background-radius: 0 0 10px 10px;
     -fx-opacity: 1.0;
     -fx-transition: opacity 0.2s ease-in-out;
@@ -181,7 +163,24 @@
     -fx-opacity: 0.5;
 }
 
-/* --- TAG STYLES --- */
+.item-cell-selected {
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+    /*-fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.6), 15, 0.3, 0, 4);*/
+    /*-fx-border-color: #007acc;*/
+}
+
+.item-cell-selected:hover{
+    fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.item-cell-selected .item-title-label{
+    -fx-text-fill: #F06292;
+    -fx-font-size: 18px;
+    -fx-font-weight: li;
+}
+
 .tag-view {
     -fx-background-color: #383838;
     -fx-background-radius: 15px;
@@ -193,12 +192,10 @@
     -fx-background-color: #004d80;
     -fx-border-color: #007acc;
 }
-
 .tag-view-simple {
-    -fx-background-color: rgba(180, 49, 93, 0.8); /* Màu hồng đậm */
-    -fx-border-color: #F06292; /* Viền hồng nhạt hơn */
+    -fx-background-color: rgba(180, 49, 93, 0.8);
+    -fx-border-color: #F06292;
 }
-
 .tag-label {
     -fx-text-fill: #ffffff;
     -fx-font-size: 14px;
@@ -234,19 +231,13 @@
 .tag-view-json .tag-delete-button {
     -fx-background-color: #007acc;
 }
-
 .tag-view-simple .tag-delete-button {
-    -fx-background-color: #F06292; /* Màu hồng nhạt hơn để tương phản */
+    -fx-background-color: #F06292;
 }
-
 .tag-delete-button:hover {
     -fx-background-color: #dc3545;
     -fx-text-fill: #ffffff;
 }
-
-/* --- POPUP & SUGGESTION TAG STYLES --- */
-
-/* Style cho nút gợi ý tag (dùng cho CỘT VALUE và TAG ĐƠN GIẢN) */
 .suggested-tag-button {
     -fx-background-color: #383838;
     -fx-text-fill: #ffffff;
@@ -257,7 +248,6 @@
     -fx-font-size: 14px;
     -fx-cursor: hand;
 }
-/* Style màu cho nút gợi ý JSON (dùng cho CỘT VALUE) */
 .suggested-tag-button.tag-view-json {
     -fx-background-color: #004d80;
     -fx-border-color: #007acc;
@@ -278,38 +268,29 @@
     -fx-border-color: #009cff;
     -fx-text-fill: white;
 }
-
-/* Style cho DÒNG KEY (trên) */
 .suggestion-key-button {
-    -fx-background-color: #004d80; /* Màu xanh */
+    -fx-background-color: #004d80;
     -fx-border-color: #007acc;
     -fx-text-fill: #ffffff;
-    -fx-background-radius: 15px; /* Bo tròn */
+    -fx-background-radius: 15px;
     -fx-border-radius: 15px;
-    -fx-padding: 4px 10px 4px 10px; /* Giống value */
-    -fx-font-size: 14px; /* Giống value */
-    -fx-font-weight: bold; /* Thêm bold cho Key */
+    -fx-padding: 4px 10px 4px 10px;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
     -fx-cursor: hand;
 }
-/* Hover cho Key */
 .suggestion-key-button:hover {
     -fx-background-color: #005f9e;
 }
-/* Style để highlight key đang được dùng để lọc value (không phải selected) */
 .suggestion-key-button.filtering-key {
-    -fx-background-color: #005f9e; /* Màu xanh đậm hơn chút so với mặc định */
-    -fx-border-color: #009cff; /* Viền sáng hơn để nổi bật */
+    -fx-background-color: #005f9e;
+    -fx-border-color: #009cff;
 }
-
-/* MÀU HỒNG KHI CHỌN KEY */
 .suggestion-key-button:selected {
-    -fx-background-color: #E91E63; /* Màu hồng */
+    -fx-background-color: #E91E63;
     -fx-border-color: #F06292;
     -fx-text-fill: white;
 }
-
-
-/* --- IMAGE UPDATE STYLES --- */
 .image-save-button {
     -fx-background-color: #28a745;
     -fx-text-fill: white;
@@ -323,15 +304,11 @@
 .image-save-button:hover {
     -fx-background-color: #218838;
 }
-
-/* *** ADD/BACKDROP BUTTONS (Unified) *** */
 .add-backdrop-button {
-    /* MÀU XÁM */
     -fx-background-color: #555555;
     -fx-text-fill: white;
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    /* HÌNH DÁNG TRÒN */
     -fx-background-radius: 100px;
     -fx-padding: 0px 10px 0px 10px;
     -fx-min-width: 30px;
@@ -341,39 +318,6 @@
 .add-backdrop-button:hover {
     -fx-background-color: #666666;
 }
-
-/* *** REVIEW BUTTONS (Unified Round) *** */
-/*.review-button-round {*/
-/* -fx-font-size: 12px;*/
-/* -fx-font-weight: bold;*/
-/* -fx-background-radius: 50em; !* Bán kính lớn để đảm bảo hình tròn *!*/
-/* -fx-min-width: 30px;*/
-/* -fx-min-height: 30px;*/
-/* -fx-max-width: 30px;*/
-/* -fx-max-height: 30px;*/
-/* -fx-padding: 0;*/
-/* -fx-border-width: 0;*/
-/* -fx-text-fill: white;*/
-/*}*/
-
-/*.review-button-round.accept-button {*/
-/* -fx-background-color: #28a745; !* MÀU XANH *!*/
-/*}*/
-
-/*.review-button-round.accept-button:hover {*/
-/* -fx-background-color: #218838; !* Xanh đậm hơn khi hover *!*/
-/*}*/
-
-/*.review-button-round.reject-button {*/
-/* -fx-background-color: #dc3545; !* MÀU ĐỎ *!*/
-/*}*/
-
-/*.review-button-round.reject-button:hover {*/
-/* -fx-background-color: #c82333; !* Đỏ đậm hơn khi hover *!*/
-/*}*/
-/* *** END REVIEW BUTTONS *** */
-
-/* Style cho tất cả các nút ACCEPT */
 #acceptTitleButton,
 #acceptCriticRatingButton,
 #acceptReleaseDateButton,
@@ -383,10 +327,9 @@
 #acceptStudiosButton,
 #acceptPeopleButton,
 #acceptOverviewButton {
-    /* 1. GỘP STYLE HÌNH DẠNG VÀO ĐÂY */
     -fx-font-size: 12px;
     -fx-font-weight: bold;
-    -fx-background-radius: 50em; /* Bo tròn */
+    -fx-background-radius: 50em;
     -fx-min-width: 30px;
     -fx-min-height: 30px;
     -fx-max-width: 30px;
@@ -394,21 +337,13 @@
     -fx-padding: 0;
     -fx-border-width: 0;
     -fx-text-fill: white;
-
-    /* 2. STYLE MÀU SẮC */
-    -fx-background-color: #28a745; /* MÀU XANH */
+    -fx-background-color: #28a745;
 }
-
-/* Hover cho ACCEPT */
 #acceptTitleButton:hover,
 #acceptCriticRatingButton:hover,
-    /* ... (thêm các ID:hover khác nếu cần) ... */
 #acceptOverviewButton:hover {
     -fx-background-color: #218838;
 }
-
-
-/* Style cho tất cả các nút REJECT */
 #rejectTitleButton,
 #rejectCriticRatingButton,
 #rejectReleaseDateButton,
@@ -418,10 +353,9 @@
 #rejectStudiosButton,
 #rejectPeopleButton,
 #rejectOverviewButton {
-    /* 1. GỘP STYLE HÌNH DẠNG VÀO ĐÂY */
     -fx-font-size: 12px;
     -fx-font-weight: bold;
-    -fx-background-radius: 50em; /* Bo tròn */
+    -fx-background-radius: 50em;
     -fx-min-width: 30px;
     -fx-min-height: 30px;
     -fx-max-width: 30px;
@@ -429,36 +363,26 @@
     -fx-padding: 0;
     -fx-border-width: 0;
     -fx-text-fill: white;
-
-    /* 2. STYLE MÀU SẮC */
-    -fx-background-color: #dc3545; /* MÀU ĐỎ */
+    -fx-background-color: #dc3545;
 }
-
-/* Hover cho REJECT */
 #rejectTitleButton:hover,
 #rejectCriticRatingButton:hover,
-    /* ... (thêm các ID:hover khác nếu cần) ... */
 #rejectOverviewButton:hover {
     -fx-background-color: #c82333;
 }
-
-/* RATING BUTTONS */
 .rating-button {
-    -fx-font-size: 16px; /* Chữ lớn hơn */
+    -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-background-radius: 50em; /* Hình tròn */
+    -fx-background-radius: 50em;
     -fx-min-width: 50px;
     -fx-min-height: 50px;
     -fx-max-width: 50px;
     -fx-max-height: 50px;
     -fx-padding: 0;
-    -fx-border-width: 0; /* Thêm viền nhẹ */
-
-    /* MÀU XÁM (mặc định) */
+    -fx-border-width: 0;
     -fx-background-color: #383838;
     -fx-text-fill: #e0e0e0;
     -fx-cursor: hand;
-
     -fx-background-insets: 0;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
@@ -467,19 +391,15 @@
     -fx-background-color: #4a4a4a;
     -fx-border-color: transparent;
 }
-
-/* MÀU HỒNG (khi được chọn) */
 .rating-button.selected {
-    -fx-background-color: #E91E63; /* Màu hồng */
-    -fx-border-color: transparent; /* Viền hồng nhạt */
+    -fx-background-color: #E91E63;
+    -fx-border-color: transparent;
     -fx-text-fill: white;
 }
 .rating-button.selected:hover {
-    -fx-background-color: #d81b60; /* Hồng đậm hơn khi hover */
+    -fx-background-color: #d81b60;
     -fx-border-color: transparent;
 }
-
-
 .backdrop-view {
     -fx-background-color: #222;
     -fx-background-radius: 5px;
@@ -505,50 +425,34 @@
 .backdrop-delete-button:hover {
     -fx-background-color: rgba(200, 33, 49, 1.0);
 }
-
-/* --- CONTEXT MENU STYLES --- */
-
-/* Style cho toàn bộ khung menu */
 .context-menu {
-    -fx-background-color: #2b2b2b; /* Màu nền tối (hơi sáng hơn #121212) */
+    -fx-background-color: #2b2b2b;
     -fx-background-insets: 0;
-    -fx-padding: 6px; /* Padding xung quanh tất cả các items */
-    -fx-background-radius: 8px; /* Bo góc kiểu macOS */
-    -fx-min-width: 220px; /* (Rộng ra chút) */
+    -fx-padding: 6px;
+    -fx-background-radius: 8px;
+    -fx-min-width: 220px;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 20, 0.1, 0, 5);
 }
-
-/* Style cho từng mục (item) trong menu */
 .menu-item {
     -fx-background-color: transparent;
-    -fx-padding: 8px 12px; /* (Nút nhỏ đi chút - padding dọc ít hơn) */
-    -fx-background-radius: 5px; /* Bo góc cho item khi hover */
+    -fx-padding: 8px 12px;
+    -fx-background-radius: 5px;
 }
-
-/* Style cho chữ (label) bên trong item */
 .menu-item .label {
-    -fx-font-size: 15px; /* (Font nhỏ hơn 18px mặc định) */
-    -fx-text-fill: #e0e0e0; /* Màu chữ sáng */
-    -fx-font-family: "System"; /* Font hệ thống */
+    -fx-font-size: 15px;
+    -fx-text-fill: #e0e0e0;
+    -fx-font-family: "System";
 }
-
-/* Style khi di chuột (hover) hoặc focus vào item */
 .menu-item:focused {
-    -fx-background-color: #007acc; /* Màu xanh Emby khi chọn */
+    -fx-background-color: #007acc;
 }
-
-/* Style cho chữ khi di chuột/focus */
 .menu-item:focused .label {
     -fx-text-fill: white;
 }
-
-/* Tắt viền focus (thường là viền nét đứt) */
 .menu-item:focused {
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
 }
-
-/* Style cho dấu phân cách (nếu có) */
 .context-menu .separator {
     -fx-padding: 5px 0 5px 0;
 }
@@ -556,28 +460,23 @@
     -fx-border-color: #444444;
     -fx-border-width: 1 0 0 0;
 }
-
 .clone-button {
     -fx-background-color: #555555;
     -fx-text-fill: white;
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    /* HÌNH DÁNG TRÒN */
     -fx-background-radius: 100px;
     -fx-padding: 0px 10px 0px 10px;
     -fx-min-width: 30px;
     -fx-min-height: 30px;
     -fx-border-width: 0;
 }
-
 .clone-button:hover{
     -fx-background-color: #666666;
 }
-
-/* (*** CẬP NHẬT 38: Style cho trường nhập liệu bị lỗi ***) */
 .text-field.validation-error,
 .text-area.validation-error {
-    -fx-border-color: #E91E63; /* Màu hồng */
+    -fx-border-color: #E91E63;
     -fx-border-width: 2px;
     -fx-border-radius: 5px;
 }

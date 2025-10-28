@@ -35,8 +35,8 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.awt.Desktop;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -77,6 +77,7 @@ public class ItemDetailController {
     @FXML private Label pathLabel;
     @FXML private TextField pathTextField;
     @FXML private Button openButton;
+    @FXML private Button openSubtitleButton; // <-- THÊM FIELD NÀY
     @FXML private Label actionStatusLabel; // Declared but not visible
     @FXML private HBox releaseDateContainer;
     @FXML private Label releaseDateLabel;
@@ -265,6 +266,7 @@ public class ItemDetailController {
         acceptOriginalTitleButton.setText(i18n.getString("itemDetailView", "acceptButton"));
         rejectOriginalTitleButton.setText(i18n.getString("itemDetailView", "rejectButton"));
         pathLabel.setText(i18n.getString("itemDetailView", "pathLabel"));
+        openSubtitleButton.setText(i18n.getString("itemDetailView", "openButtonSubtitle")); // <-- THÊM DÒNG NÀY
         tagsLabel.setText(i18n.getString("itemDetailView", "tagsLabel"));
         acceptTagsButton.setText(i18n.getString("itemDetailView", "acceptButton"));
         rejectTagsButton.setText(i18n.getString("itemDetailView", "rejectButton"));
@@ -344,7 +346,7 @@ public class ItemDetailController {
         pathTextField.textProperty().bind(viewModel.itemPathProperty());
         pathContainer.visibleProperty().bind(
                 viewModel.itemPathProperty().isNotEmpty()
-                        .and(viewModel.itemPathProperty().isNotEqualTo("Không có đường dẫn"))
+                        .and(viewModel.itemPathProperty().isNotEqualTo(I18nManager.getInstance().getString("itemDetailLoader", "noPath"))) // <-- Sửa lỗi hardcode
         );
         pathContainer.managedProperty().bind(pathContainer.visibleProperty());
 
@@ -358,6 +360,13 @@ public class ItemDetailController {
                         .then(I18nManager.getInstance().getString("itemDetailView", "openButtonFolder"))
                         .otherwise(I18nManager.getInstance().getString("itemDetailView", "openButtonFile"))
         );
+
+        // --- THÊM BINDING CHO NÚT SUBTITLE ---
+        openSubtitleButton.visibleProperty().bind(
+                pathContainer.visibleProperty().and(viewModel.isFolderProperty().not())
+        );
+        openSubtitleButton.managedProperty().bind(openSubtitleButton.visibleProperty());
+        // --- KẾT THÚC THÊM BINDING ---
 
         releaseDateContainer.visibleProperty().bind(viewModel.isFolderProperty().not());
         releaseDateContainer.managedProperty().bind(viewModel.isFolderProperty().not());
@@ -586,7 +595,7 @@ public class ItemDetailController {
         if (viewModel == null) return;
         viewModel.clearActionError();
         String path = pathTextField.getText();
-        if (path == null || path.isEmpty() || path.equals("Không có đường dẫn")) {
+        if (path == null || path.isEmpty() || path.equals(I18nManager.getInstance().getString("itemDetailLoader", "noPath"))) { // <-- Sửa lỗi hardcode
             viewModel.reportActionError(I18nManager.getInstance().getString("itemDetailView", "errorInvalidPath"));
             return;
         }
@@ -611,6 +620,121 @@ public class ItemDetailController {
             }
         }).start();
     }
+
+    // <-- HÀM MỚI (BAO GỒM LOGIC MỚI CỦA BẠN) -->
+    /**
+     * (HÀM MỚI) Xử lý nút Mở Subtitle.
+     * Tạo file .srt nếu chưa tồn tại, sau đó mở file .srt VÀ thư mục chứa nó.
+     */
+    @FXML
+    private void handleOpenSubtitleAction() {
+        if (viewModel == null) return;
+        viewModel.clearActionError();
+        I18nManager i18n = I18nManager.getInstance();
+
+        // 1. Lấy đường dẫn file media
+        String mediaPath = pathTextField.getText();
+        if (mediaPath == null || mediaPath.isEmpty() || mediaPath.equals(i18n.getString("itemDetailLoader", "noPath"))) {
+            viewModel.reportActionError(i18n.getString("itemDetailView", "errorInvalidPath"));
+            return;
+        }
+
+        // 2. Kiểm tra Desktop API
+        if (!Desktop.isDesktopSupported()) {
+            viewModel.reportActionError(i18n.getString("itemDetailView", "errorDesktopAPINotSupported"));
+            return;
+        }
+
+        // 3. (Double check) Không chạy nếu là thư mục
+        if (viewModel.isFolderProperty().get()) {
+            return;
+        }
+
+        // 4. Tạo đường dẫn file .srt
+        String srtPath;
+        int dotIndex = mediaPath.lastIndexOf('.');
+        if (dotIndex == -1) {
+            // Không có phần mở rộng file, không thể tạo đường dẫn .srt
+            viewModel.reportActionError(i18n.getString("itemDetailView", "errorInvalidPath"));
+            return;
+        }
+        String pathWithoutExt = mediaPath.substring(0, dotIndex);
+        srtPath = pathWithoutExt + ".srt";
+
+        // 5. Chạy logic trong luồng nền
+        new Thread(() -> {
+            try {
+                File mediaFile = new File(mediaPath);
+                File srtFile = new File(srtPath);
+
+                // Lấy thư mục cha
+                File parentFolder = mediaFile.getParentFile();
+
+                // 6. Kiểm tra file media gốc và thư mục cha
+                if (!mediaFile.exists()) {
+                    Platform.runLater(() -> viewModel.reportActionError(i18n.getString("itemDetailView", "errorPathNotExist")));
+                    return;
+                }
+                if (parentFolder == null || !parentFolder.exists()) {
+                    throw new IOException("Không thể tìm thấy thư mục cha.");
+                }
+
+                // 7. (Logic 1 - SỬA ĐỔI) Kiểm tra và TẠO file .srt UTF-8 BOM nếu chưa có
+                if (!srtFile.exists()) {
+                    try {
+                        // Sử dụng try-with-resources để tự đóng writer
+                        try (FileOutputStream fos = new FileOutputStream(srtFile);
+                             OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+                             BufferedWriter writer = new BufferedWriter(osw)) {
+
+                            // Ghi BOM (Byte Order Mark) cho UTF-8
+                            writer.write('\uFEFF');
+
+                            // Ghi nội dung SRT cơ bản (tùy chọn, có thể bỏ trống)
+                            writer.write("1");
+                            writer.newLine();
+                            writer.write("00:00:00,000 --> 00:00:01,000");
+                            writer.newLine();
+                            writer.write("Phụ đề được tạo tự động"); // <-- Có thể thêm text mặc định
+                            writer.newLine();
+                            writer.newLine();
+
+                            writer.flush(); // Đảm bảo dữ liệu được ghi
+                        }
+                        // Thông báo tạo file thành công
+                        Platform.runLater(() -> viewModel.reportActionError(i18n.getString("itemDetailView", "statusSubtitleCreated", srtFile.getName())));
+                    } catch (IOException createEx) {
+                        System.err.println("Lỗi khi tạo file subtitle: " + createEx.getMessage());
+                        Platform.runLater(() -> viewModel.reportActionError(i18n.getString("itemDetailView", "errorSubtitleCreate", createEx.getMessage())));
+                        return; // Dừng lại nếu không tạo được file
+                    }
+                }
+
+                // 8. (Logic 2) Mở file .srt
+                try {
+                    Desktop.getDesktop().open(srtFile);
+                } catch (Exception openSubEx) {
+                    // Báo lỗi nhưng vẫn tiếp tục để thử mở thư mục
+                    Platform.runLater(() -> viewModel.reportActionError(i18n.getString("itemDetailView", "errorSubtitleOpen", openSubEx.getMessage())));
+                }
+
+                // 9. (Logic 3 - MỚI) Mở thư mục cha
+                try {
+                    Desktop.getDesktop().open(parentFolder);
+                } catch (Exception openFolderEx) {
+                    // Báo lỗi mở thư mục
+                    Platform.runLater(() -> viewModel.reportActionError(i18n.getString("itemDetailView", "errorSubtitleOpenFolder", openFolderEx.getMessage())));
+                }
+
+            } catch (Exception e) {
+                // Bắt các lỗi chung khác (ví dụ: lỗi quyền khi mở file, lỗi tìm thư mục cha)
+                System.err.println("Lỗi khi mở/tạo subtitle hoặc thư mục: " + srtPath + " | " + e.getMessage());
+                Platform.runLater(() -> viewModel.reportActionError(i18n.getString("itemDetailView", "errorSubtitleOpen", e.getMessage())));
+            }
+        }).start();
+    }
+    // <-- KẾT THÚC HÀM MỚI -->
+
 
     /** Handles the Fetch Release Date button action. */
     @FXML

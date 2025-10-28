@@ -7,6 +7,8 @@ import com.example.embyapp.service.I18nManager;
 import com.example.embyapp.service.ItemRepository;
 import com.example.embyapp.service.UserRepository;
 import com.example.embyapp.viewmodel.*;
+// (*** THÊM IMPORT NÀY CHO DELAY ***)
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
@@ -25,6 +27,8 @@ import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.scene.control.TreeItem;
+// (*** THÊM IMPORT NÀY CHO DELAY ***)
+import javafx.util.Duration;
 
 import java.io.IOException;
 import java.net.URL;
@@ -50,6 +54,7 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
  */
 public class MainController implements NativeKeyListener {
 
+    // ... (Các khai báo @FXML và biến thành viên khác giữ nguyên) ...
     @FXML private BorderPane rootPane;
     @FXML private ToolBar mainToolBar;
     @FXML private Button logoutButton;
@@ -90,9 +95,9 @@ public class MainController implements NativeKeyListener {
     private Parent detailDialogRoot;
     private ItemDetailController detailDialogController;
 
-    // Biến cờ theo dõi trạng thái phím modifier toàn hệ thống
-    private volatile boolean isMetaPressed = false;
-    private volatile boolean isShiftPressed = false;
+    // (*** THÊM BIẾN CỜ DEBOUNCE NÀY ***)
+    private volatile boolean processingHotkey = false;
+    private final PauseTransition hotkeyDebounceTimer = new PauseTransition(Duration.millis(200)); // 200ms delay
 
 
     public void setMainApp(MainApp mainApp) {
@@ -151,6 +156,9 @@ public class MainController implements NativeKeyListener {
         if (mainSplitPane.getDividers().size() > 1) {
             mainSplitPane.getDividers().get(1).positionProperty().addListener((obs, oldVal, newVal) -> saveDividerPositions());
         }
+
+        // (*** CẤU HÌNH CHO TIMER DEBOUNCE ***)
+        hotkeyDebounceTimer.setOnFinished(event -> processingHotkey = false);
 
         // Đăng ký hotkey hệ thống
         registerSystemHotkeys();
@@ -564,49 +572,64 @@ public class MainController implements NativeKeyListener {
     }
 
     /**
+     * (*** SỬA LỖI: LOGIC MỚI VỚI DEBOUNCE ***)
      * Xử lý sự kiện nhấn phím toàn hệ thống.
      */
     @Override
     public void nativeKeyPressed(NativeKeyEvent e) {
-        // Cập nhật cờ khi nhấn phím modifiers
-        // *** SỬA ĐỔI: Dùng hằng số đúng ***
-        if (e.getKeyCode() == NativeKeyEvent.VC_META) { // Dùng VC_META chung
-            isMetaPressed = true;
-        } else if (e.getKeyCode() == NativeKeyEvent.VC_SHIFT) { // Dùng VC_SHIFT chung
-            isShiftPressed = true;
+        // (*** THÊM KIỂM TRA CỜ DEBOUNCE ***)
+        if (processingHotkey) {
+            // System.out.println("Debounce: Ignored key press while processing hotkey");
+            return; // Bỏ qua nếu đang trong thời gian chờ debounce
         }
 
+        // Lấy các modifier đang được nhấn TẠI THỜI ĐIỂM SỰ KIỆN NÀY
+        int modifiers = e.getModifiers();
+
+        // Kiểm tra xem cả Meta (Cmd/Win) và Shift có đang được nhấn không
+        boolean metaPressed = (modifiers & NativeInputEvent.META_MASK) != 0;
+        boolean shiftPressed = (modifiers & NativeInputEvent.SHIFT_MASK) != 0;
+
         // Kiểm tra tổ hợp phím
-        if (isMetaPressed && isShiftPressed) {
+        if (metaPressed && shiftPressed) {
+            Runnable action = null; // Hành động cần thực thi trên luồng JavaFX
+
             if (e.getKeyCode() == NativeKeyEvent.VC_N) {
                 // Hotkey: Cmd + Shift + N
                 System.out.println("Global Hotkey: Cmd+Shift+N (Next & Play) detected!");
-                Platform.runLater(() -> {
+                action = () -> {
                     if (itemGridViewModel != null) {
                         itemGridViewModel.selectAndPlayNextItem();
                     }
-                });
+                };
+
             } else if (e.getKeyCode() == NativeKeyEvent.VC_P) {
                 // Hotkey: Cmd + Shift + P
                 System.out.println("Global Hotkey: Cmd+Shift+P (Prev & Play) detected!");
-                Platform.runLater(() -> {
+                action = () -> {
                     if (itemGridViewModel != null) {
                         itemGridViewModel.selectAndPlayPreviousItem();
                     }
-                });
+                };
+            }
+
+            // Nếu có hành động cần thực thi
+            if (action != null) {
+                // (*** ĐẶT CỜ VÀ CHẠY TIMER DEBOUNCE ***)
+                processingHotkey = true; // Đánh dấu bắt đầu xử lý
+                hotkeyDebounceTimer.stop(); // Dừng timer cũ (nếu có)
+                hotkeyDebounceTimer.playFromStart(); // Bắt đầu timer mới
+
+                // Thực thi hành động trên luồng JavaFX
+                Platform.runLater(action);
             }
         }
     }
 
+
     @Override
     public void nativeKeyReleased(NativeKeyEvent e) {
-        // Cập nhật cờ khi *nhả* phím modifiers
-        // *** SỬA ĐỔI: Dùng hằng số đúng ***
-        if (e.getKeyCode() == NativeKeyEvent.VC_META) { // Dùng VC_META chung
-            isMetaPressed = false;
-        } else if (e.getKeyCode() == NativeKeyEvent.VC_SHIFT) { // Dùng VC_SHIFT chung
-            isShiftPressed = false;
-        }
+        // Không cần làm gì ở đây nữa
     }
     // --- Kết thúc các hàm Hotkey Hệ Thống ---
 

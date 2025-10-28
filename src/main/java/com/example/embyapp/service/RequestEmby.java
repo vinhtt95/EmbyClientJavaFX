@@ -14,6 +14,12 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 
+// --- CÁC IMPORT MỚI ĐỂ MERGE ---
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
+// --- KẾT THÚC IMPORT MỚI ---
+
 import org.json.JSONObject;
 
 public class RequestEmby {
@@ -209,6 +215,7 @@ public class RequestEmby {
 
     /**
      * Sao chép Tags từ item nguồn sang tất cả item con của một thư mục cha.
+     * (*** ĐÃ SỬA ĐỔI ĐỂ MERGE (TRỘN) TAGS ***)
      *
      * @param itemService Instance ItemService đã được xác thực
      * @param itemCopyID  ID của item nguồn (để lấy tags)
@@ -243,7 +250,35 @@ public class RequestEmby {
             itemPaste = itemService.getInforItem(eachItemPaste.getId());
             if (itemPaste == null) continue;
 
-            itemPaste.setTagItems(listTagsItemCopy);
+            // --- LOGIC MERGE (TRỘN) TAGS ---
+            // 1. Tạo Map để merge, dùng Name làm key để chống trùng lặp
+            Map<String, NameLongIdPair> mergedTagsMap = new HashMap<>();
+
+            // 2. Thêm các tag HIỆN CÓ (của item paste) vào map
+            if (itemPaste.getTagItems() != null) {
+                for (NameLongIdPair existingTag : itemPaste.getTagItems()) {
+                    if (existingTag.getName() != null) {
+                        mergedTagsMap.put(existingTag.getName(), existingTag);
+                    }
+                }
+            }
+
+            // 3. Thêm các tag MỚI (từ item copy) vào map.
+            if (listTagsItemCopy != null) {
+                for (NameLongIdPair newTag : listTagsItemCopy) {
+                    if (newTag.getName() != null) {
+                        mergedTagsMap.put(newTag.getName(), newTag);
+                    }
+                }
+            }
+
+            // 4. Chuyển map trở lại thành List
+            List<NameLongIdPair> mergedList = new ArrayList<>(mergedTagsMap.values());
+
+            // 5. Set danh sách đã merge
+            itemPaste.setTagItems(mergedList);
+            // --- KẾT THÚC LOGIC MERGE ---
+
 
             if (itemService.updateInforItem(itemPaste.getId(), itemPaste)) {
                 System.out.println("Update success " + eachItemPaste.getName());
@@ -255,6 +290,7 @@ public class RequestEmby {
 
     /**
      * Sao chép Studios từ item nguồn sang tất cả item con của một thư mục cha.
+     * (*** ĐÃ SỬA ĐỔI ĐỂ MERGE (TRỘN) STUDIOS ***)
      * @param itemService Instance ItemService đã được xác thực
      * @param itemCopyID ID của item nguồn
      * @param parentID ID của item cha
@@ -288,7 +324,27 @@ public class RequestEmby {
             itemPaste = itemService.getInforItem(eachItemPaste.getId());
             if (itemPaste == null) continue;
 
-            itemPaste.setStudios(listStudoItemCopy);
+            // --- LOGIC MERGE (TRỘN) STUDIOS ---
+            Map<String, NameLongIdPair> mergedStudiosMap = new HashMap<>();
+
+            if (itemPaste.getStudios() != null) {
+                for (NameLongIdPair existing : itemPaste.getStudios()) {
+                    if (existing.getName() != null) {
+                        mergedStudiosMap.put(existing.getName(), existing);
+                    }
+                }
+            }
+
+            if (listStudoItemCopy != null) {
+                for (NameLongIdPair newStudio : listStudoItemCopy) {
+                    if (newStudio.getName() != null) {
+                        mergedStudiosMap.put(newStudio.getName(), newStudio);
+                    }
+                }
+            }
+
+            itemPaste.setStudios(new ArrayList<>(mergedStudiosMap.values()));
+            // --- KẾT THÚC LOGIC MERGE ---
 
             if (itemService.updateInforItem(itemPaste.getId(), itemPaste)) {
                 System.out.println("Update success " + eachItemPaste.getName());
@@ -300,6 +356,7 @@ public class RequestEmby {
 
     /**
      * Sao chép People từ item nguồn sang tất cả item con của một thư mục cha.
+     * (*** ĐÃ SỬA ĐỔI ĐỂ MERGE (TRỘN) PEOPLE ***)
      * @param itemService Instance ItemService đã được xác thực
      * @param itemCopyID ID của item nguồn
      * @param parentID ID của item cha
@@ -329,11 +386,39 @@ public class RequestEmby {
         int updateCount = 0;
         BaseItemDto itemPaste;
         for (BaseItemDto eachItemPaste : listItemPaste) {
+
+            if (eachItemPaste.getId().equals(itemCopyID)) {
+                System.out.println("Skipping merge for source item itself: " + eachItemPaste.getName());
+                continue; // Chuyển sang item tiếp theo trong vòng lặp
+            }
+
             System.out.println("Updating People for: ID: " + eachItemPaste.getId() + " Name: " + eachItemPaste.getName());
             itemPaste = itemService.getInforItem(eachItemPaste.getId());
             if (itemPaste == null) continue;
 
-            itemPaste.setPeople(listPeopleItemCopy);
+            // --- LOGIC MERGE (TRỘN) PEOPLE ---
+            // Dùng Name làm key. Nếu cần độ chính xác cao hơn, có thể dùng ID nếu có.
+            Map<String, BaseItemPerson> mergedPeopleMap = new HashMap<>();
+
+            if (itemPaste.getPeople() != null) {
+                for (BaseItemPerson existing : itemPaste.getPeople()) {
+                    if (existing.getName() != null) {
+                        mergedPeopleMap.put(existing.getName(), existing);
+                    }
+                }
+            }
+
+            if (listPeopleItemCopy != null) {
+                for (BaseItemPerson newPerson : listPeopleItemCopy) {
+                    if (newPerson.getName() != null) {
+                        mergedPeopleMap.put(newPerson.getName(), newPerson);
+                    }
+                }
+            }
+
+            itemPaste.setPeople(new ArrayList<>(mergedPeopleMap.values()));
+            // --- KẾT THÚC LOGIC MERGE ---
+
 
             if (itemService.updateInforItem(itemPaste.getId(), itemPaste)) {
                 System.out.println("Update success " + eachItemPaste.getName());
@@ -345,6 +430,7 @@ public class RequestEmby {
 
     /**
      * Sao chép Genres (GenreItems) từ item nguồn sang tất cả item con của một thư mục cha.
+     * (*** ĐÃ SỬA ĐỔI ĐỂ MERGE (TRỘN) GENRES ***)
      * @param itemService Instance ItemService đã được xác thực
      * @param itemCopyID ID của item nguồn
      * @param parentID ID của item cha
@@ -380,7 +466,27 @@ public class RequestEmby {
             itemPaste = itemService.getInforItem(eachItemPaste.getId());
             if (itemPaste == null) continue;
 
-            itemPaste.setGenreItems(listGenresItemCopy);
+            // --- LOGIC MERGE (TRỘN) GENRES ---
+            Map<String, NameLongIdPair> mergedGenresMap = new HashMap<>();
+
+            if (itemPaste.getGenreItems() != null) {
+                for (NameLongIdPair existing : itemPaste.getGenreItems()) {
+                    if (existing.getName() != null) {
+                        mergedGenresMap.put(existing.getName(), existing);
+                    }
+                }
+            }
+
+            if (listGenresItemCopy != null) {
+                for (NameLongIdPair newGenre : listGenresItemCopy) {
+                    if (newGenre.getName() != null) {
+                        mergedGenresMap.put(newGenre.getName(), newGenre);
+                    }
+                }
+            }
+
+            itemPaste.setGenreItems(new ArrayList<>(mergedGenresMap.values()));
+            // --- KẾT THÚC LOGIC MERGE ---
 
             if (itemService.updateInforItem(itemPaste.getId(), itemPaste)) {
                 System.out.println("Update success " + eachItemPaste.getName());

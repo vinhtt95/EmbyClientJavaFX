@@ -1,5 +1,7 @@
 package com.example.embyapp.service;
 
+// 1. THÊM IMPORT NÀY
+import embyclient.ApiClient;
 import embyclient.ApiException;
 import embyclient.Configuration;
 import embyclient.api.ItemUpdateServiceApi;
@@ -25,16 +27,24 @@ public class ItemService {
     private UserLibraryServiceApi userLibraryServiceApi;
     private String userId; // Thêm dòng này
 
-    // Sửa hàm khởi tạo
+    // 2. THÊM CÁC DÒNG NÀY
+    private EmbyService embyService; // Thêm để lấy singleton
+    private ItemUpdateServiceApi itemUpdateServiceApi; // Thêm để cache
+    // --- KẾT THÚC THÊM ---
+
+
+    // 3. SỬA HÀM KHỞI TẠO NÀY
     public ItemService(String userId) {
-        this.itemsServiceApi = new ItemsServiceApi(Configuration.getDefaultApiClient());
+        // Lấy EmbyService singleton
+        this.embyService = EmbyService.getInstance();
+        // Lấy ApiClient ĐÃ ĐƯỢC CẤU HÌNH (trỏ về localhost và có token)
+        ApiClient correctClient = embyService.getApiClient();
+
+        // Khởi tạo các API service bằng client ĐÚNG
+        this.itemsServiceApi = new ItemsServiceApi(correctClient);
         this.userId = userId; // Gán userId
-
-        // Bỏ 2 dòng tự đăng nhập
-        // this.authenUserService = new AuthenUserService(Configuration.getDefaultApiClient());
-        // authenUserService.login();
-
-        userLibraryServiceApi = new UserLibraryServiceApi(Configuration.getDefaultApiClient());
+        this.userLibraryServiceApi = new UserLibraryServiceApi(correctClient);
+        this.itemUpdateServiceApi = new ItemUpdateServiceApi(correctClient); // Khởi tạo luôn
     }
 
     /**
@@ -186,11 +196,14 @@ public class ItemService {
 
     }
 
+    // 4. SỬA HÀM NÀY
     public boolean updateInforItem(String itemID, BaseItemDto newInfoItem) {
 
-        ItemUpdateServiceApi itemUpdateServiceApi = new ItemUpdateServiceApi(Configuration.getDefaultApiClient());
+        // Bỏ dòng tạo API client mới bị lỗi
+        // ItemUpdateServiceApi itemUpdateServiceApi = new ItemUpdateServiceApi(Configuration.getDefaultApiClient());
         try {
-            itemUpdateServiceApi.postItemsByItemid(newInfoItem, itemID);
+            // Dùng itemUpdateServiceApi đã được khởi tạo đúng ở constructor
+            this.itemUpdateServiceApi.postItemsByItemid(newInfoItem, itemID);
             return true;
         } catch (ApiException e) {
             System.out.println(e.getMessage());

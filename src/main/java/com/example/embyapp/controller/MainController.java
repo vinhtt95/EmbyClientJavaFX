@@ -28,18 +28,27 @@ import javafx.scene.control.TreeItem;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.control.TextInputControl; // Import được bao gồm trong javafx.scene.control.*
+
+// Imports cho Global Hotkey
+import com.github.kwhat.jnativehook.GlobalScreen;
+import com.github.kwhat.jnativehook.NativeHookException;
+import com.github.kwhat.jnativehook.NativeInputEvent;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
+import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 
 
 /**
  * Controller Điều Phối (Coordinator) cho MainView.
+ * Implement NativeKeyListener để bắt hotkey hệ thống.
  */
-public class MainController {
+public class MainController implements NativeKeyListener {
 
     @FXML private BorderPane rootPane;
     @FXML private ToolBar mainToolBar;
@@ -138,6 +147,9 @@ public class MainController {
         if (mainSplitPane.getDividers().size() > 1) {
             mainSplitPane.getDividers().get(1).positionProperty().addListener((obs, oldVal, newVal) -> saveDividerPositions());
         }
+
+        // Đăng ký hotkey hệ thống
+        registerSystemHotkeys();
     }
 
     private void setupLocalization() {
@@ -182,7 +194,6 @@ public class MainController {
 
 
     /**
-     * Helper
      * Tải một FXML phụ vào một AnchorPane container.
      */
     private <T> T loadNestedFXML(String fxmlFile, AnchorPane container) throws IOException {
@@ -230,8 +241,16 @@ public class MainController {
             }
         });
 
+        // Sửa listener này để xử lý `playAfterSelect`
         itemGridViewModel.selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             itemDetailViewModel.setItemToDisplay(newVal);
+
+            // Logic mới để "phát" tự động khi hotkey hệ thống được nhấn
+            if (newVal != null && itemGridViewModel.isPlayAfterSelect()) {
+                System.out.println("Hotkey: Phát tự động item: " + newVal.getName());
+                itemGridController.playItem(newVal); // Gọi hàm public của ItemGridController
+                itemGridViewModel.clearPlayAfterSelect(); // Xóa cờ
+            }
         });
 
         ReadOnlyBooleanProperty treeLoading = libraryTreeViewModel.loadingProperty();
@@ -263,7 +282,6 @@ public class MainController {
     }
 
     /**
-     * Helper
      * Cập nhật status message dựa trên trạng thái loading và lỗi hành động.
      */
     private void updateStatusMessage(boolean isTreeLoading, boolean isGridLoading, boolean isDetailLoading, String actionStatus) {
@@ -403,39 +421,33 @@ public class MainController {
     }
 
     /**
-     * (*** MỚI - HOTKEY LOGIC ***)
-     * Đăng ký Hotkeys toàn cục trên Scene sau khi nó đã được load.
+     * Đăng ký Hotkeys (khi app được focus) trên Scene sau khi nó đã được load.
      * @param scene Scene của MainView.
      */
     public void registerGlobalHotkeys(Scene scene) {
         if (scene == null) return;
 
-        // --- Request 1: Lặp lại dialog Add Tag (Phím ENTER) ---
-        // Chỉ dùng phím ENTER, không kèm modifier nào khác, và không focus vào input control.
+        // --- Lặp lại dialog Add Tag (Phím ENTER) ---
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            // Kiểm tra: phím ENTER được nhấn VÀ không có modifier nào (như Shift/Ctrl/Cmd/Alt/Meta)
             if (event.getCode() == KeyCode.ENTER && !event.isShiftDown() && !event.isControlDown() && !event.isAltDown() && !event.isMetaDown()) {
 
                 Node focusedNode = scene.getFocusOwner();
 
-                // Các control chặn hotkey (vì ENTER sẽ kích hoạt hành động của chúng)
-                boolean isBlockingControl = focusedNode instanceof TextInputControl // Covers TextField, TextArea, PasswordField
+                boolean isBlockingControl = focusedNode instanceof TextInputControl
                         || focusedNode instanceof Button
                         || focusedNode instanceof ToggleButton;
 
-                // Chỉ kích hoạt khi không có focus (null) hoặc focus không nằm trên control chặn
                 if (focusedNode == null || !isBlockingControl) {
                     if (itemDetailController != null) {
                         itemDetailController.handleRepeatAddTagDialog();
-                        event.consume(); // Ngăn sự kiện ENTER lan truyền tiếp
+                        event.consume();
                     }
                 }
             }
         });
 
 
-        // --- Request 2: Cmd + S (Save) ---
-        // SHORTCUT_DOWN là Ctrl trên Windows/Linux và Command trên Mac
+        // --- Cmd + S (Save) ---
         final KeyCombination saveShortcut = new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN);
         scene.getAccelerators().put(saveShortcut, () -> {
             if (itemDetailController != null) {
@@ -443,7 +455,7 @@ public class MainController {
             }
         });
 
-        // --- Request 3: Cmd + N (Next Item) ---
+        // --- Cmd + N (Next Item - CHỈ CHỌN) ---
         final KeyCombination nextShortcut = new KeyCodeCombination(KeyCode.N, KeyCombination.SHORTCUT_DOWN);
         scene.getAccelerators().put(nextShortcut, () -> {
             if (itemGridViewModel != null) {
@@ -451,7 +463,7 @@ public class MainController {
             }
         });
 
-        // --- Request 4: Cmd + P (Previous Item) ---
+        // --- Cmd + P (Previous Item - CHỈ CHỌN) ---
         final KeyCombination prevShortcut = new KeyCodeCombination(KeyCode.P, KeyCombination.SHORTCUT_DOWN);
         scene.getAccelerators().put(prevShortcut, () -> {
             if (itemGridViewModel != null) {
@@ -461,6 +473,84 @@ public class MainController {
 
         System.out.println("Global hotkeys registered.");
     }
+
+    // --- Các hàm cho Hotkey Hệ Thống (JNativeHook) ---
+
+    /**
+     * Đăng ký trình lắng nghe hotkey toàn hệ thống.
+     */
+    private void registerSystemHotkeys() {
+        // Tắt log của JNativeHook
+        Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
+        logger.setLevel(Level.OFF);
+        logger.setUseParentHandlers(false);
+
+        try {
+            GlobalScreen.registerNativeHook();
+            System.out.println("Global hotkey hook đã đăng ký.");
+        } catch (NativeHookException ex) {
+            System.err.println("Lỗi nghiêm trọng khi đăng ký global hotkey hook.");
+            System.err.println(ex.getMessage());
+            return;
+        }
+
+        GlobalScreen.addNativeKeyListener(this);
+    }
+
+    /**
+     * Hủy đăng ký trình lắng nghe hotkey (gọi khi thoát ứng dụng).
+     */
+    public void shutdown() {
+        try {
+            GlobalScreen.removeNativeKeyListener(this);
+            GlobalScreen.unregisterNativeHook();
+            System.out.println("Global hotkey hook đã được hủy đăng ký.");
+        } catch (NativeHookException ex) {
+            System.err.println("Lỗi khi hủy đăng ký global hotkey hook.");
+            System.err.println(ex.getMessage());
+        }
+    }
+
+    @Override
+    public void nativeKeyTyped(NativeKeyEvent e) {
+        // Không sử dụng
+    }
+
+    /**
+     * Xử lý sự kiện nhấn phím toàn hệ thống.
+     */
+    @Override
+    public void nativeKeyPressed(NativeKeyEvent e) {
+        // Kiểm tra Cmd (Meta) + Shift
+        boolean isCmdShift = (e.getModifiers() & NativeInputEvent.META_MASK) != 0 &&
+                (e.getModifiers() & NativeInputEvent.SHIFT_MASK) != 0;
+
+        if (isCmdShift) {
+            if (e.getKeyCode() == NativeKeyEvent.VC_N) {
+                // Hotkey: Cmd + Shift + N
+                System.out.println("Global Hotkey: Cmd+Shift+N (Next & Play) detected!");
+                Platform.runLater(() -> {
+                    if (itemGridViewModel != null) {
+                        itemGridViewModel.selectAndPlayNextItem();
+                    }
+                });
+            } else if (e.getKeyCode() == NativeKeyEvent.VC_P) {
+                // Hotkey: Cmd + Shift + P
+                System.out.println("Global Hotkey: Cmd+Shift+P (Prev & Play) detected!");
+                Platform.runLater(() -> {
+                    if (itemGridViewModel != null) {
+                        itemGridViewModel.selectAndPlayPreviousItem();
+                    }
+                });
+            }
+        }
+    }
+
+    @Override
+    public void nativeKeyReleased(NativeKeyEvent e) {
+        // Không sử dụng
+    }
+    // --- Kết thúc các hàm Hotkey Hệ Thống ---
 
     @FXML
     private void handleSearchAction() {

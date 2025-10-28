@@ -40,7 +40,8 @@ import java.util.Optional;
 /**
  * Controller cho ItemGridView (Cột giữa).
  * Áp dụng logic Page Replacement, và Context Menu.
- * (CẬP NHẬT) Thêm logic highlight item được chọn.
+ * Thêm logic highlight item được chọn.
+ * Tách logic "Play" ra hàm public.
  */
 public class ItemGridController {
 
@@ -312,6 +313,15 @@ public class ItemGridController {
      * Hàm xử lý logic Mở/Phát khi Double-Click.
      */
     private void handleDoubleClick(BaseItemDto item) {
+        playItem(item);
+    }
+
+    /**
+     * Xử lý logic Mở/Phát cho một item (có thể được gọi từ bên ngoài).
+     */
+    public void playItem(BaseItemDto item) {
+        if (item == null) return;
+
         I18nManager i18n = I18nManager.getInstance();
         if (itemDetailViewModel != null) {
             itemDetailViewModel.clearActionError();
@@ -364,6 +374,7 @@ public class ItemGridController {
             }
         }).start();
     }
+
 
     /**
      * Hiển thị hộp thoại xác nhận.

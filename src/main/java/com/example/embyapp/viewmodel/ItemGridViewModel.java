@@ -3,7 +3,7 @@ package com.example.embyapp.viewmodel;
 import embyclient.ApiException;
 import embyclient.model.BaseItemDto;
 import embyclient.model.QueryResultBaseItemDto;
-import com.example.embyapp.service.I18nManager; // <-- IMPORT
+import com.example.embyapp.service.I18nManager;
 import com.example.embyapp.service.ItemRepository;
 import javafx.application.Platform;
 import javafx.beans.property.*;
@@ -15,18 +15,18 @@ import javafx.collections.ObservableList;
 import java.util.List;
 
 /**
- * (SỬA ĐỔI) ViewModel cho ItemGridView (Cột giữa).
- * (CẬP NHẬT MỚI) Chuyển sang logic PHÂN TRANG THAY THẾ (Page Replacement) khi cuộn.
- * (CẬP NHẬT TÌM KIẾM) Thêm logic cho tìm kiếm và phân trang kết quả tìm kiếm.
- * (CẬP NHẬT SẮP XẾP) Thêm logic cho tùy chọn sắp xếp.
- * (CẬP NHẬT HOTKEY) Thêm logic chọn item trước/sau.
+ * ViewModel cho ItemGridView (Cột giữa).
+ * Chuyển sang logic PHÂN TRANG THAY THẾ (Page Replacement) khi cuộn.
+ * Thêm logic cho tìm kiếm và phân trang kết quả tìm kiếm.
+ * Thêm logic cho tùy chọn sắp xếp.
+ * Thêm logic chọn item trước/sau.
+ * Thêm logic cho hotkey hệ thống (playAfterSelect).
  */
 public class ItemGridViewModel {
 
     // Hằng số cho phân trang
     private static final int ITEMS_PER_LOAD = 50;
 
-    // (*** HẰNG SỐ SẮP XẾP MỚI ***)
     public static final String SORT_BY_DATE_RELEASE = "ProductionYear,PremiereDate,SortName";
     public static final String SORT_BY_NAME = "SortName";
     public static final String SORT_ORDER_DESCENDING = "Descending";
@@ -48,26 +48,29 @@ public class ItemGridViewModel {
     private String currentSearchKeywords;
     private boolean isSearching = false;
 
-    // --- (*** SORTING STATE MỚI ***) ---
-    private final ReadOnlyStringWrapper currentSortBy = new ReadOnlyStringWrapper(SORT_BY_DATE_RELEASE); // Mặc định sắp xếp theo Ngày phát hành
-    private final ReadOnlyStringWrapper currentSortOrder = new ReadOnlyStringWrapper(SORT_ORDER_DESCENDING); // Mặc định Giảm dần
+    // --- Sorting State ---
+    private final ReadOnlyStringWrapper currentSortBy = new ReadOnlyStringWrapper(SORT_BY_DATE_RELEASE);
+    private final ReadOnlyStringWrapper currentSortOrder = new ReadOnlyStringWrapper(SORT_ORDER_DESCENDING);
 
 
     // Dùng để khóa load và báo hiệu trạng thái
     private final ReadOnlyBooleanWrapper loading = new ReadOnlyBooleanWrapper(false);
-    private final ReadOnlyStringWrapper statusMessage = new ReadOnlyStringWrapper(""); // <-- Remove default
+    private final ReadOnlyStringWrapper statusMessage = new ReadOnlyStringWrapper("");
     private final ReadOnlyBooleanWrapper showStatusMessage = new ReadOnlyBooleanWrapper(true);
 
     // --- Properties (Không đổi) ---
     private final ObservableList<BaseItemDto> items = FXCollections.observableArrayList();
     private final ObjectProperty<BaseItemDto> selectedItem = new SimpleObjectProperty<>();
 
-    // (MỚI) Dùng để báo hiệu cho Controller biết cần phải cuộn
+    // Dùng để báo hiệu cho Controller biết cần phải cuộn
     private final ObjectProperty<ScrollAction> scrollAction = new SimpleObjectProperty<>(ScrollAction.NONE);
+
+    // Cờ cho hotkey hệ thống
+    private final BooleanProperty playAfterSelect = new SimpleBooleanProperty(false);
+
 
     public ItemGridViewModel(ItemRepository itemRepository) {
         this.itemRepository = itemRepository;
-        // <-- Set default text here -->
         this.statusMessage.set(I18nManager.getInstance().getString("itemGridView", "statusDefault"));
     }
 
@@ -92,7 +95,7 @@ public class ItemGridViewModel {
         currentSearchKeywords = null;
 
         int startIndex = pageIndex * ITEMS_PER_LOAD;
-        I18nManager i18n = I18nManager.getInstance(); // <-- Get I18n
+        I18nManager i18n = I18nManager.getInstance();
 
         // Lấy thông tin sắp xếp hiện tại
         final String sortBy = currentSortBy.get();
@@ -100,47 +103,36 @@ public class ItemGridViewModel {
 
         // Cập nhật trạng thái tải
         Platform.runLater(() -> {
-            statusMessage.set(i18n.getString("itemGridView", "statusPageLoading", (pageIndex + 1), (totalPages > 0 ? totalPages : "..."))); // <-- UPDATE
+            statusMessage.set(i18n.getString("itemGridView", "statusPageLoading", (pageIndex + 1), (totalPages > 0 ? totalPages : "...")));
         });
 
 
         new Thread(() -> {
             try {
-                // (*** SỬA LỖI: THÊM sortOrder và sortBy ***)
                 QueryResultBaseItemDto result = itemRepository.getFullByParentIdPaginated(
                         parentId, startIndex, ITEMS_PER_LOAD, sortOrder, sortBy
                 );
 
-                // Tính toán tổng số trang/item
                 int calculatedTotalCount = result.getTotalRecordCount() != null ? result.getTotalRecordCount() : 0;
-                // Tính toán tổng số trang
                 int calculatedTotalPages = (int) Math.ceil((double) calculatedTotalCount / ITEMS_PER_LOAD);
-
-                // Ghi nhận item hiện tại (vì đây là thay thế trang)
                 List<BaseItemDto> pageItems = result.getItems();
 
-                // (*** MỚI - LOGIC CHỌN ITEM SAU KHI TẢI ***)
                 BaseItemDto itemToSelect = null;
                 if (!pageItems.isEmpty()) {
-                    // Nếu là trang đầu tiên, chọn item đầu tiên
                     if (pageIndex == 0) {
                         itemToSelect = pageItems.get(0);
                     }
-                    // Nếu là trang trước đó, chọn item cuối cùng
                     else if (pageIndex < currentPageIndex) {
                         itemToSelect = pageItems.get(pageItems.size() - 1);
                     }
-                    // Nếu là trang tiếp theo, chọn item đầu tiên
                     else if (pageIndex > currentPageIndex) {
                         itemToSelect = pageItems.get(0);
                     }
                 }
                 final BaseItemDto finalItemToSelect = itemToSelect;
-                // (*** KẾT THÚC LOGIC CHỌN ITEM ***)
 
 
                 Platform.runLater(() -> {
-                    // 1. Cập nhật Pagination State
                     currentParentId = parentId;
                     totalCount = calculatedTotalCount;
                     totalPages = calculatedTotalPages;
@@ -149,41 +141,36 @@ public class ItemGridViewModel {
                     hasNextPage.set(currentPageIndex < totalPages - 1);
                     hasPreviousPage.set(currentPageIndex > 0);
 
-                    // 2. Cập nhật Items (Thay thế nội dung)
                     items.setAll(pageItems);
 
                     if (items.isEmpty() && totalCount > 0) {
-                        // Trường hợp hiếm: API trả về trang rỗng giữa chừng, nên giữ trạng thái loading
-                        statusMessage.set(i18n.getString("itemGridView", "statusPageEmpty")); // <-- UPDATE
+                        statusMessage.set(i18n.getString("itemGridView", "statusPageEmpty"));
                         showStatusMessage.set(true);
                     } else if (items.isEmpty()) {
-                        statusMessage.set(i18n.getString("itemGridView", "statusLibraryEmpty")); // <-- UPDATE
+                        statusMessage.set(i18n.getString("itemGridView", "statusLibraryEmpty"));
                         showStatusMessage.set(true);
                     } else {
-                        // Cập nhật status
-                        statusMessage.set(i18n.getString("itemGridView", "statusDisplaying", (pageIndex + 1), totalPages, totalCount)); // <-- UPDATE
+                        statusMessage.set(i18n.getString("itemGridView", "statusDisplaying", (pageIndex + 1), totalPages, totalCount));
 
-                        // Set item được chọn
                         if (finalItemToSelect != null) {
                             selectedItem.set(finalItemToSelect);
                         }
                     }
 
-                    // 3. Hoàn thành loading
                     loading.set(false);
                 });
 
             } catch (ApiException e) {
                 System.err.println("API Error loading page: " + e.getMessage());
                 Platform.runLater(() -> {
-                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingPage", e.getMessage())); // <-- UPDATE
+                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingPage", e.getMessage()));
                     showStatusMessage.set(true);
                     loading.set(false);
                 });
             } catch (Exception e) {
                 System.err.println("Generic Error loading page: " + e.getMessage());
                 Platform.runLater(() -> {
-                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingPageGeneric")); // <-- UPDATE
+                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingPageGeneric"));
                     showStatusMessage.set(true);
                     loading.set(false);
                 });
@@ -192,7 +179,7 @@ public class ItemGridViewModel {
     }
 
     /**
-     * (MỚI) Phương thức tải trang cho kết quả tìm kiếm.
+     * Phương thức tải trang cho kết quả tìm kiếm.
      */
     private void loadSearchPage(int pageIndex, String keywords) {
         if (loading.get() || pageIndex < 0 || (totalPages > 0 && pageIndex >= totalPages)) {
@@ -201,72 +188,61 @@ public class ItemGridViewModel {
 
         loading.set(true);
         showStatusMessage.set(false);
-        scrollAction.set(ScrollAction.NONE); // Reset scroll action
+        scrollAction.set(ScrollAction.NONE);
 
         int startIndex = pageIndex * ITEMS_PER_LOAD;
-        I18nManager i18n = I18nManager.getInstance(); // <-- Get I18n
+        I18nManager i18n = I18nManager.getInstance();
 
         Platform.runLater(() -> {
-            statusMessage.set(i18n.getString("itemGridView", "statusSearchPageLoading", (pageIndex + 1), (totalPages > 0 ? totalPages : "..."))); // <-- UPDATE
+            statusMessage.set(i18n.getString("itemGridView", "statusSearchPageLoading", (pageIndex + 1), (totalPages > 0 ? totalPages : "...")));
         });
 
         new Thread(() -> {
             try {
-                // SỬ DỤNG ItemRepository.searchItemsPaginated
-                // Tìm kiếm luôn sắp xếp theo Tên (Name) Tăng dần
                 QueryResultBaseItemDto result = itemRepository.searchItemsPaginated(
                         keywords, startIndex, ITEMS_PER_LOAD, SORT_ORDER_ASCENDING, SORT_BY_NAME
                 );
 
                 int calculatedTotalCount = result.getTotalRecordCount() != null ? result.getTotalRecordCount() : 0;
                 int calculatedTotalPages = (int) Math.ceil((double) calculatedTotalCount / ITEMS_PER_LOAD);
-
                 List<BaseItemDto> pageItems = result.getItems();
 
-                // (*** MỚI - LOGIC CHỌN ITEM SAU KHI TẢI ***)
                 BaseItemDto itemToSelect = null;
                 if (!pageItems.isEmpty()) {
-                    // Nếu là trang đầu tiên, chọn item đầu tiên
                     if (pageIndex == 0) {
                         itemToSelect = pageItems.get(0);
                     }
-                    // Nếu là trang trước đó, chọn item cuối cùng
                     else if (pageIndex < currentPageIndex) {
                         itemToSelect = pageItems.get(pageItems.size() - 1);
                     }
-                    // Nếu là trang tiếp theo, chọn item đầu tiên
                     else if (pageIndex > currentPageIndex) {
                         itemToSelect = pageItems.get(0);
                     }
                 }
                 final BaseItemDto finalItemToSelect = itemToSelect;
-                // (*** KẾT THÚC LOGIC CHỌN ITEM ***)
 
 
                 Platform.runLater(() -> {
-                    // 1. Cập nhật Pagination State & Search State
                     currentSearchKeywords = keywords;
-                    currentParentId = null; // Rất quan trọng: Báo hiệu không còn ở chế độ thư viện
+                    currentParentId = null;
                     totalCount = calculatedTotalCount;
                     totalPages = calculatedTotalPages;
                     currentPageIndex = pageIndex;
-                    isSearching = true; // Set cờ tìm kiếm
+                    isSearching = true;
 
                     hasNextPage.set(currentPageIndex < totalPages - 1);
                     hasPreviousPage.set(currentPageIndex > 0);
 
-                    // 2. Cập nhật Items (Thay thế nội dung)
                     items.setAll(pageItems);
 
                     if (items.isEmpty() && totalCount > 0) {
-                        statusMessage.set(i18n.getString("itemGridView", "statusPageEmpty")); // <-- UPDATE
+                        statusMessage.set(i18n.getString("itemGridView", "statusPageEmpty"));
                         showStatusMessage.set(true);
                     } else if (items.isEmpty()) {
-                        statusMessage.set(i18n.getString("itemGridView", "statusSearchEmpty", keywords)); // <-- UPDATE
+                        statusMessage.set(i18n.getString("itemGridView", "statusSearchEmpty", keywords));
                         showStatusMessage.set(true);
                     } else {
-                        statusMessage.set(i18n.getString("itemGridView", "statusSearchResult", (pageIndex + 1), totalPages, totalCount)); // <-- UPDATE
-                        // 3. (QUAN TRỌNG) Tự động chọn item đầu tiên (hoặc item đã được tính toán)
+                        statusMessage.set(i18n.getString("itemGridView", "statusSearchResult", (pageIndex + 1), totalPages, totalCount));
                         if (finalItemToSelect != null) {
                             selectedItem.set(finalItemToSelect);
                         } else if (!pageItems.isEmpty()) {
@@ -274,21 +250,20 @@ public class ItemGridViewModel {
                         }
                     }
 
-                    // 4. Hoàn thành loading
                     loading.set(false);
                 });
 
             } catch (ApiException e) {
                 System.err.println("API Error loading search page: " + e.getMessage());
                 Platform.runLater(() -> {
-                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingSearch", e.getMessage())); // <-- UPDATE
+                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingSearch", e.getMessage()));
                     showStatusMessage.set(true);
                     loading.set(false);
                 });
             } catch (Exception e) {
                 System.err.println("Generic Error loading search page: " + e.getMessage());
                 Platform.runLater(() -> {
-                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingSearchGeneric")); // <-- UPDATE
+                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingSearchGeneric"));
                     showStatusMessage.set(true);
                     loading.set(false);
                 });
@@ -307,12 +282,11 @@ public class ItemGridViewModel {
         if (parentId == null) {
             Platform.runLater(() -> {
                 items.clear();
-                statusMessage.set(I18nManager.getInstance().getString("itemGridView", "statusDefault")); // <-- UPDATE
+                statusMessage.set(I18nManager.getInstance().getString("itemGridView", "statusDefault"));
                 showStatusMessage.set(true);
                 loading.set(false);
                 selectedItem.set(null);
 
-                // Reset pagination state
                 currentParentId = null;
                 totalCount = 0;
                 currentPageIndex = 0;
@@ -320,27 +294,24 @@ public class ItemGridViewModel {
                 hasNextPage.set(false);
                 hasPreviousPage.set(false);
 
-                // Reset search state
                 isSearching = false;
                 currentSearchKeywords = null;
             });
             return;
         }
 
-        // Tải trang 0 cho thư viện mới hoặc khi đã thay đổi sắp xếp
         loadPage(0, parentId);
     }
 
     /**
-     * (MỚI) Bắt đầu tìm kiếm items theo từ khóa.
+     * Bắt đầu tìm kiếm items theo từ khóa.
      */
     public void searchItemsByKeywords(String keywords) {
         if (keywords == null || keywords.trim().isEmpty()) {
-            loadItemsByParentId(null); // Clear view
+            loadItemsByParentId(null);
             return;
         }
 
-        // Tải trang 0 cho kết quả tìm kiếm mới
         loadSearchPage(0, keywords);
     }
 
@@ -352,7 +323,6 @@ public class ItemGridViewModel {
 
         int nextPage = currentPageIndex + 1;
 
-        // SỬA LỖI: Khai báo listener là biến cục bộ để có thể remove
         ChangeListener<Boolean> cleanupListener = new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> obs, Boolean oldVal, Boolean newVal) {
@@ -363,14 +333,12 @@ public class ItemGridViewModel {
             }
         };
 
-        // Quyết định dùng hàm tải nào
         if (isSearching) {
-            loadSearchPage(nextPage, currentSearchKeywords); // Tải trang tìm kiếm
+            loadSearchPage(nextPage, currentSearchKeywords);
         } else {
-            loadPage(nextPage, currentParentId); // Tải trang thư viện
+            loadPage(nextPage, currentParentId);
         }
 
-        // Yêu cầu Controller cuộn lên đầu sau khi tải
         loading.addListener(cleanupListener);
     }
 
@@ -382,7 +350,6 @@ public class ItemGridViewModel {
 
         int previousPage = currentPageIndex - 1;
 
-        // SỬA LỖI: Khai báo listener là biến cục bộ để có thể remove
         ChangeListener<Boolean> cleanupListener = new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> obs, Boolean oldVal, Boolean newVal) {
@@ -393,59 +360,46 @@ public class ItemGridViewModel {
             }
         };
 
-        // Quyết định dùng hàm tải nào
         if (isSearching) {
-            loadSearchPage(previousPage, currentSearchKeywords); // Tải trang tìm kiếm
+            loadSearchPage(previousPage, currentSearchKeywords);
         } else {
-            loadPage(previousPage, currentParentId); // Tải trang thư viện
+            loadPage(previousPage, currentParentId);
         }
 
-        // Yêu cầu Controller cuộn xuống cuối sau khi tải
         loading.addListener(cleanupListener);
     }
 
-    // --- (*** LOGIC SẮP XẾP MỚI: ĐÃ THÊM ***) ---
-
     /**
-     * (*** MỚI ***)
      * Chuyển đổi tiêu chí sắp xếp (Tên <-> Ngày phát hành) và tải lại trang hiện tại.
      */
     public void toggleSortBy() {
         if (currentParentId == null || isSearching || loading.get()) return;
 
-        // Chuyển đổi trạng thái
         if (currentSortBy.get().equals(SORT_BY_DATE_RELEASE)) {
             currentSortBy.set(SORT_BY_NAME);
         } else {
             currentSortBy.set(SORT_BY_DATE_RELEASE);
         }
 
-        // Tải lại trang 0 (để đảm bảo tính nhất quán của danh sách)
         loadPage(0, currentParentId);
     }
 
     /**
-     * (*** MỚI ***)
      * Chuyển đổi thứ tự sắp xếp (Tăng dần <-> Giảm dần) và tải lại trang hiện tại.
      */
     public void toggleSortOrder() {
         if (currentParentId == null || isSearching || loading.get()) return;
 
-        // Chuyển đổi trạng thái
         if (currentSortOrder.get().equals(SORT_ORDER_DESCENDING)) {
             currentSortOrder.set(SORT_ORDER_ASCENDING);
         } else {
             currentSortOrder.set(SORT_ORDER_DESCENDING);
         }
 
-        // Tải lại trang 0 (để đảm bảo tính nhất quán của danh sách)
         loadPage(0, currentParentId);
     }
 
-    // --- (*** LOGIC HOTKEY MỚI ***) ---
-
     /**
-     * (*** MỚI - HOTKEY LOGIC ***)
      * Chọn item tiếp theo trong danh sách hiện tại.
      * Nếu là item cuối cùng của trang, tự động chuyển trang tiếp theo.
      */
@@ -455,17 +409,13 @@ public class ItemGridViewModel {
         int currentIndex = items.indexOf(current);
 
         if (currentIndex != -1 && currentIndex < items.size() - 1) {
-            // Chọn item tiếp theo trong trang
             selectedItem.set(items.get(currentIndex + 1));
         } else if (currentIndex == items.size() - 1 && hasNextPage.get()) {
-            // Nếu là item cuối cùng và có trang tiếp theo, chuyển sang trang tiếp theo
-            // loadNextPage() sẽ tự động chọn item đầu tiên của trang mới
             loadNextPage();
         }
     }
 
     /**
-     * (*** MỚI - HOTKEY LOGIC ***)
      * Chọn item liền trước trong danh sách hiện tại.
      * Nếu là item đầu tiên của trang, tự động chuyển về trang trước đó.
      */
@@ -475,13 +425,40 @@ public class ItemGridViewModel {
         int currentIndex = items.indexOf(current);
 
         if (currentIndex > 0) {
-            // Chọn item liền trước trong trang
             selectedItem.set(items.get(currentIndex - 1));
         } else if (currentIndex == 0 && hasPreviousPage.get()) {
-            // Nếu là item đầu tiên và có trang trước đó, chuyển sang trang trước đó
-            // loadPreviousPage() sẽ tự động chọn item cuối cùng của trang mới
             loadPreviousPage();
         }
+    }
+
+    /**
+     * Chọn item tiếp theo và đặt cờ để phát tự động.
+     */
+    public void selectAndPlayNextItem() {
+        playAfterSelect.set(true);
+        selectNextItem();
+    }
+
+    /**
+     * Chọn item trước đó và đặt cờ để phát tự động.
+     */
+    public void selectAndPlayPreviousItem() {
+        playAfterSelect.set(true);
+        selectPreviousItem();
+    }
+
+    /**
+     * Kiểm tra cờ phát tự động.
+     */
+    public boolean isPlayAfterSelect() {
+        return playAfterSelect.get();
+    }
+
+    /**
+     * Xóa cờ phát tự động.
+     */
+    public void clearPlayAfterSelect() {
+        playAfterSelect.set(false);
     }
 
 
@@ -507,7 +484,6 @@ public class ItemGridViewModel {
         return selectedItem;
     }
 
-    // (MỚI) Getters cho trạng thái trang
     public ReadOnlyBooleanProperty hasNextPageProperty() {
         return hasNextPage.getReadOnlyProperty();
     }
@@ -516,22 +492,20 @@ public class ItemGridViewModel {
         return hasPreviousPage.getReadOnlyProperty();
     }
 
-    // (MỚI) Getter cho hành động cuộn
     public ObjectProperty<ScrollAction> scrollActionProperty() {
         return scrollAction;
     }
 
-    /** (MỚI) Lấy chỉ số trang hiện tại (0-based) */
+    /** Lấy chỉ số trang hiện tại (0-based) */
     public int getCurrentPageIndex() {
         return currentPageIndex;
     }
 
-    /** (MỚI) Lấy tổng số trang */
+    /** Lấy tổng số trang */
     public int getTotalPages() {
         return totalPages;
     }
 
-    // (*** GETTERS SẮP XẾP MỚI ***)
     public ReadOnlyStringProperty currentSortByProperty() {
         return currentSortBy.getReadOnlyProperty();
     }
@@ -540,7 +514,6 @@ public class ItemGridViewModel {
         return currentSortOrder.getReadOnlyProperty();
     }
 
-    // (*** GETTER MỚI ***)
     public boolean isSearching() {
         return isSearching;
     }

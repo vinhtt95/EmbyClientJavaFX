@@ -139,22 +139,32 @@ public class AddTagDialogController {
         jsonTagRadio.setSelected(true);
 
         // --- (SỬA ĐỔI LISTENER KEY SUGGESTION - Chỉ phản ứng khi click) ---
-        keySuggestionGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
-            if (!isFilteringSuggestions && newToggle != null) {
-                String selectedKey = (String) newToggle.getUserData();
-                keyField.setText(selectedKey); // Điền text ngay lập tức vẫn ổn
+        // Trong hàm initialize() của AddTagDialogController.java
 
-                // Delay cả populateValues và requestFocus
+        keySuggestionGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
+            // Chỉ xử lý khi người dùng click
+            if (!isFilteringSuggestions) {
+                // --- BỌC TOÀN BỘ LOGIC CLICK TRONG Platform.runLater ---
                 Platform.runLater(() -> {
-                    valueSuggestionGroup.selectToggle(null); // Bỏ chọn value cũ (nên làm trước populate)
-                    populateValues(newToggle, ""); // Populate value dựa trên key mới
-                    valueField.requestFocus(); // Chuyển focus xuống valueField
+                    if (newToggle != null) {
+                        // Logic khi chọn một key mới
+                        valueSuggestionGroup.selectToggle(null); // Bỏ chọn value cũ
+                        String selectedKey = (String) newToggle.getUserData();
+                        keyField.setText(selectedKey); // Điền key đã chọn
+                        populateValues(newToggle, ""); // Populate value dựa trên key mới
+                        valueField.requestFocus(); // Chuyển focus xuống valueField
+                    } else if (oldToggle != null) {
+                        // Logic khi bỏ chọn key (click lại key đang chọn)
+                        // Kiểm tra xem oldToggle có còn là nút hợp lệ không trước khi dùng
+                        if (oldToggle.getUserData() != null) {
+                            populateValues(null, valueField.getText()); // Clear value suggestions
+                        }
+                    }
                 });
-            } else if (!isFilteringSuggestions && newToggle == null && oldToggle != null) {
-                populateValues(null, valueField.getText());
+                // --- KẾT THÚC BỌC ---
             }
+            // Không cần else vì khi isFilteringSuggestions = true, không cần làm gì ở đây nữa
         });
-        // --- (KẾT THÚC SỬA ĐỔI) ---
 
         // --- (SỬA ĐỔI LISTENER KEY FIELD - Chỉ lọc, không chọn) ---
         keyField.textProperty().addListener((obs, oldVal, newVal) -> {

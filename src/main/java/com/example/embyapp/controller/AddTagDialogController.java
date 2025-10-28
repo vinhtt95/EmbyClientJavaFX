@@ -1,17 +1,17 @@
 package com.example.embyapp.controller;
 
 import com.example.embyapp.service.EmbyService;
-import com.example.embyapp.service.I18nManager; // <-- IMPORT
+import com.example.embyapp.service.I18nManager;
 import com.example.embyapp.service.ItemRepository;
 import com.example.embyapp.service.RequestEmby;
 import com.example.embyapp.viewmodel.detail.SuggestionItemModel;
 import com.example.embyapp.viewmodel.detail.TagModel;
 import embyclient.model.UserLibraryTagItem;
 import javafx.application.Platform;
-import javafx.beans.property.SimpleStringProperty; // <-- THÊM IMPORT
-import javafx.beans.property.StringProperty; // <-- THÊM IMPORT
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button; // <-- IMPORT
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
@@ -24,6 +24,11 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import javafx.animation.PauseTransition;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.util.Duration;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,13 +40,9 @@ import java.util.stream.Collectors;
 
 
 /**
- * (CẬP NHẬT 30) Thêm Genres.
- * - Cập nhật SuggestionContext và loadSuggestedTags.
- * (CẬP NHẬT 34) Thêm chức năng tìm kiếm nhanh trong các gợi ý (3 ô tìm kiếm).
- * (FIX LỖI) Sửa ClassCastException và Lỗi biên dịch rawName.
- * (CẬP NHẬT 35) Gộp ô tìm kiếm nhanh vào ô nhập liệu chính.
- * (CẬP NHẬT 36) Thêm chức năng Sao chép nhanh (Quick Copy).
- * (FIX LỖI 37) Sửa NullPointerException do quickCopyLabel bị xóa khỏi FXML.
+ * Controller for the Add Tag Dialog.
+ * Includes advanced input handling features.
+ * (CẬP NHẬT 39) Thêm logic tự động chọn key gợi ý, bôi đen value khi Tab, bỏ qua value khi nhập key.
  */
 public class AddTagDialogController {
 
@@ -56,37 +57,26 @@ public class AddTagDialogController {
 
     @FXML private GridPane simpleTagPane;
     @FXML private Label contentLabel;
-    @FXML private TextField simpleNameField; // (*** DÙNG LÀM TÌM KIẾM ***)
+    @FXML private TextField simpleNameField;
 
     @FXML private GridPane jsonTagPane;
     @FXML private Label keyLabel;
-    @FXML private TextField keyField; // (*** DÙNG LÀM TÌM KIẾM ***)
+    @FXML private TextField keyField;
     @FXML private Label valueLabel;
-    @FXML private TextField valueField; // (*** DÙNG LÀM TÌM KIẾM ***)
-
-    // (*** XÓA BỎ: 3 ô Search và Label của chúng ***)
-    // @FXML private Label suggestionKeyLabel;
-    // @FXML private TextField keySearchField;
-    // @FXML private Label suggestionValueLabel;
-    // @FXML private TextField valueSearchField;
-    // @FXML private Label suggestionSimpleLabel; // (Label này vẫn tồn tại trong FXML, nhưng là header)
-    // @FXML private TextField simpleSearchField;
+    @FXML private TextField valueField;
 
     @FXML private VBox suggestionJsonContainer;
-    @FXML private Label suggestionKeyLabel; // (*** GIỮ LẠI: Label header ***)
+    @FXML private Label suggestionKeyLabel;
     @FXML private FlowPane suggestionKeysPane;
-    @FXML private Label suggestionValueLabel; // (*** GIỮ LẠI: Label header ***)
+    @FXML private Label suggestionValueLabel;
     @FXML private FlowPane suggestionValuesPane;
 
     @FXML private VBox suggestionSimpleContainer;
-    @FXML private Label suggestionSimpleLabel; // (*** GIỮ LẠI: Label header ***)
+    @FXML private Label suggestionSimpleLabel;
     @FXML private FlowPane suggestionSimplePane;
 
-    // (*** THÊM CÁC TRƯỜNG MỚI CHO SAO CHÉP NHANH ***)
-    // @FXML private Label quickCopyLabel; // <<<==== ĐÃ BỊ XÓA KHỎI FXML
     @FXML private TextField copyIdField;
     @FXML private Button copyButton;
-    // (*** KẾT THÚC THÊM MỚI ***)
 
     @FXML private Button cancelButton;
     @FXML private Button okButton;
@@ -96,16 +86,17 @@ public class AddTagDialogController {
 
     private Stage dialogStage;
     private TagModel resultTag = null;
-    // (*** THÊM PROPERTY MỚI ĐỂ GIAO TIẾP ***)
     private StringProperty copyTriggeredId = new SimpleStringProperty(null);
 
     private ItemRepository itemRepository;
     private SuggestionContext currentContext = SuggestionContext.TAG;
 
-    // (*** Danh sách gốc và các nhóm đã phân tách ***)
     private List<String> allRawNames = Collections.emptyList();
-    private Map<String, List<ParsedTag>> jsonGroups = new HashMap<>(); // Key -> List<ParsedTag>
-    private List<ParsedTag> allSimpleTags = Collections.emptyList(); // List<ParsedTag> cho Simple
+    private Map<String, List<ParsedTag>> jsonGroups = new HashMap<>();
+    private List<ParsedTag> allSimpleTags = Collections.emptyList();
+
+    // Cờ để kiểm soát việc populate value khi key thay đổi tự động
+    private boolean isAutoSelectingKey = false;
 
 
     private static class ParsedTag {
@@ -121,102 +112,108 @@ public class AddTagDialogController {
 
     @FXML
     public void initialize() {
-        // --- Setup Localization ---
-        setupLocalization(); // <-- CALL NEW METHOD
+        setupLocalization();
 
-        // Listener chuyển đổi pane nhập liệu (Giữ nguyên)
         simpleTagRadio.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
             simpleTagPane.setVisible(isSelected);
             simpleTagPane.setManaged(isSelected);
             jsonTagPane.setVisible(!isSelected);
             jsonTagPane.setManaged(!isSelected);
+
+            Platform.runLater(() -> {
+                if (isSelected) {
+                    simpleNameField.requestFocus();
+                } else {
+                    keyField.requestFocus();
+                }
+            });
         });
 
-        // Kích hoạt listener lần đầu (Mặc định là JSON)
         simpleTagPane.setVisible(false);
         simpleTagPane.setManaged(false);
         jsonTagPane.setVisible(true);
         jsonTagPane.setManaged(true);
         jsonTagRadio.setSelected(true);
 
-        // 1. Listener cho JSON Key (Giữ nguyên)
+        // Listener khi người dùng *CLICK* chọn Key suggestion
         keySuggestionGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
-            if (newToggle != null) {
-                valueSuggestionGroup.selectToggle(null);
+            if (isAutoSelectingKey) {
+                // Nếu là do tự động chọn, chỉ populate value dựa trên key mới
+                populateValues(newToggle, ""); // Bỏ qua value hiện tại
+            } else if (newToggle != null) {
+                // Nếu là do user click
+                valueSuggestionGroup.selectToggle(null); // Bỏ chọn value cũ
+                String selectedKey = (String) newToggle.getUserData();
+                keyField.setText(selectedKey); // Điền key đã chọn vào keyField
+                Platform.runLater(() -> valueField.requestFocus()); // Chuyển focus xuống valueField
+                populateValues(newToggle, valueField.getText()); // Populate value dựa trên key và value hiện tại
+            } else {
+                // Nếu không có key nào được chọn (ví dụ: key bị lọc hết)
+                populateValues(null, valueField.getText()); // Clear value suggestions
             }
-            // Gọi hàm populateValues để lọc và hiển thị
-            // (*** CẬP NHẬT: Đọc từ valueField ***)
-            populateValues(newToggle, valueField.getText());
         });
 
-        // (*** CẬP NHẬT: Gộp listener tìm kiếm vào ô nhập liệu ***)
+
         keyField.textProperty().addListener((obs, oldVal, newVal) -> {
-            populateKeys(newVal); // Lọc Keys
-            // Khi key thay đổi, value cũng phải cập nhật (dựa trên key đang chọn)
-            populateValues(keySuggestionGroup.getSelectedToggle(), valueField.getText());
-            updateContainerVisibility(); // Cập nhật hiển thị
+            isAutoSelectingKey = true; // Bật cờ trước khi populate keys
+            populateKeys(newVal); // Lọc Keys (và có thể tự động chọn key đầu tiên)
+            isAutoSelectingKey = false; // Tắt cờ sau khi xong
+            // populateValues sẽ được gọi bởi listener của keySuggestionGroup nếu có key được auto-select
+            if (keySuggestionGroup.getSelectedToggle() == null) {
+                // Nếu không có key nào được auto-select (vì không có gợi ý), clear value suggestions
+                populateValues(null, "");
+            }
+            updateContainerVisibility();
         });
+
 
         valueField.textProperty().addListener((obs, oldVal, newVal) -> {
-            populateValues(keySuggestionGroup.getSelectedToggle(), newVal); // Lọc Values
-            updateContainerVisibility(); // Cập nhật hiển thị
+            // Chỉ populate value dựa trên key đang được chọn và text value mới
+            populateValues(keySuggestionGroup.getSelectedToggle(), newVal);
+            updateContainerVisibility();
         });
 
         simpleNameField.textProperty().addListener((obs, oldVal, newVal) -> {
-            populateSimpleTags(newVal); // Lọc Simple
-            updateContainerVisibility(); // Cập nhật hiển thị
+            populateSimpleTags(newVal);
+            updateContainerVisibility();
         });
 
-        // (*** THÊM HANDLER CHO NÚT SAO CHÉP MỚI ***)
         copyButton.setOnAction(e -> handleCopyAction());
+
+        // Xử lý Tab từ Key Field
+        keyField.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.TAB && !event.isShiftDown()) {
+                valueField.requestFocus();
+                // Bôi đen toàn bộ text trong value field
+                Platform.runLater(() -> valueField.selectAll());
+                event.consume();
+            }
+        });
     }
 
-    // <-- ADD THIS NEW METHOD -->
     private void setupLocalization() {
         I18nManager i18n = I18nManager.getInstance();
-
-        // Title is set in setContext
-
         jsonTagRadio.setText(i18n.getString("addTagDialog", "labelJson"));
-
         contentLabel.setText(i18n.getString("addTagDialog", "contentLabel"));
-        // (*** THAY ĐỔI: Dùng prompt tìm kiếm ***)
         simpleNameField.setPromptText(i18n.getString("addTagDialog", "suggestionSimplePrompt"));
-
         keyLabel.setText(i18n.getString("addTagDialog", "keyLabel"));
-        // (*** THAY ĐỔI: Dùng prompt tìm kiếm ***)
         keyField.setPromptText(i18n.getString("addTagDialog", "suggestionKeyPrompt"));
-
         valueLabel.setText(i18n.getString("addTagDialog", "valueLabel"));
-        // (*** THAY ĐỔI: Dùng prompt tìm kiếm ***)
         valueField.setPromptText(i18n.getString("addTagDialog", "suggestionValuePrompt"));
-
-        // (*** XÓA BỎ CÁC TRƯỜNG TÌM KIẾM CŨ ***)
         suggestionKeyLabel.setText(i18n.getString("addTagDialog", "suggestionKeyLabel"));
         suggestionValueLabel.setText(i18n.getString("addTagDialog", "suggestionValueLabel"));
-
-        // suggestionSimpleLabel is set in setContext (sẽ được set ở setContext)
-
-        // (*** THÊM CÁC TRƯỜNG SAO CHÉP MỚI ***)
-        // quickCopyLabel.setText(i18n.getString("addTagDialog", "quickCopyLabel")); // <<<==== DÒNG GÂY LỖI ĐÃ BỊ XÓA
         copyIdField.setPromptText(i18n.getString("addTagDialog", "copyIdPrompt"));
         copyButton.setText(i18n.getString("addTagDialog", "copyButton"));
-        // (*** KẾT THÚC THÊM MỚI ***)
-
         cancelButton.setText(i18n.getString("addTagDialog", "cancelButton"));
         okButton.setText(i18n.getString("addTagDialog", "okButton"));
     }
 
-    /**
-     * Thiết lập context và repository trước khi hiển thị.
-     */
     public void setContext(SuggestionContext context, ItemRepository itemRepository) {
         this.currentContext = context;
         this.itemRepository = itemRepository;
 
-        // Cập nhật UI theo context (Chỉ thay đổi tiêu đề, không ẩn JSON inputs)
         Platform.runLater(() -> {
-            I18nManager i18n = I18nManager.getInstance(); // <-- Get I18n
+            I18nManager i18n = I18nManager.getInstance();
             Stage stage = (Stage) dialogStage.getScene().getWindow();
             String title;
             String simpleRadioText;
@@ -247,26 +244,27 @@ public class AddTagDialogController {
             }
 
             stage.setTitle(title);
-            titleLabel.setText(title); // <-- Set title label in dialog
-            simpleTagRadio.setText(simpleRadioText); // <-- Set radio button text
+            titleLabel.setText(title);
+            simpleTagRadio.setText(simpleRadioText);
 
-            // Đặt lại label cho Simple Suggestions
-            // (*** ĐÃ SỬA LỖI CAST TẠI ĐÂY ***)
-            // (*** CẬP NHẬT: Lấy Label trực tiếp, vì HBox đã bị xóa ***)
-            // Lấy Label (index 0 của suggestionSimpleContainer)
-            // (Đảm bảo FXML khớp, label là con đầu tiên)
-            Label suggestionLabel = (Label) suggestionSimpleContainer.getChildren().get(0);
+            if (suggestionSimpleContainer != null && !suggestionSimpleContainer.getChildren().isEmpty() && suggestionSimpleContainer.getChildren().get(0) instanceof Label) {
+                Label suggestionLabel = (Label) suggestionSimpleContainer.getChildren().get(0);
+                suggestionLabel.setText(simpleSuggestionLabelText);
+            }
 
-            suggestionLabel.setText(simpleSuggestionLabelText); // <-- Set suggestion label text
 
-            // Luôn hiển thị cả hai radio buttons và containers
             jsonTagRadio.setVisible(true);
             jsonTagRadio.setManaged(true);
             simpleTagRadio.setVisible(true);
             simpleTagRadio.setManaged(true);
 
-            // Tải gợi ý
             loadSuggestedTags();
+
+            if (jsonTagRadio.isSelected()) {
+                Platform.runLater(() -> keyField.requestFocus());
+            } else {
+                Platform.runLater(() -> simpleNameField.requestFocus());
+            }
         });
     }
 
@@ -305,24 +303,23 @@ public class AddTagDialogController {
                 e.printStackTrace();
             }
 
-            // Cập nhật UI
             Platform.runLater(() -> {
                 this.allRawNames = rawNames;
-                prepareSuggestionLists(); // Chuẩn bị danh sách gốc
+                prepareSuggestionLists();
 
-                // (*** CẬP NHẬT: Đọc từ ô nhập liệu chính ***)
-                // Áp dụng filter ban đầu (đọc từ text fields, nếu có)
                 String keySearch = keyField.getText();
-                String valueSearch = valueField.getText();
+                String valueSearch = valueField.getText(); // Giữ lại value search ban đầu nếu có
                 String simpleSearch = simpleNameField.getText();
 
-                // Gọi các hàm populate
+                isAutoSelectingKey = true; // Bật cờ trước khi populate keys ban đầu
                 populateKeys(keySearch);
+                isAutoSelectingKey = false; // Tắt cờ
                 populateSimpleTags(simpleSearch);
+                // Populate values dựa trên key đã auto-select (nếu có) và value search ban đầu
                 populateValues(keySuggestionGroup.getSelectedToggle(), valueSearch);
 
-                // Cập nhật hiển thị container
-                updateContainerVisibility(); // (*** Dùng hàm mới ***)
+
+                updateContainerVisibility();
             });
         }).start();
     }
@@ -342,14 +339,11 @@ public class AddTagDialogController {
                 }
             }
         } catch (Exception e) {
-            // Lỗi đã được log ở loadSuggestedTags
+            // Lỗi đã được log
         }
         return Collections.emptyList();
     }
 
-    /**
-     * (*** TÁCH LOGIC: Chuẩn bị danh sách gốc (Không lọc) ***)
-     */
     private void prepareSuggestionLists() {
         if (allRawNames == null || allRawNames.isEmpty()) {
             jsonGroups.clear();
@@ -357,101 +351,80 @@ public class AddTagDialogController {
             return;
         }
 
-        // 1. Parse tất cả tên thô thành TagModel
         List<ParsedTag> parsedTags = allRawNames.stream()
                 .map(raw -> new ParsedTag(raw, TagModel.parse(raw)))
                 .collect(Collectors.toList());
 
-        // 2. Chia nhóm JSON
         jsonGroups = parsedTags.stream()
                 .filter(pt -> pt.model.isJson())
                 .collect(Collectors.groupingBy(pt -> pt.model.getKey()));
 
-        // 3. Lấy danh sách Simple Tags
         allSimpleTags = parsedTags.stream()
                 .filter(pt -> !pt.model.isJson())
                 .collect(Collectors.toList());
     }
 
 
-    /**
-     * (*** HÀM NÀY ĐÃ BỊ XÓA BỎ ***)
-     * private void applyFiltersAndPopulate(...) { ... }
-     */
-
-    /**
-     * (*** HÀM MỚI: Cập nhật hiển thị container ***)
-     */
     private void updateContainerVisibility() {
         Platform.runLater(() -> {
-            // Hiển thị/ẩn container JSON
             suggestionJsonContainer.setVisible(!jsonGroups.isEmpty());
             suggestionJsonContainer.setManaged(!jsonGroups.isEmpty());
 
-            // Hiển thị/ẩn container Simple
             boolean hasOriginalSimpleSuggestions = allSimpleTags != null && !allSimpleTags.isEmpty();
             suggestionSimpleContainer.setVisible(hasOriginalSimpleSuggestions);
             suggestionSimpleContainer.setManaged(hasOriginalSimpleSuggestions);
         });
     }
 
-    /**
-     * Lọc và populate Keys dựa trên searchText.
-     * @param searchText Text từ keyField. (*** THAY ĐỔI ***)
-     */
     private void populateKeys(String searchText) {
         suggestionKeysPane.getChildren().clear();
+        Toggle oldSelectedToggle = keySuggestionGroup.getSelectedToggle(); // Lưu lại lựa chọn cũ
         keySuggestionGroup.getToggles().clear();
 
         Set<String> allKeys = jsonGroups.keySet();
 
-        // 1. Lọc Keys
         List<String> filteredKeys;
         if (searchText == null || searchText.trim().isEmpty()) {
             filteredKeys = new ArrayList<>(allKeys);
         } else {
-            String lowerCaseSearchText = searchText.trim().toLowerCase();
+            String lowerCaseSearchText = searchText.trim().toLowerCase(); // Đảm bảo case-insensitive
             filteredKeys = allKeys.stream()
-                    .filter(key -> key.toLowerCase().contains(lowerCaseSearchText))
+                    .filter(key -> key.toLowerCase().contains(lowerCaseSearchText)) // Đảm bảo case-insensitive
                     .collect(Collectors.toList());
         }
 
-        // 2. Sắp xếp và Populate
         Collections.sort(filteredKeys, String.CASE_INSENSITIVE_ORDER);
 
+        ToggleButton firstButton = null;
         for (String key : filteredKeys) {
             ToggleButton chip = new ToggleButton(key);
             chip.setToggleGroup(keySuggestionGroup);
             chip.getStyleClass().add("suggestion-key-button");
             chip.setUserData(key);
             suggestionKeysPane.getChildren().add(chip);
+            if (firstButton == null) {
+                firstButton = chip;
+            }
         }
 
-        // Giữ lại key đã chọn nếu nó vẫn còn trong danh sách đã lọc
-        if (keySuggestionGroup.getSelectedToggle() == null && !filteredKeys.isEmpty()) {
-            keySuggestionGroup.selectToggle(keySuggestionGroup.getToggles().get(0));
-        } else if (keySuggestionGroup.getSelectedToggle() != null) {
-            // Kiểm tra xem toggle hiện tại có bị lọc mất không
-            String selectedKey = (String) keySuggestionGroup.getSelectedToggle().getUserData();
-            if (!filteredKeys.contains(selectedKey) && !filteredKeys.isEmpty()) {
-                // Chọn lại cái đầu tiên nếu cái cũ bị lọc mất
-                keySuggestionGroup.selectToggle(keySuggestionGroup.getToggles().get(0));
-            } else if (!filteredKeys.contains(selectedKey) && filteredKeys.isEmpty()) {
-                // Nếu không có key nào, clear values
-                // (*** CẬP NHẬT: Đọc từ valueField ***)
-                populateValues(null, valueField.getText());
+        // Tự động chọn key đầu tiên nếu danh sách lọc không rỗng
+        if (firstButton != null) {
+            // Chỉ gọi selectToggle nếu lựa chọn hiện tại khác null VÀ khác với cái đầu tiên
+            // HOẶC nếu lựa chọn hiện tại là null
+            Toggle currentSelection = keySuggestionGroup.getSelectedToggle();
+            if (currentSelection == null || !currentSelection.getUserData().equals(firstButton.getUserData())) {
+                keySuggestionGroup.selectToggle(firstButton); // -> Sẽ trigger listener của keySuggestionGroup
             }
+        } else {
+            // Nếu không có key nào khớp -> bỏ chọn key hiện tại (nếu có)
+            keySuggestionGroup.selectToggle(null); // -> Sẽ trigger listener của keySuggestionGroup
         }
     }
 
-    /**
-     * Lọc và populate Values của Key đang được chọn.
-     * @param selectedKeyToggle Toggle của Key đang được chọn.
-     * @param searchText Text từ valueField. (*** THAY ĐỔI ***)
-     */
+
     private void populateValues(Toggle selectedKeyToggle, String searchText) {
         suggestionValuesPane.getChildren().clear();
-        valueSuggestionGroup.getToggles().clear(); // Reset ToggleGroup cho Values
+        valueSuggestionGroup.getToggles().clear();
 
         if (selectedKeyToggle == null) {
             return;
@@ -462,18 +435,16 @@ public class AddTagDialogController {
 
         if (tagsInGroup == null) return;
 
-        // 1. Lọc Values
         final List<ParsedTag> filteredTags;
         if (searchText == null || searchText.trim().isEmpty()) {
             filteredTags = tagsInGroup;
         } else {
-            String lowerCaseSearchText = searchText.trim().toLowerCase();
+            String lowerCaseSearchText = searchText.trim().toLowerCase(); // Đảm bảo case-insensitive
             filteredTags = tagsInGroup.stream()
-                    .filter(pt -> pt.model.getValue().toLowerCase().contains(lowerCaseSearchText))
+                    .filter(pt -> pt.model.getValue().toLowerCase().contains(lowerCaseSearchText)) // Đảm bảo case-insensitive
                     .collect(Collectors.toList());
         }
 
-        // 2. Sắp xếp và Populate
         filteredTags.sort((pt1, pt2) -> pt1.model.getValue().compareToIgnoreCase(pt2.model.getValue()));
 
 
@@ -492,25 +463,19 @@ public class AddTagDialogController {
         }
     }
 
-    /**
-     * Lọc và Populate Simple Tags.
-     * @param searchText Text từ simpleNameField. (*** THAY ĐỔI ***)
-     */
     private void populateSimpleTags(String searchText) {
         suggestionSimplePane.getChildren().clear();
-        // Không reset valueSuggestionGroup ở đây, vì nó dùng chung với value/key
 
         final List<ParsedTag> filteredTags;
         if (searchText == null || searchText.trim().isEmpty()) {
             filteredTags = allSimpleTags;
         } else {
-            String lowerCaseSearchText = searchText.trim().toLowerCase();
+            String lowerCaseSearchText = searchText.trim().toLowerCase(); // Đảm bảo case-insensitive
             filteredTags = allSimpleTags.stream()
-                    .filter(pt -> pt.model.getDisplayName().toLowerCase().contains(lowerCaseSearchText))
+                    .filter(pt -> pt.model.getDisplayName().toLowerCase().contains(lowerCaseSearchText)) // Đảm bảo case-insensitive
                     .collect(Collectors.toList());
         }
 
-        // Sắp xếp theo DisplayName (tên)
         filteredTags.sort((pt1, pt2) -> pt1.model.getDisplayName().compareToIgnoreCase(pt2.model.getDisplayName()));
 
 
@@ -535,7 +500,6 @@ public class AddTagDialogController {
         TagModel selectedTag = TagModel.parse(selectedTagName);
         if (selectedTag.isJson()) {
             jsonTagRadio.setSelected(true);
-            // Dùng TagModel getters thay vì parse lại JSON thô
             keyField.setText(selectedTag.getKey() != null ? selectedTag.getKey() : "");
             valueField.setText(selectedTag.getValue() != null ? selectedTag.getValue() : "");
             simpleNameField.clear();
@@ -555,29 +519,19 @@ public class AddTagDialogController {
         return resultTag;
     }
 
-    // (*** THÊM HÀM GETTER MỚI NÀY ***)
-    /**
-     * Property này sẽ được set khi người dùng nhấn nút "Sao chép".
-     * @return StringProperty chứa ID của item cần sao chép.
-     */
     public StringProperty copyTriggeredIdProperty() {
         return copyTriggeredId;
     }
 
-    /**
-     * Logic handleOk không đổi: nó tạo TagModel.
-     */
     @FXML
     private void handleOk() {
         resultTag = null;
         if (simpleTagRadio.isSelected()) {
             String simpleName = simpleNameField.getText();
             if (simpleName != null && !simpleName.trim().isEmpty()) {
-                // Studio/People/Simple Tag đều được lưu dưới dạng TagModel đơn giản
                 resultTag = new TagModel(simpleName.trim());
             }
         } else {
-            // Luôn cho phép tạo JSON cho mọi Context
             String key = keyField.getText();
             String value = valueField.getText();
             if (key != null && !key.trim().isEmpty() && value != null && !value.trim().isEmpty()) {
@@ -588,7 +542,16 @@ public class AddTagDialogController {
         if (resultTag != null) {
             dialogStage.close();
         } else {
-            System.err.println(I18nManager.getInstance().getString("addTagDialog", "errorInvalid")); // <-- UPDATE
+            System.err.println(I18nManager.getInstance().getString("addTagDialog", "errorInvalid"));
+            if (simpleTagRadio.isSelected()) {
+                highlightField(simpleNameField);
+            } else {
+                if (keyField.getText().trim().isEmpty()) {
+                    highlightField(keyField);
+                } else if (valueField.getText().trim().isEmpty()) {
+                    highlightField(valueField);
+                }
+            }
         }
     }
 
@@ -597,20 +560,64 @@ public class AddTagDialogController {
         dialogStage.close();
     }
 
-    // (*** THÊM HÀM HANDLER MỚI NÀY ***)
-    /**
-     * Xử lý khi nhấn nút "Sao chép".
-     * Nó chỉ set ID và đóng dialog.
-     */
     @FXML
     private void handleCopyAction() {
         String id = copyIdField.getText();
         if (id != null && !id.trim().isEmpty()) {
-            this.copyTriggeredId.set(id.trim()); // Set ID để ItemDetailController bắt
-            dialogStage.close(); // Đóng dialog
+            this.copyTriggeredId.set(id.trim());
+            dialogStage.close();
         } else {
-            // (Tùy chọn: Có thể báo lỗi field rỗng)
             copyIdField.requestFocus();
+            highlightField(copyIdField);
         }
+    }
+
+    @FXML
+    private void handleKeyPressed(KeyEvent event) {
+        if (event.getCode() == KeyCode.ESCAPE) {
+            handleCancel();
+        } else if (event.getCode() == KeyCode.ENTER) {
+            handleEnterPressed();
+        }
+    }
+
+    private void handleEnterPressed() {
+        if (simpleTagRadio.isSelected()) {
+            if (simpleNameField.getText().trim().isEmpty()) {
+                handleCancel();
+            } else {
+                handleOk();
+            }
+        } else {
+            String key = keyField.getText().trim();
+            String value = valueField.getText().trim();
+
+            if (key.isEmpty()) {
+                handleCancel();
+            } else if (!key.isEmpty() && !value.isEmpty()) {
+                handleOk();
+            } else if (!key.isEmpty() && value.isEmpty()) {
+                boolean keyExists = jsonGroups.keySet().stream()
+                        .anyMatch(k -> k.equalsIgnoreCase(key)); // Đảm bảo case-insensitive
+
+                if (keyExists) {
+                    valueField.requestFocus();
+                    highlightField(valueField);
+                } else {
+                    simpleTagRadio.setSelected(true);
+                    simpleNameField.setText(keyField.getText()); // Dùng text gốc, không trim()
+                    handleOk();
+                }
+            }
+        }
+    }
+
+    private void highlightField(TextField field) {
+        Platform.runLater(() -> {
+            field.getStyleClass().add("validation-error");
+            PauseTransition pause = new PauseTransition(Duration.seconds(1));
+            pause.setOnFinished(e -> field.getStyleClass().remove("validation-error"));
+            pause.play();
+        });
     }
 }

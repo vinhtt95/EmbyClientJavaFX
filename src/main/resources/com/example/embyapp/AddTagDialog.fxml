@@ -16,7 +16,8 @@
 
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.example.embyapp.controller.AddTagDialogController"
-      spacing="15.0" styleClass="dialog-pane" prefWidth="550.0" prefHeight="975.0">
+      spacing="15.0" styleClass="dialog-pane" prefWidth="550.0" prefHeight="975.0"
+      onKeyPressed="#handleKeyPressed">
     <padding>
         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
     </padding>

@@ -337,10 +337,50 @@
 }
 
 /* *** REVIEW BUTTONS (Unified Round) *** */
-.review-button-round {
+/*.review-button-round {*/
+/*    -fx-font-size: 12px;*/
+/*    -fx-font-weight: bold;*/
+/*    -fx-background-radius: 50em; !* Bán kính lớn để đảm bảo hình tròn *!*/
+/*    -fx-min-width: 30px;*/
+/*    -fx-min-height: 30px;*/
+/*    -fx-max-width: 30px;*/
+/*    -fx-max-height: 30px;*/
+/*    -fx-padding: 0;*/
+/*    -fx-border-width: 0;*/
+/*    -fx-text-fill: white;*/
+/*}*/
+
+/*.review-button-round.accept-button {*/
+/*    -fx-background-color: #28a745; !* MÀU XANH *!*/
+/*}*/
+
+/*.review-button-round.accept-button:hover {*/
+/*    -fx-background-color: #218838; !* Xanh đậm hơn khi hover *!*/
+/*}*/
+
+/*.review-button-round.reject-button {*/
+/*    -fx-background-color: #dc3545; !* MÀU ĐỎ *!*/
+/*}*/
+
+/*.review-button-round.reject-button:hover {*/
+/*    -fx-background-color: #c82333; !* Đỏ đậm hơn khi hover *!*/
+/*}*/
+/* *** END REVIEW BUTTONS *** */
+
+/* Style cho tất cả các nút ACCEPT */
+#acceptTitleButton,
+#acceptCriticRatingButton,
+#acceptReleaseDateButton,
+#acceptOriginalTitleButton,
+#acceptTagsButton,
+#acceptGenresButton,
+#acceptStudiosButton,
+#acceptPeopleButton,
+#acceptOverviewButton {
+    /* 1. GỘP STYLE HÌNH DẠNG VÀO ĐÂY */
     -fx-font-size: 12px;
     -fx-font-weight: bold;
-    -fx-background-radius: 50em; /* Bán kính lớn để đảm bảo hình tròn */
+    -fx-background-radius: 50em; /* Bo tròn */
     -fx-min-width: 30px;
     -fx-min-height: 30px;
     -fx-max-width: 30px;
@@ -348,25 +388,53 @@
     -fx-padding: 0;
     -fx-border-width: 0;
     -fx-text-fill: white;
-}
 
-.review-button-round.accept-button {
+    /* 2. STYLE MÀU SẮC */
     -fx-background-color: #28a745; /* MÀU XANH */
 }
 
-.review-button-round.accept-button:hover {
-    -fx-background-color: #218838; /* Xanh đậm hơn khi hover */
+/* Hover cho ACCEPT */
+#acceptTitleButton:hover,
+#acceptCriticRatingButton:hover,
+    /* ... (thêm các ID:hover khác nếu cần) ... */
+#acceptOverviewButton:hover {
+    -fx-background-color: #218838;
 }
 
-.review-button-round.reject-button {
+
+/* Style cho tất cả các nút REJECT */
+#rejectTitleButton,
+#rejectCriticRatingButton,
+#rejectReleaseDateButton,
+#rejectOriginalTitleButton,
+#rejectTagsButton,
+#rejectGenresButton,
+#rejectStudiosButton,
+#rejectPeopleButton,
+#rejectOverviewButton {
+    /* 1. GỘP STYLE HÌNH DẠNG VÀO ĐÂY */
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 50em; /* Bo tròn */
+    -fx-min-width: 30px;
+    -fx-min-height: 30px;
+    -fx-max-width: 30px;
+    -fx-max-height: 30px;
+    -fx-padding: 0;
+    -fx-border-width: 0;
+    -fx-text-fill: white;
+
+    /* 2. STYLE MÀU SẮC */
     -fx-background-color: #dc3545; /* MÀU ĐỎ */
 }
 
-.review-button-round.reject-button:hover {
-    -fx-background-color: #c82333; /* Đỏ đậm hơn khi hover */
+/* Hover cho REJECT */
+#rejectTitleButton:hover,
+#rejectCriticRatingButton:hover,
+    /* ... (thêm các ID:hover khác nếu cần) ... */
+#rejectOverviewButton:hover {
+    -fx-background-color: #c82333;
 }
-/* *** END REVIEW BUTTONS *** */
-
 
 /* RATING BUTTONS */
 .rating-button {
@@ -481,4 +549,21 @@
 .context-menu .separator .line {
     -fx-border-color: #444444;
     -fx-border-width: 1 0 0 0;
+}
+
+.clone-button {
+    -fx-background-color: #555555;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    /* HÌNH DÁNG TRÒN */
+    -fx-background-radius: 100px;
+    -fx-padding: 0px 10px 0px 10px;
+    -fx-min-width: 30px;
+    -fx-min-height: 30px;
+    -fx-border-width: 0;
+}
+
+.clone-button:hover{
+    -fx-background-color: #666666;
 }

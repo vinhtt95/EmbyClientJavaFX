@@ -64,6 +64,7 @@
     "overviewPrompt": "Mô tả chi tiết...",
     "backdropGalleryLabel": "Gallery Ảnh Nền (Backdrops)",
     "addButton": "+",
+    "cloneButton": "Nhân bản",
     "saveButton": "Lưu thay đổi",
     "importButton": "Import JSON",
     "exportButton": "Export JSON",
@@ -86,7 +87,13 @@
     "statusFetchingDate": "Đang tìm ngày phát hành cho: {0}...",
     "errorFetchDate": "Lỗi khi lấy ngày: {0}",
     "statusFetchDateSuccess": "Lấy ngày P.H thành công!",
-    "statusFetchDateNotFound": "Không tìm thấy ngày phát hành."
+    "statusFetchDateNotFound": "Không tìm thấy ngày phát hành.",
+    "cloneStatusStart": "Bắt đầu nhân bản {0} cho các item con...",
+    "cloneStatusSuccess": "Nhân bản {0} thành công cho {1} item con.",
+    "cloneStatusError": "Lỗi khi nhân bản: {0}",
+    "cloneErrorNoParent": "Lỗi: Vui lòng chọn một item cha (folder) ở cột thư viện bên trái.",
+    "cloneErrorNoSource": "Lỗi: Không có item nguồn (cột chi tiết) để sao chép.",
+    "cloneErrorNoChildren": "Item cha không có item con nào để nhân bản."
   },
   "addTagDialog": {
     "addTagTitle": "Thêm Tag Mới",

@@ -173,6 +173,7 @@ public class ItemService {
         try {
             // Sửa dòng này để dùng this.userId
             BaseItemDto itemInfo = userLibraryServiceApi.getUsersByUseridItemsById(this.userId, itemId);
+            System.out.println("Item info: "+itemInfo.getName());
 
             if (itemInfo != null) {
                 return  itemInfo;

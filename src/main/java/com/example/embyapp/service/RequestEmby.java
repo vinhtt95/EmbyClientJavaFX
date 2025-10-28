@@ -30,7 +30,7 @@ public class RequestEmby {
     public QueryResultBaseItemDto getQueryResultBaseItemDto(String parentID, ItemsServiceApi itemsServiceApi) {
         QueryResultBaseItemDto result = null;
         try {
-            result = itemsServiceApi.getItems(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "Ascending", parentID, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "ProductionYear,PremiereDate,SortName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            result = itemsServiceApi.getItems(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "Ascending", parentID, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "ProductionYear,PremiereDate,SortName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,null);
 
         } catch (ApiException e) {
             System.out.println(e.getMessage());
@@ -45,14 +45,14 @@ public class RequestEmby {
      * @param itemsServiceApi
      * @param startIndex
      * @param limit
+     * @param sortOrder
+     * @param sortBy
      * @return
      * @throws ApiException
      */
-    // SỬA ĐỔI: Thêm startIndex và limit
     public QueryResultBaseItemDto getQueryResultFullBaseItemDto(String parentID, ItemsServiceApi itemsServiceApi, Integer startIndex, Integer limit, String sortOrder, String sortBy) {
         QueryResultBaseItemDto result = null;
         try {
-            // sortOrder là tham số thứ 37, sortBy là tham số thứ 58
             result = itemsServiceApi.getItems(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, startIndex, limit, true, null, sortOrder, parentID, null, null, "Movie", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, sortBy, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         } catch (ApiException e) {
             System.out.println(e.getMessage());
@@ -90,56 +90,47 @@ public class RequestEmby {
     }
 
     /**
-     * (*** HÀM ĐÃ SỬA ĐỔI: Thêm ApiClient ***)
      * Lấy danh sách tất cả các tag đã dùng trong thư viện của người dùng.
      *
      * @param apiClient ApiClient đã được cấu hình (từ EmbyService)
-     * @return Danh sách các UserLibraryTagItem hoặc null nếu lỗi.
+     * @return Danh sách các UserLibraryTagItem hoặc list rỗng nếu lỗi.
      */
-    public List<UserLibraryTagItem> getListTagsItem(ApiClient apiClient) { // <-- Thêm ApiClient
-
-        // Khởi tạo TagServiceApi với ApiClient được cung cấp
+    public List<UserLibraryTagItem> getListTagsItem(ApiClient apiClient) {
         TagServiceApi tagServiceApi = new TagServiceApi(apiClient);
         try {
-            // Gọi API getTags (không cần truyền nhiều tham số null như vậy)
-            // Hầu hết các tham số có giá trị mặc định là null trong hàm gọi
             QueryResultUserLibraryTagItem listTag = tagServiceApi.getTags(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
             if (listTag != null && listTag.getItems() != null) {
                 return listTag.getItems();
             }
         } catch (ApiException e) {
-            System.err.println("API Error getting tags: " + e.getMessage()); // Sửa thành System.err
+            System.err.println("API Error getting tags: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("Unexpected Error getting tags: " + e.getMessage()); // Thêm catch tổng quát
+            System.err.println("Unexpected Error getting tags: " + e.getMessage());
             e.printStackTrace();
         }
 
-        return Collections.emptyList(); // Trả về list rỗng thay vì null
+        return Collections.emptyList();
     }
 
-    public List<BaseItemDto> getListStudio(ApiClient apiClient) { // <-- Thêm ApiClient
-
-        // Khởi tạo TagServiceApi với ApiClient được cung cấp
+    public List<BaseItemDto> getListStudio(ApiClient apiClient) {
         StudiosServiceApi studiosServiceApi = new StudiosServiceApi(apiClient);
         try {
-            // Gọi API getTags (không cần truyền nhiều tham số null như vậy)
-            // Hầu hết các tham số có giá trị mặc định là null trong hàm gọi
             embyclient.model.QueryResultBaseItemDto resultBaseItemDto = studiosServiceApi.getStudios(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
             if (resultBaseItemDto != null && resultBaseItemDto.getItems() != null) {
                 return resultBaseItemDto.getItems();
             }
         } catch (ApiException e) {
-            System.err.println("API Error getting tags: " + e.getMessage()); // Sửa thành System.err
+            System.err.println("API Error getting tags: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("Unexpected Error getting tags: " + e.getMessage()); // Thêm catch tổng quát
+            System.err.println("Unexpected Error getting tags: " + e.getMessage());
             e.printStackTrace();
         }
 
-        return Collections.emptyList(); // Trả về list rỗng thay vì null
+        return Collections.emptyList();
     }
 
-    public List<BaseItemDto> getListPeoples(ApiClient apiClient) { // <-- Thêm ApiClient
+    public List<BaseItemDto> getListPeoples(ApiClient apiClient) {
         PersonsServiceApi personsServiceApi = new PersonsServiceApi(apiClient);
         try {
             QueryResultBaseItemDto resultBaseItemDto = personsServiceApi.getPersons(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
@@ -148,16 +139,16 @@ public class RequestEmby {
                 return resultBaseItemDto.getItems();
             }
         } catch (ApiException e) {
-            System.err.println("API Error getting tags: " + e.getMessage()); // Sửa thành System.err
+            System.err.println("API Error getting tags: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("Unexpected Error getting tags: " + e.getMessage()); // Thêm catch tổng quát
+            System.err.println("Unexpected Error getting tags: " + e.getMessage());
             e.printStackTrace();
         }
 
-        return Collections.emptyList(); // Trả về list rỗng thay vì null
+        return Collections.emptyList();
     }
 
-    public List<BaseItemDto> getListGenres(ApiClient apiClient) { // <-- Thêm ApiClient
+    public List<BaseItemDto> getListGenres(ApiClient apiClient) {
         GenresServiceApi genresServiceApi = new GenresServiceApi(apiClient);
         try {
 
@@ -167,252 +158,236 @@ public class RequestEmby {
                 return genreResult.getItems();
             }
         } catch (ApiException e) {
-            System.err.println("API Error getting tags: " + e.getMessage()); // Sửa thành System.err
+            System.err.println("API Error getting tags: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("Unexpected Error getting tags: " + e.getMessage()); // Thêm catch tổng quát
+            System.err.println("Unexpected Error getting tags: " + e.getMessage());
             e.printStackTrace();
         }
 
-        return Collections.emptyList(); // Trả về list rỗng thay vì null
+        return Collections.emptyList();
     }
 
     public OffsetDateTime getDateRelease(String code) {
-        // API này là của đồng chí, tôi giữ nguyên
         String apiUrl = "http://localhost:8081/movies/movie/date/?movieCode=" + code;
-        HttpURLConnection connection = null; // Khai báo bên ngoài để đóng trong finally
+        HttpURLConnection connection = null;
         try {
             URL url = new URL(apiUrl);
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setRequestProperty("Accept", "application/json");
-            connection.setConnectTimeout(5000); // Thêm timeout
+            connection.setConnectTimeout(5000);
             connection.setReadTimeout(5000);
 
             int responseCode = connection.getResponseCode();
             if (responseCode == 200) {
-                // Try-with-resources để tự động đóng BufferedReader
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                     StringBuilder response = new StringBuilder();
                     String line;
                     while ((line = reader.readLine()) != null) {
                         response.append(line);
                     }
-                    // Parse JSON response to extract "data"
                     JSONObject jsonResponse = new JSONObject(response.toString());
                     String dataValue = jsonResponse.optString("data", null);
                     if (dataValue != null && !dataValue.equals("null")) {
                         return OffsetDateTime.parse(dataValue);
                     } else {
-                        return null; // API trả về data: null
+                        return null;
                     }
                 }
             } else {
-                // System.out.println("API call failed for code: " + code + ". Response: " + responseCode);
                 return null;
             }
         } catch (Exception e) {
-            // System.out.println("Error calling API for code: " + code + " - " + e.getMessage());
             return null;
         } finally {
             if (connection != null) {
-                connection.disconnect(); // Đảm bảo đóng connection
+                connection.disconnect();
             }
         }
     }
 
 
-    public void copyTags(String itemCopyID, String parentID, String userID) {
-
-        ItemService itemService = new ItemService(userID);
-        // Bỏ dòng này
-        // ItemService itemService = new ItemService();
-        // Dùng this.itemService
+    /**
+     * Sao chép Tags từ item nguồn sang tất cả item con của một thư mục cha.
+     *
+     * @param itemService Instance ItemService đã được xác thực
+     * @param itemCopyID  ID của item nguồn (để lấy tags)
+     * @param parentID    ID của item cha (để tìm item đích)
+     * @return Số lượng item con đã được cập nhật
+     * @throws ApiException
+     */
+    public int copyTags(ItemService itemService, String itemCopyID, String parentID) throws ApiException {
         BaseItemDto itemCopy = itemService.getInforItem(itemCopyID);
 
-        if(itemCopy == null){
+        if (itemCopy == null) {
             System.out.println("Not found item copy");
-            return;
-        }else{
-            System.out.println("List Tags of Item copy:");
-            List<NameLongIdPair> listTagsItemCopy = itemCopy.getTagItems();
-            for (NameLongIdPair eachtags : listTagsItemCopy) {
-                System.out.println("ID: " + eachtags.getId() + " Name: " + eachtags.getName());
-            }
+            return 0;
         }
 
-        // Dùng this.itemService
+        List<NameLongIdPair> listTagsItemCopy = itemCopy.getTagItems();
+        System.out.println("List Tags of Item copy (" + listTagsItemCopy.size() + "):");
+        for (NameLongIdPair eachtags : listTagsItemCopy) {
+            System.out.println("ID: " + eachtags.getId() + " Name: " + eachtags.getName());
+        }
+
         List<BaseItemDto> listItemPaste = itemService.getListItemByParentID(parentID, null, null, true);
-        if (listItemPaste == null) {
+        if (listItemPaste == null || listItemPaste.isEmpty()) {
             System.out.println("Not found item paste");
-            return;
+            return 0;
         }
 
-        BaseItemDto itemPaste = null;
+        int updateCount = 0;
+        BaseItemDto itemPaste;
         for (BaseItemDto eachItemPaste : listItemPaste) {
-            System.out.println("ID: " + eachItemPaste.getId()+ " Name: " + eachItemPaste.getName());
-            // Dùng this.itemService
+            System.out.println("Updating Tags for: ID: " + eachItemPaste.getId() + " Name: " + eachItemPaste.getName());
             itemPaste = itemService.getInforItem(eachItemPaste.getId());
+            if (itemPaste == null) continue;
 
-            List<NameLongIdPair> listTagsItemPaste = itemPaste.getTagItems();
+            itemPaste.setTagItems(listTagsItemCopy);
 
-            itemPaste.getStudios().clear();
-
-            listTagsItemPaste.addAll(itemCopy.getTagItems());
-
-            for (NameLongIdPair eachTagsPaste : itemPaste.getStudios()) {
-                System.out.println(eachTagsPaste.toString());
-            }
-
-            // Dùng this.itemService
-            if(itemService.updateInforItem(itemPaste.getId(),itemPaste)) {
-                System.out.println("Update success "+eachItemPaste.getName());
+            if (itemService.updateInforItem(itemPaste.getId(), itemPaste)) {
+                System.out.println("Update success " + eachItemPaste.getName());
+                updateCount++;
             }
         }
+        return updateCount;
     }
 
-    public void copyStudio(String itemCopyID, String parentID, String userID) {
-
-        ItemService itemService = new ItemService(userID);
-        // Bỏ dòng này
-        // ItemService itemService = new ItemService();
-        // Dùng this.itemService
+    /**
+     * Sao chép Studios từ item nguồn sang tất cả item con của một thư mục cha.
+     * @param itemService Instance ItemService đã được xác thực
+     * @param itemCopyID ID của item nguồn
+     * @param parentID ID của item cha
+     * @return Số lượng item con đã được cập nhật
+     * @throws ApiException
+     */
+    public int copyStudio(ItemService itemService, String itemCopyID, String parentID) throws ApiException {
         BaseItemDto itemCopy = itemService.getInforItem(itemCopyID);
 
-        if(itemCopy == null){
+        if (itemCopy == null) {
             System.out.println("Not found item copy");
-            return;
-        }else{
-            System.out.println("List Studio of Item copy:");
-            List<NameLongIdPair> listStudoItemCopy = itemCopy.getStudios();
-            for (NameLongIdPair eachStudio : listStudoItemCopy) {
-                System.out.println("ID: " + eachStudio.getId() + " Name: " + eachStudio.getName());
-            }
+            return 0;
         }
 
-        // Dùng itemService
+        List<NameLongIdPair> listStudoItemCopy = itemCopy.getStudios();
+        System.out.println("List Studio of Item copy (" + listStudoItemCopy.size() + "):");
+        for (NameLongIdPair eachStudio : listStudoItemCopy) {
+            System.out.println("ID: " + eachStudio.getId() + " Name: " + eachStudio.getName());
+        }
+
         List<BaseItemDto> listItemPaste = itemService.getListItemByParentID(parentID, null, null, true);
-        if (listItemPaste == null) {
+        if (listItemPaste == null || listItemPaste.isEmpty()) {
             System.out.println("Not found item paste");
-            return;
+            return 0;
         }
 
-        BaseItemDto itemPaste = null;
+        int updateCount = 0;
+        BaseItemDto itemPaste;
         for (BaseItemDto eachItemPaste : listItemPaste) {
-            System.out.println("ID: " + eachItemPaste.getId()+ " Name: " + eachItemPaste.getName());
-            // Dùng itemService
+            System.out.println("Updating Studio for: ID: " + eachItemPaste.getId() + " Name: " + eachItemPaste.getName());
             itemPaste = itemService.getInforItem(eachItemPaste.getId());
+            if (itemPaste == null) continue;
 
-            List<NameLongIdPair> listStudioItemPaste = itemPaste.getStudios();
+            itemPaste.setStudios(listStudoItemCopy);
 
-            itemPaste.getStudios().clear();
-
-            listStudioItemPaste.addAll(itemCopy.getStudios());
-
-            for (NameLongIdPair eachStudioPaste : itemPaste.getStudios()) {
-                System.out.println(eachStudioPaste.toString());
-            }
-
-            // Dùng itemService
-            if(itemService.updateInforItem(itemPaste.getId(),itemPaste)) {
-                System.out.println("Update success "+eachItemPaste.getName());
+            if (itemService.updateInforItem(itemPaste.getId(), itemPaste)) {
+                System.out.println("Update success " + eachItemPaste.getName());
+                updateCount++;
             }
         }
+        return updateCount;
     }
 
-    public void copyPeople(String itemCopyID, String parentID, String userID) {
-        ItemService itemService = new ItemService(userID);
-        // Bỏ dòng này
-        // ItemService itemService = new ItemService();
-        // Dùng itemService
+    /**
+     * Sao chép People từ item nguồn sang tất cả item con của một thư mục cha.
+     * @param itemService Instance ItemService đã được xác thực
+     * @param itemCopyID ID của item nguồn
+     * @param parentID ID của item cha
+     * @return Số lượng item con đã được cập nhật
+     * @throws ApiException
+     */
+    public int copyPeople(ItemService itemService, String itemCopyID, String parentID) throws ApiException {
         BaseItemDto itemCopy = itemService.getInforItem(itemCopyID);
 
-        if(itemCopy == null){
+        if (itemCopy == null) {
             System.out.println("Not found item copy");
-            return;
-        }else{
-            System.out.println("List People of Item copy:");
-            List<NameLongIdPair> listPeopleItemCopy = itemCopy.getStudios();
-            for (NameLongIdPair eachStudio : listPeopleItemCopy) {
-                System.out.println("ID: " + eachStudio.getId() + " Name: " + eachStudio.getName());
-            }
+            return 0;
         }
 
-        // Dùng itemService
+        List<BaseItemPerson> listPeopleItemCopy = itemCopy.getPeople();
+        System.out.println("List People of Item copy (" + listPeopleItemCopy.size() + "):");
+        for (BaseItemPerson eachPeople : listPeopleItemCopy) {
+            System.out.println("ID: " + eachPeople.getId() + " Name: " + eachPeople.getName());
+        }
+
         List<BaseItemDto> listItemPaste = itemService.getListItemByParentID(parentID, null, null, true);
-        if (listItemPaste == null) {
+        if (listItemPaste == null || listItemPaste.isEmpty()) {
             System.out.println("Not found item paste");
-            return;
+            return 0;
         }
 
-        BaseItemDto itemPaste = null;
+        int updateCount = 0;
+        BaseItemDto itemPaste;
         for (BaseItemDto eachItemPaste : listItemPaste) {
-            System.out.println("ID: " + eachItemPaste.getId()+ " Name: " + eachItemPaste.getName());
-            // Dùng itemService
+            System.out.println("Updating People for: ID: " + eachItemPaste.getId() + " Name: " + eachItemPaste.getName());
             itemPaste = itemService.getInforItem(eachItemPaste.getId());
+            if (itemPaste == null) continue;
 
-            List<BaseItemPerson> listPeopleItemPaste = itemPaste.getPeople();
+            itemPaste.setPeople(listPeopleItemCopy);
 
-            itemPaste.getPeople().clear();
-
-            listPeopleItemPaste.addAll(itemCopy.getPeople());
-
-            for (BaseItemPerson eachPeoplePaste : itemPaste.getPeople()) {
-                System.out.println(eachPeoplePaste.toString());
-            }
-
-            // Dùng itemService
-            if(itemService.updateInforItem(itemPaste.getId(),itemPaste)) {
-                System.out.println("Update success "+eachItemPaste.getName());
+            if (itemService.updateInforItem(itemPaste.getId(), itemPaste)) {
+                System.out.println("Update success " + eachItemPaste.getName());
+                updateCount++;
             }
         }
+        return updateCount;
     }
 
-    public void copyGenres(String itemCopyID, String parentID, String userID) {
-        ItemService itemService = new ItemService(userID);
-        // Bỏ dòng này
-        // ItemService itemService = new ItemService();
-        // Dùng itemService
+    /**
+     * Sao chép Genres (GenreItems) từ item nguồn sang tất cả item con của một thư mục cha.
+     * @param itemService Instance ItemService đã được xác thực
+     * @param itemCopyID ID của item nguồn
+     * @param parentID ID của item cha
+     * @return Số lượng item con đã được cập nhật
+     * @throws ApiException
+     */
+    public int copyGenres(ItemService itemService, String itemCopyID, String parentID) throws ApiException {
         BaseItemDto itemCopy = itemService.getInforItem(itemCopyID);
 
-        if(itemCopy == null){
+        if (itemCopy == null) {
             System.out.println("Not found item copy");
-            return;
-        }else{
-            System.out.println("List Genres of Item copy:");
-            List<NameLongIdPair> listGenresItemCopy = itemCopy.getGenreItems();
+            return 0;
+        }
+
+        List<NameLongIdPair> listGenresItemCopy = itemCopy.getGenreItems();
+        System.out.println("List Genres of Item copy (" + (listGenresItemCopy != null ? listGenresItemCopy.size() : 0) + "):");
+        if (listGenresItemCopy != null) {
             for (NameLongIdPair eachGenres : listGenresItemCopy) {
                 System.out.println("ID: " + eachGenres.getId() + " Name: " + eachGenres.getName());
             }
         }
 
-        // Dùng itemService
         List<BaseItemDto> listItemPaste = itemService.getListItemByParentID(parentID, null, null, true);
-        if (listItemPaste == null) {
+        if (listItemPaste == null || listItemPaste.isEmpty()) {
             System.out.println("Not found item paste");
-            return;
+            return 0;
         }
 
-        BaseItemDto itemPaste = null;
+        int updateCount = 0;
+        BaseItemDto itemPaste;
         for (BaseItemDto eachItemPaste : listItemPaste) {
-            System.out.println("ID: " + eachItemPaste.getId()+ " Name: " + eachItemPaste.getName());
-            // Dùng itemService
+            System.out.println("Updating Genres for: ID: " + eachItemPaste.getId() + " Name: " + eachItemPaste.getName());
             itemPaste = itemService.getInforItem(eachItemPaste.getId());
+            if (itemPaste == null) continue;
 
-            List<NameLongIdPair> listGenresItemPaste = itemPaste.getGenreItems();
+            itemPaste.setGenreItems(listGenresItemCopy);
 
-            itemPaste.getGenreItems().clear();
-
-            listGenresItemPaste.addAll(itemCopy.getGenreItems());
-
-            for (NameLongIdPair eachGenresPaste : itemPaste.getGenreItems()) {
-                System.out.println(eachGenresPaste.toString());
-            }
-
-            // Dùng itemService
-            if(itemService.updateInforItem(itemPaste.getId(),itemPaste)) {
-                System.out.println("Update success "+eachItemPaste.getName());
+            if (itemService.updateInforItem(itemPaste.getId(), itemPaste)) {
+                System.out.println("Update success " + eachItemPaste.getName());
+                updateCount++;
             }
         }
+        return updateCount;
     }
 
 }

@@ -460,14 +460,27 @@ public class ItemDetailController {
             Button ratingButton = new Button(String.valueOf(ratingValue));
             ratingButton.getStyleClass().add("rating-button");
             ratingButton.setUserData(ratingValue);
+
+            // (*** SỬA ĐỔI PHẦN NÀY ***)
             ratingButton.setOnAction(e -> {
-                Float newRating = (float) ratingValue;
-                if (Objects.equals(viewModel.criticRatingProperty().get(), newRating)) {
-                    viewModel.criticRatingProperty().set(null);
+                Float newRating;
+                float buttonRating = (float) ratingValue;
+
+                // Xác định giá trị mới (toggle on/off)
+                if (Objects.equals(viewModel.criticRatingProperty().get(), buttonRating)) {
+                    newRating = null; // Tắt rating
                 } else {
-                    viewModel.criticRatingProperty().set(newRating);
+                    newRating = buttonRating; // Bật rating
                 }
+
+                // 1. Cập nhật UI ngay lập tức
+                viewModel.criticRatingProperty().set(newRating);
+
+                // 2. Gọi hàm lưu độc lập của ViewModel
+                viewModel.saveCriticRatingImmediately(newRating);
             });
+            // (*** KẾT THÚC SỬA ĐỔI ***)
+
             criticRatingPane.getChildren().add(ratingButton);
         }
         updateRatingButtonSelection();

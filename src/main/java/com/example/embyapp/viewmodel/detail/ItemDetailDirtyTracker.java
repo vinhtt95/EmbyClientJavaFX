@@ -245,7 +245,6 @@ public class ItemDetailDirtyTracker {
         this.originalOriginalTitle = viewModel.originalTitleProperty().get();
         this.originalOverview = viewModel.overviewProperty().get();
         this.originalReleaseDate = viewModel.releaseDateProperty().get();
-        // (*** THÊM DÒNG NÀY ĐỂ CẬP NHẬT RATING GỐC ***)
         this.originalCriticRating = viewModel.criticRatingProperty().get();
 
         this.originalTagItems = new ArrayList<>(viewModel.getTagItems());
@@ -256,6 +255,25 @@ public class ItemDetailDirtyTracker {
         importAcceptancePending = false; // <-- Reset cờ sau khi lưu
 
         // Kiểm tra lại (sẽ set isDirty về false nếu không paused)
+        checkForChanges();
+    }
+
+    /**
+     * Cập nhật snapshot gốc CHỈ CHO RATING sau khi lưu thành công (từ hàm saveCriticRatingImmediately).
+     * Reset cờ dirty NẾU không còn thay đổi nào khác.
+     */
+    public void updateOriginalRating(Float newRating) {
+        if (paused) return; // Không làm gì nếu đang pause
+
+        System.out.println("DirtyTracker: Updating original rating baseline to: " + newRating);
+        this.originalCriticRating = newRating;
+
+        // Reset cờ import nếu nó đang bật (mặc dù kịch bản này ít xảy ra)
+        if (importAcceptancePending) {
+            importAcceptancePending = false;
+        }
+
+        // Kiểm tra lại (sẽ set isDirty về false NẾU không còn thay đổi nào khác)
         checkForChanges();
     }
 

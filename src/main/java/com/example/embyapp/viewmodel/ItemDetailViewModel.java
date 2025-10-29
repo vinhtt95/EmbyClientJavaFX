@@ -283,6 +283,66 @@ public class ItemDetailViewModel {
         }).start();
     }
 
+    public void saveCriticRatingImmediately(Float newRating) {
+        final BaseItemDto dtoAtSaveTime = this.originalItemDto;
+        final String idAtSaveTime = this.currentItemId;
+
+        if (dtoAtSaveTime == null || idAtSaveTime == null) {
+            reportActionError(i18n.getString("itemDetailViewModel", "errorSave"));
+            return;
+        }
+
+        // Báo cáo hành động
+        reportActionError(i18n.getString("itemDetailViewModel", "statusSavingRating"));
+
+        new Thread(() -> {
+            try {
+                // 1. Clone DTO gốc để không ảnh hưởng dirty tracker
+                // Quan trọng: Dùng gson để clone sâu (deep copy)
+                BaseItemDto dtoToSend = gson.fromJson(gson.toJson(dtoAtSaveTime), BaseItemDto.class);
+
+                // 2. Chỉ đặt giá trị rating mới
+                dtoToSend.setCriticRating(newRating);
+
+                // 3. Lấy API service
+                ItemUpdateServiceApi itemUpdateServiceApi = embyService.getItemUpdateServiceApi();
+                if (itemUpdateServiceApi == null) {
+                    throw new IllegalStateException(i18n.getString("itemDetailViewModel", "errorApiUpdate"));
+                }
+
+                // 4. Gửi API call
+                itemUpdateServiceApi.postItemsByItemid(dtoToSend, idAtSaveTime);
+
+                // 5. Thành công (trên luồng UI)
+                Platform.runLater(() -> {
+                    reportActionError(i18n.getString("itemDetailViewModel", "statusSaveRatingSuccess"));
+
+                    // QUAN TRỌNG: Cập nhật DTO gốc trong ViewModel
+                    if (idAtSaveTime.equals(this.currentItemId)) { // Đảm bảo item chưa bị đổi
+                        this.originalItemDto.setCriticRating(newRating);
+
+                        // QUAN TRỌNG: Cập nhật baseline của DirtyTracker
+                        dirtyTracker.updateOriginalRating(newRating);
+                    }
+                });
+
+            } catch (ApiException e) {
+                System.err.println("API Error saving rating: " + e.getMessage());
+                e.printStackTrace();
+                Platform.runLater(() -> {
+                    reportActionError(i18n.getString("itemDetailViewModel", "errorSaveRating", e.getMessage()));
+                    // (Tùy chọn) Rollback UI về giá trị cũ nếu lỗi
+                    // this.criticRating.set(originalItemDto.getCriticRating());
+                    // updateRatingButtonSelection(); // (Cần gọi hàm này nếu rollback)
+                });
+            } catch (Exception e) {
+                System.err.println("Generic Error saving rating: " + e.getMessage());
+                e.printStackTrace();
+                Platform.runLater(() -> reportActionError(i18n.getString("itemDetailViewModel", "errorSaveRating", e.getMessage())));
+            }
+        }).start();
+    }
+
     private BaseItemDto createDtoWithAcceptedChanges(BaseItemDto originalDtoAtSaveTime, Set<String> acceptedFields) {
         if (originalDtoAtSaveTime == null) {
             throw new RuntimeException("originalDtoAtSaveTime không được null khi tạo DTO thay đổi.");

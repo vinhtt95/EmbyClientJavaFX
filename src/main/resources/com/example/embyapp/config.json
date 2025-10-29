@@ -178,7 +178,10 @@
     "statusUploadingBackdropProgress": "Đang upload backdrop {0}/{1}: {2}",
     "statusUploadBackdropSuccess": "Upload {0} backdrop thành công. Đang tải lại gallery...",
     "errorUploadBackdrop": "Lỗi upload backdrop: {0}",
-    "errorLoadUserID": "User ID is null"
+    "errorLoadUserID": "User ID is null",
+    "statusSavingRating": "Đang lưu điểm số...",
+    "statusSaveRatingSuccess": "Đã lưu điểm số thành công!",
+    "errorSaveRating": "Lỗi lưu điểm: {0}"
   },
   "itemGridController": {
     "statusGetPath": "Đang lấy đường dẫn chi tiết...",

@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
  * (CẬP NHẬT) Thêm điều hướng bằng phím mũi tên Lên/Xuống cho các suggestion chip.
  * (CẬP NHẬT 2) Thêm hành vi nhấn Enter trên keyField (khi value trống) để chuyển sang Simple Tag.
  * (CẬP NHẬT 3) Thêm quick search Simple khi gõ Key, focus SimpleField, và Tab từ Simple về JSON.
+ * (CẬP NHẬT 4) Luôn hiển thị các suggestion box.
  */
 public class AddTagDialogController {
 
@@ -130,13 +131,15 @@ public class AddTagDialogController {
             jsonTagPane.setVisible(!isSelected);
             jsonTagPane.setManaged(!isSelected);
 
-            // Reset focus indices khi chuyển tab
             focusedKeyIndex = -1;
             focusedValueIndex = -1;
             focusedSimpleIndex = -1;
             clearAndSetChipFocus(suggestionKeysPane, -1);
             clearAndSetChipFocus(suggestionValuesPane, -1);
             clearAndSetChipFocus(suggestionSimplePane, -1);
+
+            // (*** CẬP NHẬT 4: Gọi updateContainerVisibility để cập nhật opacity ***)
+            updateContainerVisibility();
 
             isUpdatingProgrammatically = false;
 
@@ -159,11 +162,10 @@ public class AddTagDialogController {
         // Listener for key text field changes
         keyField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (isUpdatingProgrammatically) return;
-            focusedKeyIndex = -1; // Reset focus
-            populateKeys(newVal); // Filter keys
-            // (*** CẬP NHẬT 3: Quick search simple tags ***)
-            populateSimpleTags(newVal); // Filter simple tags (dù đang ẩn)
-            updateContainerVisibility();
+            focusedKeyIndex = -1;
+            populateKeys(newVal);
+            populateSimpleTags(newVal); // Quick search simple tags
+            updateContainerVisibility(); // Chỉ để cập nhật opacity
             // populateValues called within populateKeys
         });
 
@@ -182,12 +184,9 @@ public class AddTagDialogController {
                     clearAndSetChipFocus(suggestionKeysPane, focusedKeyIndex);
 
                     isUpdatingProgrammatically = false;
-                    // Không chuyển focus value tự động
                 } else if (oldToggle != null) {
-                    // Khi user deselect key bằng cách click lại
                     if (oldToggle.getUserData() != null) {
-                        populateValues(null, valueField.getText()); // Clear value suggestions
-                        // (*** MỚI: Reset cả focusedKeyIndex khi deselect ***)
+                        populateValues(null, valueField.getText());
                         focusedKeyIndex = -1;
                         clearAndSetChipFocus(suggestionKeysPane, -1);
                     }
@@ -201,7 +200,7 @@ public class AddTagDialogController {
             handleFieldKeyPress(e, keyField, suggestionKeysPane, keySuggestionGroup);
         });
 
-        // Focus listener for auto-complete (giữ nguyên logic cũ nhưng không tự chuyển focus value)
+        // Focus listener for auto-complete
         keyField.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
             if (wasFocused && !isFocused && keySuggestionGroup.getSelectedToggle() == null) {
                 String currentKeyText = keyField.getText().trim();
@@ -246,12 +245,12 @@ public class AddTagDialogController {
         // Listener for value text field changes
         valueField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (isUpdatingProgrammatically) return;
-            focusedValueIndex = -1; // Reset focus
+            focusedValueIndex = -1;
             Toggle effectiveKeyToggle = keySuggestionGroup.getSelectedToggle() != null
                     ? keySuggestionGroup.getSelectedToggle()
                     : findFocusedKeyToggle();
             populateValues(effectiveKeyToggle, newVal);
-            updateContainerVisibility();
+            updateContainerVisibility(); // Chỉ để cập nhật opacity
         });
 
         // EventFilter cho valueField (Xử lý Up/Down/Tab/Enter)
@@ -263,14 +262,14 @@ public class AddTagDialogController {
         // Listener for simple name text field changes
         simpleNameField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (isUpdatingProgrammatically) return;
-            focusedSimpleIndex = -1; // Reset focus
+            focusedSimpleIndex = -1;
             populateSimpleTags(newVal);
-            updateContainerVisibility();
+            updateContainerVisibility(); // Chỉ để cập nhật opacity
         });
 
         // EventFilter cho simpleNameField (Xử lý Up/Down/Tab/Enter)
         simpleNameField.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
-            handleFieldKeyPress(e, simpleNameField, suggestionSimplePane, valueSuggestionGroup); // Dùng chung group
+            handleFieldKeyPress(e, simpleNameField, suggestionSimplePane, valueSuggestionGroup);
         });
 
 
@@ -279,7 +278,7 @@ public class AddTagDialogController {
 
     }
 
-    // (*** HÀM MỚI: Xử lý phím cho cả 3 text field ***)
+    // ... (handleFieldKeyPress giữ nguyên) ...
     private void handleFieldKeyPress(KeyEvent event, TextField field, FlowPane suggestionPane, ToggleGroup suggestionGroup) {
         KeyCode code = event.getCode();
         int currentIndex = -1;
@@ -331,7 +330,7 @@ public class AddTagDialogController {
                 }
                 okButton.requestFocus();
             } else if (field == simpleNameField) {
-                // (*** CẬP NHẬT 3: Tab từ Simple về JSON ***)
+                // Tab từ Simple về JSON
                 String currentSimpleText = simpleNameField.getText();
                 isUpdatingProgrammatically = true;
                 jsonTagRadio.setSelected(true); // Chuyển radio
@@ -344,13 +343,13 @@ public class AddTagDialogController {
                 final String textToSearch = currentSimpleText;
                 Platform.runLater(() -> {
                     populateKeys(textToSearch);
-                    populateSimpleTags(textToSearch); // Vẫn populate simple (dù ẩn)
+                    populateSimpleTags(textToSearch); // Vẫn populate simple
                     keyField.requestFocus();
                     keyField.positionCaret(keyField.getText().length());
                 });
             }
         } else if (code == KeyCode.ENTER) {
-            // Enter trên keyField + value trống
+            // Enter trên keyField + value trống -> Chuyển sang Simple
             if (field == keyField && valueField.getText().trim().isEmpty()) {
                 event.consume();
                 String keyText = keyField.getText().trim();
@@ -362,7 +361,6 @@ public class AddTagDialogController {
                         }
                     }
 
-                    // Chuyển sang Simple Mode
                     isUpdatingProgrammatically = true;
                     simpleTagRadio.setSelected(true);
                     simpleNameField.setText(keyText);
@@ -372,62 +370,55 @@ public class AddTagDialogController {
 
                     final String textToMatch = keyText;
                     Platform.runLater(() -> {
-                        populateSimpleTags(textToMatch); // Populate lại list simple
+                        populateSimpleTags(textToMatch);
                         int matchIndex = findSimpleChipIndex(textToMatch);
 
-                        // (*** CẬP NHẬT 3: Focus vào simpleNameField ***)
-                        simpleNameField.requestFocus(); // Focus field trước
+                        simpleNameField.requestFocus(); // Focus field
                         if (matchIndex != -1) {
-                            // Focus chip tìm thấy (style và cập nhật field)
                             setChipFocus(simpleNameField, suggestionSimplePane, valueSuggestionGroup, matchIndex);
                         } else {
-                            // Nếu không có chip khớp, chỉ cần select all text
                             simpleNameField.selectAll();
                         }
-                        // Không chuyển focus okButton nữa
-                        // okButton.requestFocus();
                     });
                 } else {
                     handleCancel();
                 }
 
             }
-            // Enter trên valueField (hoặc chip value được focus) -> Chọn chip (nếu focus) rồi OK
+            // Enter trên valueField (hoặc chip value được focus) -> Chọn chip rồi OK
             else if (field == valueField) {
                 if (focusedValueIndex != -1 && focusedValueIndex < suggestionValuesPane.getChildren().size()) {
                     Node focusedNode = suggestionValuesPane.getChildren().get(focusedValueIndex);
                     if (focusedNode instanceof ToggleButton) {
                         event.consume();
                         isUpdatingProgrammatically = true;
-                        valueSuggestionGroup.selectToggle((ToggleButton)focusedNode); // Chọn chip
-                        // Listener sẽ cập nhật field
+                        valueSuggestionGroup.selectToggle((ToggleButton)focusedNode);
                         isUpdatingProgrammatically = false;
-                        handleOk(); // Gọi OK
+                        handleOk();
                     }
                 } else if (!valueField.getText().trim().isEmpty()) {
                     event.consume();
-                    handleOk(); // Có text -> OK
+                    handleOk();
                 }
                 // Nếu value trống, để handleEnterPressed() xử lý (cancel)
             }
-            // Enter trên simpleNameField (hoặc chip simple được focus) -> Chọn chip (nếu focus) rồi OK
+            // Enter trên simpleNameField (hoặc chip simple được focus) -> Chọn chip rồi OK
             else if (field == simpleNameField) {
                 if (focusedSimpleIndex != -1 && focusedSimpleIndex < suggestionSimplePane.getChildren().size()) {
                     Node focusedNode = suggestionSimplePane.getChildren().get(focusedSimpleIndex);
                     if (focusedNode instanceof ToggleButton) {
                         event.consume();
                         isUpdatingProgrammatically = true;
-                        valueSuggestionGroup.selectToggle((ToggleButton)focusedNode); // Chọn chip
+                        valueSuggestionGroup.selectToggle((ToggleButton)focusedNode);
                         isUpdatingProgrammatically = false;
-                        handleOk(); // Gọi OK
+                        handleOk();
                     }
                 } else if (!simpleNameField.getText().trim().isEmpty()) {
                     event.consume();
-                    handleOk(); // Có text -> OK
+                    handleOk();
                 }
                 // Nếu simple trống, để handleEnterPressed() xử lý (cancel)
             }
-            // Nếu Enter không bị consume, handleEnterPressed (gắn với toàn dialog) sẽ chạy
         }
     }
 
@@ -505,7 +496,7 @@ public class AddTagDialogController {
         });
     }
 
-    // ... (setupLocalization, setContext, loadSuggestedTags, fetchTagsFromServer, prepareSuggestionLists, updateContainerVisibility giữ nguyên) ...
+    // ... (setupLocalization, setContext, loadSuggestedTags, fetchTagsFromServer, prepareSuggestionLists giữ nguyên) ...
     private void setupLocalization() {
         I18nManager i18n = I18nManager.getInstance();
         jsonTagRadio.setText(i18n.getString("addTagDialog", "labelJson"));
@@ -624,7 +615,7 @@ public class AddTagDialogController {
                 populateKeys(keySearch);
                 populateSimpleTags(simpleSearch);
                 isUpdatingProgrammatically = false;
-                updateContainerVisibility();
+                updateContainerVisibility(); // Gọi để set visibility ban đầu
             });
         }).start();
     }
@@ -665,25 +656,25 @@ public class AddTagDialogController {
                 .collect(Collectors.toList());
     }
 
+    // (*** CẬP NHẬT 4: Sửa đổi updateContainerVisibility ***)
     private void updateContainerVisibility() {
         Platform.runLater(() -> {
-            boolean hasJsonGroups = !jsonGroups.isEmpty();
-            boolean showJsonSuggestions = jsonTagRadio.isSelected() && hasJsonGroups;
-            if (suggestionJsonContainer != null) {
-                suggestionJsonContainer.setVisible(showJsonSuggestions);
-                suggestionJsonContainer.setManaged(showJsonSuggestions);
-            }
-            boolean hasSimpleTags = allSimpleTags != null && !allSimpleTags.isEmpty();
-            boolean showSimpleSuggestions = simpleTagRadio.isSelected() && hasSimpleTags;
-            if (suggestionSimpleContainer != null) {
-                // (*** CẬP NHẬT 3: Hiển thị simple suggestions cả khi đang ở JSON mode ***)
-                suggestionSimpleContainer.setVisible(hasSimpleTags); // Luôn hiển thị nếu có tag
-                suggestionSimpleContainer.setManaged(hasSimpleTags);
-                // Làm mờ đi nếu đang ở JSON mode (tùy chọn)
-                suggestionSimpleContainer.setOpacity(jsonTagRadio.isSelected() ? 0.6 : 1.0);
+            boolean hasJsonData = !jsonGroups.isEmpty();
+            boolean hasSimpleData = allSimpleTags != null && !allSimpleTags.isEmpty();
+            boolean isSimpleMode = simpleTagRadio.isSelected();
 
-                // suggestionSimpleContainer.setVisible(showSimpleSuggestions);
-                // suggestionSimpleContainer.setManaged(showSimpleSuggestions);
+            // Luôn hiển thị cả 2 container nếu có dữ liệu tương ứng
+            if (suggestionJsonContainer != null) {
+                suggestionJsonContainer.setVisible(hasJsonData);
+                suggestionJsonContainer.setManaged(hasJsonData);
+                // Làm mờ đi nếu đang ở Simple mode
+                suggestionJsonContainer.setOpacity(isSimpleMode ? 0.6 : 1.0);
+            }
+            if (suggestionSimpleContainer != null) {
+                suggestionSimpleContainer.setVisible(hasSimpleData);
+                suggestionSimpleContainer.setManaged(hasSimpleData);
+                // Làm mờ đi nếu đang ở JSON mode
+                suggestionSimpleContainer.setOpacity(isSimpleMode ? 1.0 : 0.6);
             }
         });
     }
@@ -721,12 +712,12 @@ public class AddTagDialogController {
 
         clearKeyHighlightOnly();
         if (keySuggestionGroup.getSelectedToggle() == null) {
-            // Populate value dựa trên key được focus (nếu có) hoặc không có gì
             populateValues(findFocusedKeyToggle(), valueField.getText());
         } else {
             populateValues(keySuggestionGroup.getSelectedToggle(), valueField.getText());
         }
     }
+
 
     // ... (findFocusedKeyToggle giữ nguyên) ...
     private Toggle findFocusedKeyToggle() {
@@ -789,7 +780,7 @@ public class AddTagDialogController {
     // ... (populateSimpleTags giữ nguyên) ...
     private void populateSimpleTags(String searchText) {
         suggestionSimplePane.getChildren().clear();
-        // Không clear valueSuggestionGroup ở đây nếu muốn giữ selection giữa JSON và Simple
+        // Không clear valueSuggestionGroup ở đây nếu muốn giữ selection
 
         final List<ParsedTag> filteredTags;
         if (searchText == null || searchText.trim().isEmpty()) {
@@ -806,13 +797,12 @@ public class AddTagDialogController {
             ToggleButton chip = new ToggleButton(pt.model.getDisplayName());
             chip.setToggleGroup(valueSuggestionGroup); // Dùng chung group
             chip.getStyleClass().add("suggested-tag-button");
-            // Thêm style simple
             chip.getStyleClass().add("tag-view-simple");
             chip.setUserData(pt.rawString); // Lưu raw string
             chip.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
                 if (isUpdatingProgrammatically) return;
                 if (isSelected) {
-                    clearKeyHighlightAndSelection(); // Clear key selection when simple tag is chosen
+                    clearKeyHighlightAndSelection();
                     fillFormFromSuggestion((String) chip.getUserData());
 
                     focusedSimpleIndex = suggestionSimplePane.getChildren().indexOf(chip);
@@ -955,7 +945,7 @@ public class AddTagDialogController {
         }
     }
 
-    // ... (handleKeyPressed - chỉ còn xử lý ESCAPE) ...
+    // ... (handleKeyPressed giữ nguyên) ...
     /** Handles key presses globally within the dialog (Escape). */
     @FXML
     private void handleKeyPressed(KeyEvent event) {

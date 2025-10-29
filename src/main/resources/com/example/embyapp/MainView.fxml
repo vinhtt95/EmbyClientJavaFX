@@ -1,50 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 
-<BorderPane fx:id="rootPane" prefHeight="1400.0" prefWidth="2000.0"
-            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.example.embyapp.controller.MainController">
+<BorderPane fx:id="rootPane" prefHeight="1400.0" prefWidth="2000.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.embyapp.controller.MainController">
     <top>
-        <ToolBar fx:id="mainToolBar" style="-fx-background-color: #1e1e1e;"
-                 BorderPane.alignment="CENTER">
+        <ToolBar fx:id="mainToolBar" style="-fx-background-color: #1e1e1e;" BorderPane.alignment="CENTER">
             <items>
-                <Button fx:id="logoutButton" mnemonicParsing="false"/> <Separator orientation="VERTICAL" />
-
-                <Button fx:id="sortByButton" onAction="#handleSortByToggle" minWidth="150.0"/> <ToggleButton fx:id="sortOrderButton" onAction="#handleSortOrderToggle" minWidth="100.0"/>         <Region HBox.hgrow="ALWAYS" />
-
+                <Button fx:id="homeButton" mnemonicParsing="false" onAction="#handleHomeButtonAction" />
+                <Separator orientation="VERTICAL" />
+                <Button fx:id="logoutButton" mnemonicParsing="false" />
+                <Separator orientation="VERTICAL" />
+                <Button fx:id="sortByButton" minWidth="150.0" onAction="#handleSortByToggle" />
+                <ToggleButton fx:id="sortOrderButton" minWidth="100.0" onAction="#handleSortOrderToggle" />
+                <Region HBox.hgrow="ALWAYS" />
                 <HBox alignment="CENTER_LEFT" spacing="5.0">
                     <children>
-                        <TextField fx:id="searchField" prefWidth="250.0" onAction="#handleSearchAction"/>   <Button fx:id="searchButton" onAction="#handleSearchAction"/> </children>
+                        <TextField fx:id="searchField" onAction="#handleSearchAction" prefWidth="250.0" />
+                        <Button fx:id="searchButton" onAction="#handleSearchAction" />
+                    </children>
                 </HBox>
             </items>
         </ToolBar>
     </top>
     <bottom>
         <HBox fx:id="statusBar" alignment="CENTER_LEFT" spacing="10.0" styleClass="status-bar" BorderPane.alignment="CENTER">
-
             <padding>
-                <Insets bottom="5.0" left="10.0" right="10.0" top="5.0"/>
+                <Insets bottom="5.0" left="10.0" right="10.0" top="5.0" />
             </padding>
             <children>
-                <Label fx:id="statusLabel" HBox.hgrow="ALWAYS"/>
-                <ProgressIndicator fx:id="statusProgressIndicator" maxHeight="20.0" maxWidth="20.0" visible="false"/>
-
-                <Region HBox.hgrow="ALWAYS" /> <StackPane fx:id="hotkeyIndicator" minHeight="12.0" minWidth="12.0" style="-fx-border-radius: 5em; -fx-background-radius: 5em;">
-                <HBox.margin>
-                    <Insets right="5.0" />
-                </HBox.margin>
-            </StackPane>
+                <Label fx:id="statusLabel" HBox.hgrow="ALWAYS" />
+                <ProgressIndicator fx:id="statusProgressIndicator" maxHeight="20.0" maxWidth="20.0" visible="false" />
+                <Region HBox.hgrow="ALWAYS" />
+                <StackPane fx:id="hotkeyIndicator" minHeight="12.0" minWidth="12.0" style="-fx-border-radius: 5em; -fx-background-radius: 5em;">
+                    <HBox.margin>
+                        <Insets right="5.0" />
+                    </HBox.margin>
+                </StackPane>
             </children>
         </HBox>
     </bottom>
     <center>
         <SplitPane fx:id="mainSplitPane" prefHeight="160.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-            <AnchorPane fx:id="leftPaneContainer" minHeight="150.0" prefHeight="160.0" prefWidth="100.0" maxWidth="300.0" style="-fx-background-color: #1e1e1e;"/>
-            <AnchorPane fx:id="centerPaneContainer" minHeight="0.0" prefHeight="160.0" prefWidth="100.0" style="-fx-background-color: #1a1a1a;"/>
-            <AnchorPane fx:id="rightPaneContainer" minHeight="0.0" prefHeight="160.0" prefWidth="100.0" style="-fx-background-color: #121212;"/>
+            <items>
+                <AnchorPane fx:id="leftPaneContainer" maxWidth="300.0" minHeight="150.0" prefHeight="160.0" prefWidth="100.0" style="-fx-background-color: #1e1e1e;" />
+                <AnchorPane fx:id="centerPaneContainer" minHeight="0.0" prefHeight="160.0" prefWidth="100.0" style="-fx-background-color: #1a1a1a;" />
+                <AnchorPane fx:id="rightPaneContainer" minHeight="0.0" prefHeight="160.0" prefWidth="100.0" style="-fx-background-color: #121212;" />
+            </items>
         </SplitPane>
     </center>
 </BorderPane>

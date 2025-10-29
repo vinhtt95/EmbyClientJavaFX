@@ -7,7 +7,6 @@ import com.example.embyapp.service.I18nManager;
 import com.example.embyapp.service.ItemRepository;
 import com.example.embyapp.service.UserRepository;
 import com.example.embyapp.viewmodel.*;
-// (*** THÊM IMPORT NÀY CHO DELAY ***)
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -27,7 +26,6 @@ import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.scene.control.TreeItem;
-// (*** THÊM IMPORT NÀY CHO DELAY ***)
 import javafx.util.Duration;
 
 import java.io.IOException;
@@ -40,23 +38,23 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 
-// Imports cho Global Hotkey
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import com.github.kwhat.jnativehook.NativeInputEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
-import javafx.scene.layout.StackPane; // <-- THÊM IMPORT NÀY
+import javafx.scene.layout.StackPane;
 
 /**
  * Controller Điều Phối (Coordinator) cho MainView.
  * Implement NativeKeyListener để bắt hotkey hệ thống.
+ * (CẬP NHẬT) Thêm nút Home.
  */
 public class MainController implements NativeKeyListener {
 
-    // ... (Các khai báo @FXML và biến thành viên khác giữ nguyên) ...
     @FXML private BorderPane rootPane;
     @FXML private ToolBar mainToolBar;
+    @FXML private Button homeButton;
     @FXML private Button logoutButton;
     @FXML private HBox statusBar;
     @FXML private Label statusLabel;
@@ -69,8 +67,6 @@ public class MainController implements NativeKeyListener {
     @FXML private Button searchButton;
     @FXML private Button sortByButton;
     @FXML private ToggleButton sortOrderButton;
-
-    // --- THÊM DÒNG NÀY ---
     @FXML private StackPane hotkeyIndicator;
 
     private MainApp mainApp;
@@ -98,13 +94,12 @@ public class MainController implements NativeKeyListener {
     private Parent detailDialogRoot;
     private ItemDetailController detailDialogController;
 
-    // --- THÊM CÁC BIẾN TỪ BƯỚC TRƯỚC VÀ BIẾN MỚI ---
     private final BooleanProperty hotkeyModifiersActive = new SimpleBooleanProperty(false);
     private volatile boolean globalMetaPressed = false;
     private volatile boolean globalShiftPressed = false;
 
     private volatile boolean processingHotkey = false;
-    private final PauseTransition hotkeyDebounceTimer = new PauseTransition(Duration.millis(200)); // 200ms delay
+    private final PauseTransition hotkeyDebounceTimer = new PauseTransition(Duration.millis(200));
 
 
     public void setMainApp(MainApp mainApp) {
@@ -115,7 +110,6 @@ public class MainController implements NativeKeyListener {
     public void initialize() {
         setupLocalization();
 
-        // --- THÊM ĐOẠN CODE NÀY ---
         if (hotkeyIndicator != null) {
             hotkeyModifiersActive.addListener((obs, oldVal, isActive) -> {
                 if (isActive) {
@@ -130,11 +124,8 @@ public class MainController implements NativeKeyListener {
                     }
                 }
             });
-            // Đặt trạng thái ban đầu
             hotkeyIndicator.getStyleClass().add("hotkey-indicator-off");
         }
-        // --- KẾT THÚC THÊM ---
-
 
         this.embyService = EmbyService.getInstance();
         this.itemRepository = new ItemRepository();
@@ -174,7 +165,10 @@ public class MainController implements NativeKeyListener {
         bindDataFlow();
 
         viewModel.loadUserData();
-        libraryTreeViewModel.loadLibraries();
+        libraryTreeViewModel.loadLibraries(); // Vẫn load cây thư mục bình thường
+
+        // Kích hoạt "Home" khi khởi động
+        Platform.runLater(this::handleHomeButtonAction);
 
         prefs = Preferences.userRoot().node(PREF_NODE_PATH);
         loadDividerPositions();
@@ -185,15 +179,14 @@ public class MainController implements NativeKeyListener {
             mainSplitPane.getDividers().get(1).positionProperty().addListener((obs, oldVal, newVal) -> saveDividerPositions());
         }
 
-        // (*** CẤU HÌNH CHO TIMER DEBOUNCE ***)
         hotkeyDebounceTimer.setOnFinished(event -> processingHotkey = false);
 
-        // Đăng ký hotkey hệ thống
         registerSystemHotkeys();
     }
 
     private void setupLocalization() {
         I18nManager i18n = I18nManager.getInstance();
+        homeButton.setText(i18n.getString("mainView", "homeButton"));
         logoutButton.setText(i18n.getString("mainView", "logoutButton"));
         searchField.setPromptText(i18n.getString("mainView", "searchPrompt"));
         searchButton.setText(i18n.getString("mainView", "searchButton"));
@@ -211,11 +204,15 @@ public class MainController implements NativeKeyListener {
                         return i18n.getString("mainView", "sortByName");
                     } else if (currentSortBy.equals(ItemGridViewModel.SORT_BY_DATE_RELEASE)) {
                         return i18n.getString("mainView", "sortByDateRelease");
+                    } else if (currentSortBy.equals(ItemGridViewModel.SORT_BY_DATE_CREATED)) {
+                        return i18n.getString("mainView", "sortByDateCreated");
                     }
                     return i18n.getString("mainView", "sortByDefault");
                 }, itemGridViewModel.currentSortByProperty())
         );
-        sortByButton.disableProperty().bind(itemGridViewModel.loadingProperty().or(Bindings.createBooleanBinding(itemGridViewModel::isSearching, itemGridViewModel.statusMessageProperty())));
+        sortByButton.disableProperty().bind(itemGridViewModel.loadingProperty().or(
+                Bindings.createBooleanBinding(itemGridViewModel::isSearching, itemGridViewModel.statusMessageProperty())
+        ));
 
         sortOrderButton.textProperty().bind(
                 Bindings.createStringBinding(() -> {
@@ -228,7 +225,9 @@ public class MainController implements NativeKeyListener {
                     }
                 }, itemGridViewModel.currentSortOrderProperty())
         );
-        sortOrderButton.disableProperty().bind(itemGridViewModel.loadingProperty().or(Bindings.createBooleanBinding(itemGridViewModel::isSearching, itemGridViewModel.statusMessageProperty())));
+        sortOrderButton.disableProperty().bind(itemGridViewModel.loadingProperty().or(
+                Bindings.createBooleanBinding(itemGridViewModel::isSearching, itemGridViewModel.statusMessageProperty())
+        ));
         sortOrderButton.setSelected(itemGridViewModel.currentSortOrderProperty().get().equals(ItemGridViewModel.SORT_ORDER_ASCENDING));
     }
 
@@ -277,19 +276,17 @@ public class MainController implements NativeKeyListener {
                 }
                 itemGridController.loadItemsByParentId(parentId);
             } else {
-                itemGridController.loadItemsByParentId(null);
+                // If selection is cleared (e.g., by Home button), do nothing here
+                // Home button action will handle loading the grid
             }
         });
 
-        // Sửa listener này để xử lý `playAfterSelect`
         itemGridViewModel.selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             itemDetailViewModel.setItemToDisplay(newVal);
-
-            // Logic mới để "phát" tự động khi hotkey hệ thống được nhấn
             if (newVal != null && itemGridViewModel.isPlayAfterSelect()) {
                 System.out.println("Hotkey: Phát tự động item: " + newVal.getName());
-                itemGridController.playItem(newVal); // Gọi hàm public của ItemGridController
-                itemGridViewModel.clearPlayAfterSelect(); // Xóa cờ
+                itemGridController.playItem(newVal);
+                itemGridViewModel.clearPlayAfterSelect();
             }
         });
 
@@ -401,7 +398,6 @@ public class MainController implements NativeKeyListener {
                     scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
                 }
 
-                // Đăng ký TẤT CẢ hotkey cho scene của dialog
                 registerHotkeysForScene(scene);
 
 
@@ -426,7 +422,7 @@ public class MainController implements NativeKeyListener {
                     detailDialog.setY(savedY);
                 }
                 detailDialog.initModality(Modality.NONE);
-                detailDialog.setScene(scene); // Gán scene đã được đăng ký hotkey
+                detailDialog.setScene(scene);
 
                 detailDialog.setOnCloseRequest(e -> {
                     prefs.putDouble(KEY_DIALOG_WIDTH, detailDialog.getWidth());
@@ -470,7 +466,6 @@ public class MainController implements NativeKeyListener {
      */
     public void registerGlobalHotkeys(Scene scene) {
         if (scene == null) return;
-        // Chỉ cần gọi hàm helper
         registerHotkeysForScene(scene);
     }
 
@@ -481,7 +476,6 @@ public class MainController implements NativeKeyListener {
     private void registerHotkeysForScene(Scene scene) {
         if (scene == null) return;
 
-        // --- Lặp lại dialog Add Tag (Phím ENTER) ---
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ENTER && !event.isShiftDown() && !event.isControlDown() && !event.isAltDown() && !event.isMetaDown()) {
 
@@ -492,15 +486,12 @@ public class MainController implements NativeKeyListener {
                         || focusedNode instanceof ToggleButton;
 
                 if (focusedNode == null || !isBlockingControl) {
-                    // Dùng controller của cửa sổ chính hay của dialog?
-                    // Nếu detailDialog đang hiển thị VÀ scene này là scene của dialog
                     if (detailDialog != null && detailDialog.isShowing() && scene == detailDialog.getScene()) {
                         if (detailDialogController != null) {
                             detailDialogController.handleRepeatAddTagDialog();
                             event.consume();
                         }
                     }
-                    // Ngược lại, dùng controller của cửa sổ chính
                     else if (itemDetailController != null) {
                         itemDetailController.handleRepeatAddTagDialog();
                         event.consume();
@@ -510,10 +501,8 @@ public class MainController implements NativeKeyListener {
         });
 
 
-        // --- Cmd + S (Save) ---
         final KeyCombination saveShortcut = new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN);
         scene.getAccelerators().put(saveShortcut, () -> {
-            // Tương tự, kiểm tra xem controller nào đang active
             if (detailDialog != null && detailDialog.isShowing() && scene == detailDialog.getScene()) {
                 if (detailDialogController != null) {
                     detailDialogController.handleSaveHotkey();
@@ -523,7 +512,6 @@ public class MainController implements NativeKeyListener {
             }
         });
 
-        // --- Cmd + N (Next Item - CHỈ CHỌN) ---
         final KeyCombination nextShortcut = new KeyCodeCombination(KeyCode.N, KeyCombination.SHORTCUT_DOWN);
         scene.getAccelerators().put(nextShortcut, () -> {
             if (itemGridViewModel != null) {
@@ -531,7 +519,6 @@ public class MainController implements NativeKeyListener {
             }
         });
 
-        // --- Cmd + P (Previous Item - CHỈ CHỌN) ---
         final KeyCombination prevShortcut = new KeyCodeCombination(KeyCode.P, KeyCombination.SHORTCUT_DOWN);
         scene.getAccelerators().put(prevShortcut, () -> {
             if (itemGridViewModel != null) {
@@ -539,7 +526,6 @@ public class MainController implements NativeKeyListener {
             }
         });
 
-        // --- Cmd + ENTER (Play Item) ---
         final KeyCombination playShortcut = new KeyCodeCombination(KeyCode.ENTER, KeyCombination.SHORTCUT_DOWN);
         scene.getAccelerators().put(playShortcut, () -> {
             if (itemGridViewModel != null && itemGridController != null) {
@@ -556,14 +542,10 @@ public class MainController implements NativeKeyListener {
         System.out.println("Hotkeys registered for scene: " + scene.hashCode());
     }
 
-
-    // --- Các hàm cho Hotkey Hệ Thống (JNativeHook) ---
-
     /**
      * Đăng ký trình lắng nghe hotkey toàn hệ thống.
      */
     private void registerSystemHotkeys() {
-        // Tắt log của JNativeHook
         Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
         logger.setLevel(Level.OFF);
         logger.setUseParentHandlers(false);
@@ -594,35 +576,28 @@ public class MainController implements NativeKeyListener {
         }
     }
 
-
     /**
-     * (HÀM MỚI) Cập nhật trạng thái của BooleanProperty dựa trên
+     * Cập nhật trạng thái của BooleanProperty dựa trên
      * các biến volatile globalMetaPressed và globalShiftPressed.
      * Phải được gọi từ bên trong nativeKey...
      */
     private void updateHotkeyIndicatorState() {
         boolean isActive = globalMetaPressed && globalShiftPressed;
-
-        // Chỉ cập nhật nếu trạng thái thay đổi
         if (hotkeyModifiersActive.get() != isActive) {
-            // Đẩy việc cập nhật UI về luồng JavaFX
             Platform.runLater(() -> hotkeyModifiersActive.set(isActive));
         }
     }
 
 
     @Override
-    public void nativeKeyTyped(NativeKeyEvent e) {
-        // Không sử dụng
-    }
+    public void nativeKeyTyped(NativeKeyEvent e) { }
 
     /**
-     * (SỬA ĐỔI) Xử lý sự kiện nhấn phím toàn hệ thống.
+     * Xử lý sự kiện nhấn phím toàn hệ thống.
      * Cập nhật trạng thái phím modifier VÀ gọi updateHotkeyIndicatorState.
      */
     @Override
     public void nativeKeyPressed(NativeKeyEvent e) {
-        // 1. Cập nhật trạng thái phím modifier (khi nhấn)
         if (e.getKeyCode() == NativeKeyEvent.VC_META) {
             globalMetaPressed = true;
         }
@@ -630,43 +605,33 @@ public class MainController implements NativeKeyListener {
             globalShiftPressed = true;
         }
 
-        // 2. Cập nhật đèn báo UI
         updateHotkeyIndicatorState();
 
-        // 3. Xử lý logic debounce (giữ nguyên)
         if (processingHotkey) {
-            // System.out.println("Debounce: Ignored key press while processing hotkey"); // Bỏ comment để debug nếu cần
             return;
         }
 
-        // 4. Xử lý logic hotkey (dựa trên biến global)
         if (globalMetaPressed && globalShiftPressed) {
             Runnable action = null;
-            final int keyCode = e.getKeyCode(); // Lưu keyCode để dùng trong Platform.runLater
+            final int keyCode = e.getKeyCode();
 
-            // --- KIỂM TRA KHỐI NÀY ---
             if (keyCode == NativeKeyEvent.VC_N || keyCode == NativeKeyEvent.VC_P) {
-                // Đặt cờ debounce ngay lập tức
                 processingHotkey = true;
                 hotkeyDebounceTimer.stop();
                 hotkeyDebounceTimer.playFromStart();
-                System.out.println("Global Hotkey: Debounce started for " + NativeKeyEvent.getKeyText(keyCode)); // Thêm log
+                System.out.println("Global Hotkey: Debounce started for " + NativeKeyEvent.getKeyText(keyCode));
 
-                // Tạo hành động để chạy trên luồng JavaFX
                 action = () -> {
-                    // Thêm log xem Platform.runLater có chạy không
                     System.out.println("Global Hotkey: Platform.runLater executing for " + NativeKeyEvent.getKeyText(keyCode));
                     try {
                         if (keyCode == NativeKeyEvent.VC_N) {
-                            // Hotkey: Cmd + Shift + N
                             System.out.println("Global Hotkey: Cmd+Shift+N (Next & Play) executing...");
                             if (itemGridViewModel != null) {
                                 itemGridViewModel.selectAndPlayNextItem();
                             } else {
                                 System.err.println("itemGridViewModel is null in action!");
                             }
-                        } else { // keyCode == NativeKeyEvent.VC_P
-                            // Hotkey: Cmd + Shift + P
+                        } else {
                             System.out.println("Global Hotkey: Cmd+Shift+P (Prev & Play) executing...");
                             if (itemGridViewModel != null) {
                                 itemGridViewModel.selectAndPlayPreviousItem();
@@ -674,42 +639,48 @@ public class MainController implements NativeKeyListener {
                                 System.err.println("itemGridViewModel is null in action!");
                             }
                         }
-                        System.out.println("Global Hotkey: Action completed for " + NativeKeyEvent.getKeyText(keyCode)); // Thêm log
+                        System.out.println("Global Hotkey: Action completed for " + NativeKeyEvent.getKeyText(keyCode));
                     } finally {
-                        // --- ĐÂY LÀ PHẦN QUAN TRỌNG ĐỂ RESET ---
-                        // Luôn reset trạng thái sau khi action đã chạy (hoặc cố gắng chạy)
                         try { Thread.sleep(100); } catch (InterruptedException ie) {}
                         System.out.println("Global Hotkey: Resetting modifier state after action.");
                         globalMetaPressed = false;
                         globalShiftPressed = false;
-                        // Cập nhật lại đèn báo ngay lập tức
                         updateHotkeyIndicatorState();
-                        // Không cần reset processingHotkey ở đây, debounce timer sẽ làm việc đó
                     }
                 };
-
-                // Đưa action vào hàng đợi của luồng JavaFX
                 Platform.runLater(action);
             }
-            // --- KẾT THÚC KIỂM TRA KHỐI ---
         }
     }
 
 
     @Override
     public void nativeKeyReleased(NativeKeyEvent e) {
-        // 1. Cập nhật trạng thái phím modifier
         if (e.getKeyCode() == NativeKeyEvent.VC_META) {
             globalMetaPressed = false;
         }
         if (e.getKeyCode() == NativeKeyEvent.VC_SHIFT) {
             globalShiftPressed = false;
         }
-
-        // 2. Cập nhật đèn báo UI
         updateHotkeyIndicatorState();
     }
-    // --- Kết thúc các hàm Hotkey Hệ Thống ---
+
+    /**
+     * Xử lý nút "Home".
+     * Tải tất cả item (parentId = null) và xóa chọn thư mục.
+     */
+    @FXML
+    private void handleHomeButtonAction() {
+        if (libraryTreeController != null) {
+            libraryTreeController.clearSelection();
+        }
+        if (searchField != null) {
+            searchField.setText("");
+        }
+        if (itemGridController != null) {
+            itemGridController.loadItemsByParentId(null);
+        }
+    }
 
     @FXML
     private void handleSearchAction() {
@@ -718,7 +689,7 @@ public class MainController implements NativeKeyListener {
             itemGridViewModel.searchItemsByKeywords(keywords.trim());
         } else {
             viewModel.statusMessageProperty().set(I18nManager.getInstance().getString("mainView", "errorSearchKeywords"));
-            itemGridViewModel.loadItemsByParentId(null);
+            handleHomeButtonAction(); // Quay về Home khi xóa search
         }
     }
 

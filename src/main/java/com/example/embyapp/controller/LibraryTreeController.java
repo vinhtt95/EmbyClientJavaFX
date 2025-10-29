@@ -11,6 +11,7 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.SelectionModel; // Import needed
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.MouseEvent;
@@ -35,7 +36,6 @@ public class LibraryTreeController {
     public void setViewModel(LibraryTreeViewModel viewModel) {
         this.viewModel = viewModel;
 
-        // BINDINGS
         if (progressIndicator != null) {
             progressIndicator.visibleProperty().bind(viewModel.loadingProperty());
         } else {
@@ -43,9 +43,8 @@ public class LibraryTreeController {
         }
 
         treeView.rootProperty().bind(viewModel.rootItemProperty());
-        treeView.setShowRoot(false); // Ẩn node gốc "Root"
+        treeView.setShowRoot(false);
 
-        // 1. Tùy chỉnh CellFactory
         treeView.setCellFactory(tv -> new TreeCell<>() {
 
             private final ChangeListener<Boolean> expansionListener = (obs, wasExpanded, isNowExpanded) -> {
@@ -112,7 +111,6 @@ public class LibraryTreeController {
             }
         });
 
-        // 2. Lắng nghe sự kiện click (single-click)
         treeView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newItem) -> {
             viewModel.selectedTreeItemProperty().set(newItem);
         });
@@ -123,5 +121,18 @@ public class LibraryTreeController {
      */
     public void loadLibraries() {
         viewModel.loadLibraries();
+    }
+
+    /**
+     * Xóa lựa chọn hiện tại trên TreeView.
+     * Được gọi bởi MainController khi nhấn nút "Home".
+     */
+    public void clearSelection() {
+        if (treeView != null) {
+            SelectionModel<TreeItem<BaseItemDto>> selectionModel = treeView.getSelectionModel();
+            if (selectionModel != null) {
+                selectionModel.clearSelection();
+            }
+        }
     }
 }

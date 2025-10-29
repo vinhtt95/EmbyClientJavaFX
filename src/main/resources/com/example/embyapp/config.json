@@ -8,10 +8,12 @@
     "loginInProgress": "Logging in..."
   },
   "mainView": {
+    "homeButton": "Trang chủ (Tất cả)",
     "logoutButton": "Logout",
     "sortByDate": "Sort By: Date",
     "sortByName": "Sort By: Name (A-Z)",
     "sortByDateRelease": "Sort By: Date (Year, Release)",
+    "sortByDateCreated": "Sort By: Date (Created)",
     "sortByDefault": "Sort By...",
     "orderDesc": "Order: Desc (▼)",
     "orderAsc": "Order: Asc (▲)",
@@ -32,6 +34,8 @@
     "statusPageEmpty": "Trang này rỗng.",
     "statusLibraryEmpty": "Thư viện này không có items.",
     "statusDisplaying": "Đang hiển thị: {0}/{1} ({2} items)",
+    "statusAllItemsEmpty": "Không tìm thấy item nào trên server.",
+    "statusDisplayingAll": "Đang hiển thị (Tất cả): {0}/{1} ({2} items)",
     "statusSearchPageLoading": "Đang tìm kiếm và tải trang {0}/{1}...",
     "statusSearchEmpty": "Không tìm thấy items nào khớp với từ khóa \"{0}\".",
     "statusSearchResult": "Kết quả tìm kiếm: {0}/{1} ({2} items)",

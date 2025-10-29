@@ -622,7 +622,7 @@ public class MainController implements NativeKeyListener {
      */
     @Override
     public void nativeKeyPressed(NativeKeyEvent e) {
-        // 1. Cập nhật trạng thái phím modifier
+        // 1. Cập nhật trạng thái phím modifier (khi nhấn)
         if (e.getKeyCode() == NativeKeyEvent.VC_META) {
             globalMetaPressed = true;
         }
@@ -635,38 +635,63 @@ public class MainController implements NativeKeyListener {
 
         // 3. Xử lý logic debounce (giữ nguyên)
         if (processingHotkey) {
+            // System.out.println("Debounce: Ignored key press while processing hotkey"); // Bỏ comment để debug nếu cần
             return;
         }
 
-        // 4. Xử lý logic hotkey (dựa trên biến global, không dùng e.getModifiers())
+        // 4. Xử lý logic hotkey (dựa trên biến global)
         if (globalMetaPressed && globalShiftPressed) {
             Runnable action = null;
+            final int keyCode = e.getKeyCode(); // Lưu keyCode để dùng trong Platform.runLater
 
-            if (e.getKeyCode() == NativeKeyEvent.VC_N) {
-                // Hotkey: Cmd + Shift + N
-                System.out.println("Global Hotkey: Cmd+Shift+N (Next & Play) detected!");
-                action = () -> {
-                    if (itemGridViewModel != null) {
-                        itemGridViewModel.selectAndPlayNextItem();
-                    }
-                };
-
-            } else if (e.getKeyCode() == NativeKeyEvent.VC_P) {
-                // Hotkey: Cmd + Shift + P
-                System.out.println("Global Hotkey: Cmd+Shift+P (Prev & Play) detected!");
-                action = () -> {
-                    if (itemGridViewModel != null) {
-                        itemGridViewModel.selectAndPlayPreviousItem();
-                    }
-                };
-            }
-
-            if (action != null) {
+            // --- KIỂM TRA KHỐI NÀY ---
+            if (keyCode == NativeKeyEvent.VC_N || keyCode == NativeKeyEvent.VC_P) {
+                // Đặt cờ debounce ngay lập tức
                 processingHotkey = true;
                 hotkeyDebounceTimer.stop();
                 hotkeyDebounceTimer.playFromStart();
+                System.out.println("Global Hotkey: Debounce started for " + NativeKeyEvent.getKeyText(keyCode)); // Thêm log
+
+                // Tạo hành động để chạy trên luồng JavaFX
+                action = () -> {
+                    // Thêm log xem Platform.runLater có chạy không
+                    System.out.println("Global Hotkey: Platform.runLater executing for " + NativeKeyEvent.getKeyText(keyCode));
+                    try {
+                        if (keyCode == NativeKeyEvent.VC_N) {
+                            // Hotkey: Cmd + Shift + N
+                            System.out.println("Global Hotkey: Cmd+Shift+N (Next & Play) executing...");
+                            if (itemGridViewModel != null) {
+                                itemGridViewModel.selectAndPlayNextItem();
+                            } else {
+                                System.err.println("itemGridViewModel is null in action!");
+                            }
+                        } else { // keyCode == NativeKeyEvent.VC_P
+                            // Hotkey: Cmd + Shift + P
+                            System.out.println("Global Hotkey: Cmd+Shift+P (Prev & Play) executing...");
+                            if (itemGridViewModel != null) {
+                                itemGridViewModel.selectAndPlayPreviousItem();
+                            } else {
+                                System.err.println("itemGridViewModel is null in action!");
+                            }
+                        }
+                        System.out.println("Global Hotkey: Action completed for " + NativeKeyEvent.getKeyText(keyCode)); // Thêm log
+                    } finally {
+                        // --- ĐÂY LÀ PHẦN QUAN TRỌNG ĐỂ RESET ---
+                        // Luôn reset trạng thái sau khi action đã chạy (hoặc cố gắng chạy)
+                        try { Thread.sleep(100); } catch (InterruptedException ie) {}
+                        System.out.println("Global Hotkey: Resetting modifier state after action.");
+                        globalMetaPressed = false;
+                        globalShiftPressed = false;
+                        // Cập nhật lại đèn báo ngay lập tức
+                        updateHotkeyIndicatorState();
+                        // Không cần reset processingHotkey ở đây, debounce timer sẽ làm việc đó
+                    }
+                };
+
+                // Đưa action vào hàng đợi của luồng JavaFX
                 Platform.runLater(action);
             }
+            // --- KẾT THÚC KIỂM TRA KHỐI ---
         }
     }
 

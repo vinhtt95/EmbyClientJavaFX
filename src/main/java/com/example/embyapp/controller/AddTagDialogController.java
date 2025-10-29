@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
  * (CẬP NHẬT 39) Thêm logic tự động chọn key gợi ý, bôi đen value khi Tab, bỏ qua value khi nhập key.
  * (CẬP NHẬT 44) Sửa lỗi NullPointerException và hành vi tự động chọn/nhảy focus.
  * (CẬP NHẬT 45) Bỏ auto-select, chỉ highlight key đang lọc value.
+ * (CẬP NHẬT 46) (*** SỬA LỖI: Tự động chọn key khi rời focus khỏi keyField ***)
  */
 public class AddTagDialogController {
 
@@ -153,6 +154,7 @@ public class AddTagDialogController {
                         keyField.setText(selectedKey); // Điền key đã chọn
                         populateValues(newToggle, ""); // Populate value dựa trên key mới
                         valueField.requestFocus(); // Chuyển focus xuống valueField
+                        valueField.selectAll(); // (*** THÊM MỚI: Bôi đen value khi focus tới ***)
                     } else if (oldToggle != null) {
                         // Logic khi bỏ chọn key (click lại key đang chọn)
                         // Kiểm tra xem oldToggle có còn là nút hợp lệ không trước khi dùng
@@ -197,11 +199,47 @@ public class AddTagDialogController {
         // Xử lý Tab từ Key Field (Giữ nguyên)
         keyField.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.TAB && !event.isShiftDown()) {
-                valueField.requestFocus();
-                Platform.runLater(() -> valueField.selectAll());
+                // (*** SỬA ĐỔI: Chuyển logic sang focusedProperty, ở đây chỉ consume event ***)
+                // Logic cũ:
+                // valueField.requestFocus();
+                // Platform.runLater(() -> valueField.selectAll());
+                // event.consume();
+
+                // Logic mới:
+                // Chỉ consume event để ngăn JavaFX di chuyển focus mặc định.
+                // Việc di chuyển focus và auto-select sẽ được listener 'focusedProperty' xử lý.
                 event.consume();
+                // Yêu cầu focus cho valueField thủ công
+                valueField.requestFocus();
             }
         });
+
+        // (*** THÊM MỚI: Tự động chọn key khi rời focus khỏi keyField ***)
+        keyField.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+            if (wasFocused && !isFocused) { // Vừa mất focus
+                // Nếu user CHƯA click chọn key nào (để tôn trọng lựa chọn thủ công)
+                if (keySuggestionGroup.getSelectedToggle() == null) {
+                    String currentKeyText = keyField.getText().trim();
+                    if (!currentKeyText.isEmpty()) {
+                        // Tìm key đầu tiên khớp (không phân biệt hoa thường)
+                        for (Toggle toggle : keySuggestionGroup.getToggles()) {
+                            if (toggle.getUserData() instanceof String) {
+                                String toggleKey = (String) toggle.getUserData();
+                                if (toggleKey.equalsIgnoreCase(currentKeyText)) {
+                                    // Tìm thấy! Chọn nó.
+                                    // Thao tác này sẽ kích hoạt listener của keySuggestionGroup
+                                    // (đã được bọc trong Platform.runLater)
+                                    isFilteringSuggestions = false; // Đảm bảo listener chạy
+                                    keySuggestionGroup.selectToggle(toggle);
+                                    break; // Dừng tìm
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        // (*** KẾT THÚC THÊM MỚI ***)
     }
 
     private void setupLocalization() {

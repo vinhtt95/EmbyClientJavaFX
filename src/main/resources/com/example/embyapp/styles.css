@@ -513,3 +513,20 @@
     -fx-effect: dropshadow(gaussian, rgba(220, 53, 69, 0.7), 10, 0.3, 0, 0);
 }
 /* --- KẾT THÚC THÊM --- */
+
+.focused-chip {
+    -fx-border-color: #f0ad4e; /* Màu vàng cam */
+    -fx-border-width: 2px;
+    -fx-effect: dropshadow(gaussian, rgba(240, 173, 78, 0.5), 10, 0.2, 0, 0);
+}
+
+/* Tùy chỉnh cho suggestion-key-button khi được focus */
+.suggestion-key-button.focused-chip {
+    -fx-border-color: #f0ad4e;
+    -fx-background-color: #005f9e; /* Vẫn giữ màu nền highlight khi focus */
+}
+
+/* Tùy chỉnh cho suggested-tag-button khi được focus */
+.suggested-tag-button.focused-chip {
+    -fx-border-color: #f0ad4e;
+}

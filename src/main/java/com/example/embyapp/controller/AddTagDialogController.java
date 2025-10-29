@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 /**
  * Controller for the Add Tag Dialog.
  * Includes advanced input handling features.
+ * (CẬP NHẬT) Thêm điều hướng bằng phím mũi tên Lên/Xuống cho các suggestion chip.
  */
 public class AddTagDialogController {
 
@@ -98,6 +99,13 @@ public class AddTagDialogController {
     // Flag to prevent listener loops during programmatic changes
     private boolean isUpdatingProgrammatically = false;
 
+    // (*** MỚI: Biến quản lý focus bằng phím mũi tên ***)
+    private int focusedKeyIndex = -1;
+    private int focusedValueIndex = -1;
+    private int focusedSimpleIndex = -1;
+    // Tên của class CSS mới
+    private static final String FOCUSED_CHIP_STYLE_CLASS = "focused-chip";
+
 
     private static class ParsedTag {
         final String rawString;
@@ -142,6 +150,7 @@ public class AddTagDialogController {
         // Listener for key text field changes - filters suggestions
         keyField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (isUpdatingProgrammatically) return;
+            focusedKeyIndex = -1; // (*** MỚI: Reset focus khi gõ text ***)
             populateKeys(newVal); // Filter keys and highlight best match
             populateSimpleTags(newVal); // Filter simple tags
             updateContainerVisibility();
@@ -160,6 +169,12 @@ public class AddTagDialogController {
                     populateValues(newToggle, "");  // Show values for selected key
                     valueField.requestFocus();     // Focus value field
                     valueField.selectAll();        // Select text
+
+                    // (*** MỚI: Cập nhật focusedKeyIndex khi click ***)
+                    focusedKeyIndex = suggestionKeysPane.getChildren().indexOf(newToggle);
+                    // Bỏ focus style cũ, set style mới
+                    clearAndSetChipFocus(suggestionKeysPane, focusedKeyIndex);
+
                     isUpdatingProgrammatically = false;
                 } else if (oldToggle != null) {
                     // When user deselects a key by clicking it again
@@ -171,7 +186,12 @@ public class AddTagDialogController {
         });
 
 
-        // (*** CẬP NHẬT LẦN 6: Listener for key field focus lost - Auto-complete & trigger actions ***)
+        // (*** SỬA ĐỔI: Chuyển sang EventFilter để xử lý phím Tab ***)
+        keyField.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+            handleFieldKeyPress(e, keyField, suggestionKeysPane, keySuggestionGroup);
+        });
+
+        // (*** CẬP NHẬT 6 - Bỏ qua, đã xử lý bằng handleFieldKeyPress)
         keyField.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
             // Check if focus was lost AND no key is currently selected by the user
             if (wasFocused && !isFocused && keySuggestionGroup.getSelectedToggle() == null) {
@@ -214,8 +234,12 @@ public class AddTagDialogController {
                             populateValues(finalToggle, "");
 
                             // 4. Move focus to the value field and select its content
-                            valueField.requestFocus();
-                            valueField.selectAll();
+                            // (*** SỬA ĐỔI: Không tự động chuyển focus, chỉ chuẩn bị ***)
+                            // valueField.requestFocus();
+                            // valueField.selectAll();
+                            // (*** CẬP NHẬT: Gán focusedKeyIndex ***)
+                            focusedKeyIndex = suggestionKeysPane.getChildren().indexOf(finalToggle);
+
 
                             // DO NOT call selectToggle() here to avoid focus issues
                             isUpdatingProgrammatically = false; // Allow listeners again
@@ -225,12 +249,12 @@ public class AddTagDialogController {
                 }
             }
         });
-        // (*** END OF CẬP NHẬT LẦN 6 ***)
 
 
         // Listener for value text field changes - filters value suggestions
         valueField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (isUpdatingProgrammatically) return;
+            focusedValueIndex = -1; // (*** MỚI: Reset focus khi gõ text ***)
             Toggle filteringKeyToggle = findFilteringKeyToggle(); // Find highlighted key first
             Toggle selectedKeyToggle = keySuggestionGroup.getSelectedToggle(); // Check if user manually selected one
             // Prioritize selected key, fallback to highlighted key for filtering values
@@ -238,24 +262,133 @@ public class AddTagDialogController {
             updateContainerVisibility();
         });
 
+        // (*** MỚI: Thêm EventFilter cho valueField ***)
+        valueField.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+            handleFieldKeyPress(e, valueField, suggestionValuesPane, valueSuggestionGroup);
+        });
+
+
         // Listener for simple name text field changes - filters simple suggestions
         simpleNameField.textProperty().addListener((obs, oldVal, newVal) -> {
             if (isUpdatingProgrammatically) return;
+            focusedSimpleIndex = -1; // (*** MỚI: Reset focus khi gõ text ***)
             populateSimpleTags(newVal);
             updateContainerVisibility();
         });
 
+        // (*** MỚI: Thêm EventFilter cho simpleNameField ***)
+        simpleNameField.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+            handleFieldKeyPress(e, simpleNameField, suggestionSimplePane, valueSuggestionGroup); // Dùng chung group
+        });
+
+
         // Copy button action
         copyButton.setOnAction(e -> handleCopyAction());
 
-        // Handle TAB key press in key field to move to value field
-        keyField.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.TAB && !event.isShiftDown()) {
-                event.consume(); // Prevent default TAB behavior
-                // Focus listener on keyField will handle the auto-complete/highlight/populate
-                valueField.requestFocus(); // Explicitly request focus for value field
+        // (*** XÓA: keyField.setOnKeyPressed - đã chuyển sang EventFilter ***)
+    }
+
+    // (*** HÀM MỚI: Xử lý phím cho cả 3 text field ***)
+    private void handleFieldKeyPress(KeyEvent event, TextField field, FlowPane suggestionPane, ToggleGroup suggestionGroup) {
+        KeyCode code = event.getCode();
+
+        if (code == KeyCode.UP || code == KeyCode.DOWN) {
+            event.consume(); // Ngăn con trỏ di chuyển trong text field
+
+            int currentIndex = -1;
+            if (field == keyField) currentIndex = focusedKeyIndex;
+            else if (field == valueField) currentIndex = focusedValueIndex;
+            else if (field == simpleNameField) currentIndex = focusedSimpleIndex;
+
+            int paneSize = suggestionPane.getChildren().size();
+            if (paneSize == 0) return; // Không có gì để focus
+
+            int nextIndex = currentIndex;
+            if (code == KeyCode.DOWN) {
+                nextIndex++;
+                if (nextIndex >= paneSize) nextIndex = 0; // Quay vòng
+            } else { // KeyCode.UP
+                nextIndex--;
+                if (nextIndex < 0) nextIndex = paneSize - 1; // Quay vòng
             }
-        });
+
+            // Cập nhật UI
+            setChipFocus(field, suggestionPane, suggestionGroup, nextIndex);
+
+        } else if (code == KeyCode.TAB && !event.isShiftDown()) {
+            event.consume(); // Luôn ngăn Tab mặc định
+
+            // Logic chuyển focus khi nhấn Tab
+            if (field == keyField) {
+                // (Optional: Nếu muốn auto-select chip đầu tiên nếu chưa chọn gì)
+                // if (focusedKeyIndex == -1 && !suggestionKeysPane.getChildren().isEmpty()) {
+                //     setChipFocus(keyField, suggestionKeysPane, keySuggestionGroup, 0);
+                // }
+                valueField.requestFocus();
+            } else if (field == valueField) {
+                okButton.requestFocus();
+            } else if (field == simpleNameField) {
+                okButton.requestFocus();
+            }
+        }
+    }
+
+    // (*** HÀM MỚI: Cập nhật focus của chip và text field ***)
+    private void setChipFocus(TextField field, FlowPane pane, ToggleGroup group, int index) {
+        if (index < 0 || index >= pane.getChildren().size()) {
+            // (Optional: Xóa focus nếu index-out-of-bounds, nhưng hiện tại đang quay vòng nên không cần)
+            return;
+        }
+
+        // 1. Xóa style focus cũ
+        clearAndSetChipFocus(pane, index);
+
+        // 2. Lấy chip (Toggle)
+        Node chipNode = pane.getChildren().get(index);
+        if (!(chipNode instanceof ToggleButton)) return;
+
+        ToggleButton chip = (ToggleButton) chipNode;
+
+        // 3. Cập nhật chỉ số focus
+        if (field == keyField) focusedKeyIndex = index;
+        else if (field == valueField) focusedValueIndex = index;
+        else if (field == simpleNameField) focusedSimpleIndex = index;
+
+        // 4. Lấy text từ chip
+        String chipText = "";
+        if (field == keyField) { // Key pane lưu text trong UserData
+            chipText = (String) chip.getUserData();
+        } else { // Value và Simple pane lưu text trong rawString (cũng trong UserData)
+            TagModel model = TagModel.parse((String) chip.getUserData());
+            if (field == valueField) {
+                chipText = model.getValue();
+            } else { // simpleNameField
+                chipText = model.getDisplayName();
+            }
+        }
+
+        // 5. Cập nhật TextField
+        isUpdatingProgrammatically = true;
+        field.setText(chipText);
+        field.selectAll(); // Bôi đen
+        isUpdatingProgrammatically = false;
+
+        // 6. (Rất quan trọng) Nếu là keyField, cập nhật value pane
+        if (field == keyField) {
+            // Không select toggle (gây lỗi focus), chỉ truyền nó vào để populateValues
+            populateValues(chip, valueField.getText());
+        }
+    }
+
+    // (*** HÀM MỚI: Xóa style và set style mới ***)
+    private void clearAndSetChipFocus(FlowPane pane, int indexToFocus) {
+        for (int i = 0; i < pane.getChildren().size(); i++) {
+            Node child = pane.getChildren().get(i);
+            child.getStyleClass().remove(FOCUSED_CHIP_STYLE_CLASS);
+            if (i == indexToFocus) {
+                child.getStyleClass().add(FOCUSED_CHIP_STYLE_CLASS);
+            }
+        }
     }
 
     private void setupLocalization() {
@@ -488,7 +621,10 @@ public class AddTagDialogController {
         // Clear previous highlight and highlight the best match (first button)
         clearKeyHighlightOnly(); // Use a specific method to avoid deselecting
         if (firstButton != null) {
-            firstButton.getStyleClass().add("filtering-key");
+            // (*** SỬA ĐỔI: Không tự động highlight "filtering-key" nữa ***)
+            // (*** Thay vào đó, nó sẽ được highlight bởi setChipFocus ***)
+            // firstButton.getStyleClass().add("filtering-key");
+
             // Populate values based on the highlighted key only if NO key is manually selected
             if (keySuggestionGroup.getSelectedToggle() == null) {
                 populateValues(firstButton, valueField.getText());
@@ -507,11 +643,23 @@ public class AddTagDialogController {
      * @return The highlighted Toggle, or null if none.
      */
     private Toggle findFilteringKeyToggle() {
-        for (Toggle toggle : keySuggestionGroup.getToggles()) {
-            if (toggle instanceof Node && ((Node)toggle).getStyleClass().contains("filtering-key")) {
-                return toggle;
+        // (*** SỬA ĐỔI: Tìm bằng "focused-chip" thay vì "filtering-key" ***)
+        for (Node node : suggestionKeysPane.getChildren()) {
+            if (node.getStyleClass().contains(FOCUSED_CHIP_STYLE_CLASS)) {
+                if (node instanceof Toggle) {
+                    return (Toggle) node;
+                }
             }
         }
+
+        // Fallback: nếu không có gì được focus, dùng key đầu tiên
+        if (!suggestionKeysPane.getChildren().isEmpty()) {
+            Node firstChild = suggestionKeysPane.getChildren().get(0);
+            if (firstChild instanceof Toggle) {
+                return (Toggle) firstChild;
+            }
+        }
+
         return null;
     }
 
@@ -553,6 +701,11 @@ public class AddTagDialogController {
                 if (isUpdatingProgrammatically) return;
                 if (isSelected) {
                     fillFormFromSuggestion((String) chip.getUserData());
+
+                    // (*** MỚI: Cập nhật focusedValueIndex khi click ***)
+                    focusedValueIndex = suggestionValuesPane.getChildren().indexOf(chip);
+                    clearAndSetChipFocus(suggestionValuesPane, focusedValueIndex);
+
                     Platform.runLater(() -> okButton.requestFocus());
                 }
             });
@@ -591,6 +744,11 @@ public class AddTagDialogController {
                 if (isSelected) {
                     clearKeyHighlightAndSelection(); // Clear key selection when simple tag is chosen
                     fillFormFromSuggestion((String) chip.getUserData());
+
+                    // (*** MỚI: Cập nhật focusedSimpleIndex khi click ***)
+                    focusedSimpleIndex = suggestionSimplePane.getChildren().indexOf(chip);
+                    clearAndSetChipFocus(suggestionSimplePane, focusedSimpleIndex);
+
                     Platform.runLater(() -> okButton.requestFocus());
                 }
             });
@@ -610,8 +768,9 @@ public class AddTagDialogController {
 
     /** Clears only the highlighting ('filtering-key' style) from key suggestions. */
     private void clearKeyHighlightOnly() {
+        // (*** SỬA ĐỔI: Xóa cả 2 class "filtering-key" và "focused-chip" ***)
         for (Node node : suggestionKeysPane.getChildren()) {
-            node.getStyleClass().remove("filtering-key");
+            node.getStyleClass().removeAll("filtering-key", FOCUSED_CHIP_STYLE_CLASS);
         }
     }
 
@@ -622,6 +781,11 @@ public class AddTagDialogController {
      */
     private void fillFormFromSuggestion(String selectedTagName) {
         isUpdatingProgrammatically = true;
+        // (*** MỚI: Reset tất cả các chỉ số focus ***)
+        focusedKeyIndex = -1;
+        focusedValueIndex = -1;
+        focusedSimpleIndex = -1;
+
         TagModel selectedTag = TagModel.parse(selectedTagName);
         if (selectedTag.isJson()) {
             jsonTagRadio.setSelected(true); // Ensure correct radio is selected
@@ -651,6 +815,7 @@ public class AddTagDialogController {
         for (Toggle toggle : keySuggestionGroup.getToggles()) {
             // Check if the toggle is a Node and its user data matches the key
             if (toggle instanceof Node && keyToHighlight.equals(toggle.getUserData())) {
+                // (*** SỬA ĐỔI: Dùng "filtering-key" khi click, "focused-chip" khi dùng phím ***)
                 ((Node)toggle).getStyleClass().add("filtering-key");
                 // Also ensure values are populated for this newly highlighted key
                 // but only if no key is currently *selected* by the user
@@ -738,12 +903,21 @@ public class AddTagDialogController {
         if (event.getCode() == KeyCode.ESCAPE) {
             handleCancel();
         } else if (event.getCode() == KeyCode.ENTER) {
-            handleEnterPressed();
+            // (*** SỬA ĐỔI: Không xử lý Enter ở đây nữa, để handleFieldKeyPress xử lý ***)
+            // handleEnterPressed();
         }
     }
 
     /** Determines action on Enter key press based on current state. */
+    @FXML
     private void handleEnterPressed() {
+        // (*** SỬA ĐỔI: Logic này được gọi bởi handleKeyPressed, nhưng chúng ta sẽ
+        //     tích hợp nó vào handleFieldKeyPress. Tuy nhiên, giữ lại OK/Cancel
+        //     cho phím Enter chung) ***
+
+        // Kiểm tra xem focus đang ở đâu
+        Node focusedNode = dialogStage.getScene().getFocusOwner();
+
         if (simpleTagRadio.isSelected()) {
             if (simpleNameField.getText().trim().isEmpty()) {
                 // If simple field is empty, treat Enter as Cancel
@@ -763,6 +937,14 @@ public class AddTagDialogController {
                 // If key and value are filled, treat Enter as OK
                 handleOk();
             } else { // Key is filled, but value is empty
+
+                // Nếu đang focus ở keyField, chuyển sang valueField
+                if (focusedNode == keyField) {
+                    valueField.requestFocus();
+                    highlightField(valueField);
+                    return; // Không làm gì thêm
+                }
+
                 // Check if the entered key exists as a suggestion
                 boolean keyExists = jsonGroups.keySet().stream()
                         .anyMatch(k -> k.equalsIgnoreCase(key));

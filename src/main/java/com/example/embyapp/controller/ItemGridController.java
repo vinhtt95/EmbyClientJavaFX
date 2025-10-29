@@ -76,6 +76,7 @@ public class ItemGridController {
             if (viewModel == null || viewModel.loadingProperty().get()) return;
 
             if (ignoreNextScrollEvent) {
+                ignoreNextScrollEvent = false;
                 return;
             }
 

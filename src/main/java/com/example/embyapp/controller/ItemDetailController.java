@@ -647,6 +647,11 @@ public class ItemDetailController {
 
         // 1. Lấy đường dẫn file media
         String mediaPath = pathTextField.getText();
+
+        // (*** BẮT ĐẦU THAY ĐỔI: Lấy tiêu đề item ***)
+        final String itemTitle = titleTextField.getText(); // Lấy tiêu đề từ text field
+        // (*** KẾT THÚC THAY ĐỔI ***)
+
         if (mediaPath == null || mediaPath.isEmpty() || mediaPath.equals(i18n.getString("itemDetailLoader", "noPath"))) {
             viewModel.reportActionError(i18n.getString("itemDetailView", "errorInvalidPath"));
             return;
@@ -675,7 +680,7 @@ public class ItemDetailController {
         srtPath = pathWithoutExt + ".srt";
 
         // 5. Chạy logic trong luồng nền
-        new Thread(() -> {
+        new Thread(() -> { // Biến itemTitle (final) sẽ được lambda capture
             try {
                 File mediaFile = new File(mediaPath);
                 File srtFile = new File(srtPath);
@@ -703,12 +708,20 @@ public class ItemDetailController {
                             // Ghi BOM (Byte Order Mark) cho UTF-8
                             writer.write('\uFEFF');
 
-                            // Ghi nội dung SRT cơ bản (tùy chọn, có thể bỏ trống)
+                            // Ghi nội dung SRT cơ bản
                             writer.write("1");
                             writer.newLine();
                             writer.write("00:00:00,000 --> 00:00:10,000");
                             writer.newLine();
-                            writer.write(""); // <-- Có thể thêm text mặc định
+
+                            // (*** BẮT ĐẦU THAY ĐỔI: Ghi tiêu đề làm sub đầu tiên ***)
+                            if (itemTitle != null && !itemTitle.isEmpty()) {
+                                writer.write(itemTitle);
+                            } else {
+                                writer.write(""); // Ghi rỗng nếu title rỗng
+                            }
+                            // (*** KẾT THÚC THAY ĐỔI ***)
+                            writer.newLine();
                             writer.newLine();
                             writer.write("2");
                             writer.newLine();

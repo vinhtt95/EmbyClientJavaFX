@@ -284,7 +284,7 @@ public class MainController implements NativeKeyListener {
         itemGridViewModel.selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             itemDetailViewModel.setItemToDisplay(newVal);
             if (newVal != null && itemGridViewModel.isPlayAfterSelect()) {
-                System.out.println("Hotkey: Phát tự động item: " + newVal.getName());
+                // System.out.println("Hotkey: Phát tự động item: " + newVal.getName());
                 itemGridController.playItem(newVal);
                 itemGridViewModel.clearPlayAfterSelect();
             }
@@ -381,7 +381,7 @@ public class MainController implements NativeKeyListener {
     private void showDetailDialog() {
         try {
             if (detailDialog == null) {
-                System.out.println("Đang tạo Pop-out Detail Dialog lần đầu...");
+                // System.out.println("Đang tạo Pop-out Detail Dialog lần đầu...");
 
                 URL fxmlUrl = getClass().getResource("/com/example/embyapp/ItemDetailView.fxml");
                 if (fxmlUrl == null) {
@@ -431,7 +431,7 @@ public class MainController implements NativeKeyListener {
                     prefs.putDouble(KEY_DIALOG_Y, detailDialog.getY());
                     try {
                         prefs.flush();
-                        System.out.println("Đã lưu kích thước Dialog: " + detailDialog.getWidth() + "x" + detailDialog.getHeight());
+                        // System.out.println("Đã lưu kích thước Dialog: " + detailDialog.getWidth() + "x" + detailDialog.getHeight());
                     } catch (Exception ex) {
                         System.err.println("Error flushing dialog size preferences: " + ex.getMessage());
                     }
@@ -531,15 +531,15 @@ public class MainController implements NativeKeyListener {
             if (itemGridViewModel != null && itemGridController != null) {
                 BaseItemDto selectedItem = itemGridViewModel.selectedItemProperty().get();
                 if (selectedItem != null) {
-                    System.out.println("Hotkey Cmd+ENTER: Playing item: " + selectedItem.getName());
+                    // System.out.println("Hotkey Cmd+ENTER: Playing item: " + selectedItem.getName());
                     itemGridController.playItem(selectedItem);
                 } else {
-                    System.out.println("Hotkey Cmd+ENTER: No item selected to play.");
+                    // System.out.println("Hotkey Cmd+ENTER: No item selected to play.");
                 }
             }
         });
 
-        System.out.println("Hotkeys registered for scene: " + scene.hashCode());
+        // System.out.println("Hotkeys registered for scene: " + scene.hashCode());
     }
 
     /**
@@ -552,7 +552,7 @@ public class MainController implements NativeKeyListener {
 
         try {
             GlobalScreen.registerNativeHook();
-            System.out.println("Global hotkey hook đã đăng ký.");
+            // System.out.println("Global hotkey hook đã đăng ký.");
         } catch (NativeHookException ex) {
             System.err.println("Lỗi nghiêm trọng khi đăng ký global hotkey hook.");
             System.err.println(ex.getMessage());
@@ -569,7 +569,7 @@ public class MainController implements NativeKeyListener {
         try {
             GlobalScreen.removeNativeKeyListener(this);
             GlobalScreen.unregisterNativeHook();
-            System.out.println("Global hotkey hook đã được hủy đăng ký.");
+            // System.out.println("Global hotkey hook đã được hủy đăng ký.");
         } catch (NativeHookException ex) {
             System.err.println("Lỗi khi hủy đăng ký global hotkey hook.");
             System.err.println(ex.getMessage());
@@ -619,30 +619,30 @@ public class MainController implements NativeKeyListener {
                 processingHotkey = true;
                 hotkeyDebounceTimer.stop();
                 hotkeyDebounceTimer.playFromStart();
-                System.out.println("Global Hotkey: Debounce started for " + NativeKeyEvent.getKeyText(keyCode));
+                // System.out.println("Global Hotkey: Debounce started for " + NativeKeyEvent.getKeyText(keyCode));
 
                 action = () -> {
-                    System.out.println("Global Hotkey: Platform.runLater executing for " + NativeKeyEvent.getKeyText(keyCode));
+                    // System.out.println("Global Hotkey: Platform.runLater executing for " + NativeKeyEvent.getKeyText(keyCode));
                     try {
                         if (keyCode == NativeKeyEvent.VC_N) {
-                            System.out.println("Global Hotkey: Cmd+Shift+N (Next & Play) executing...");
+                            // System.out.println("Global Hotkey: Cmd+Shift+N (Next & Play) executing...");
                             if (itemGridViewModel != null) {
                                 itemGridViewModel.selectAndPlayNextItem();
                             } else {
                                 System.err.println("itemGridViewModel is null in action!");
                             }
                         } else {
-                            System.out.println("Global Hotkey: Cmd+Shift+P (Prev & Play) executing...");
+                            // System.out.println("Global Hotkey: Cmd+Shift+P (Prev & Play) executing...");
                             if (itemGridViewModel != null) {
                                 itemGridViewModel.selectAndPlayPreviousItem();
                             } else {
                                 System.err.println("itemGridViewModel is null in action!");
                             }
                         }
-                        System.out.println("Global Hotkey: Action completed for " + NativeKeyEvent.getKeyText(keyCode));
+                        // System.out.println("Global Hotkey: Action completed for " + NativeKeyEvent.getKeyText(keyCode));
                     } finally {
-                        try { Thread.sleep(100); } catch (InterruptedException ie) {}
-                        System.out.println("Global Hotkey: Resetting modifier state after action.");
+                        try { Thread.sleep(500); } catch (InterruptedException ie) {}
+                        // System.out.println("Global Hotkey: Resetting modifier state after action.");
                         globalMetaPressed = false;
                         globalShiftPressed = false;
                         updateHotkeyIndicatorState();

@@ -39,7 +39,7 @@ public class RequestEmby {
             result = itemsServiceApi.getItems(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "Ascending", parentID, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "ProductionYear,PremiereDate,SortName", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,null);
 
         } catch (ApiException e) {
-            System.out.println(e.getMessage());
+            // System.out.println(e.getMessage());
         }
         return result;
     }
@@ -61,7 +61,7 @@ public class RequestEmby {
         try {
             result = itemsServiceApi.getItems(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, startIndex, limit, true, null, sortOrder, parentID, "OfficialRating,CriticRating", null, "Movie", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, sortBy, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         } catch (ApiException e) {
-            System.out.println(e.getMessage());
+            // System.out.println(e.getMessage());
         }
         return result;
     }
@@ -72,7 +72,7 @@ public class RequestEmby {
         try {
             result = itemsServiceApi.getItems(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, startIndex, limit, true, keywords, sortOrder, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, sortBy, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         } catch (ApiException e) {
-            System.out.println(e.getMessage());
+            // System.out.println(e.getMessage());
         }
         return result;
     }
@@ -89,7 +89,7 @@ public class RequestEmby {
         try {
             return itemsServiceApi.getUsersByUseridItems(userID, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         } catch (ApiException e) {
-            System.out.println(e.getMessage());
+            // System.out.println(e.getMessage());
         }
 
         return null;
@@ -227,26 +227,26 @@ public class RequestEmby {
         BaseItemDto itemCopy = itemService.getInforItem(itemCopyID);
 
         if (itemCopy == null) {
-            System.out.println("Not found item copy");
+            // System.out.println("Not found item copy");
             return 0;
         }
 
         List<NameLongIdPair> listTagsItemCopy = itemCopy.getTagItems();
-        System.out.println("List Tags of Item copy (" + listTagsItemCopy.size() + "):");
+        // System.out.println("List Tags of Item copy (" + listTagsItemCopy.size() + "):");
         for (NameLongIdPair eachtags : listTagsItemCopy) {
-            System.out.println("ID: " + eachtags.getId() + " Name: " + eachtags.getName());
+            // System.out.println("ID: " + eachtags.getId() + " Name: " + eachtags.getName());
         }
 
         List<BaseItemDto> listItemPaste = itemService.getListItemByParentID(parentID, null, null, true);
         if (listItemPaste == null || listItemPaste.isEmpty()) {
-            System.out.println("Not found item paste");
+            // System.out.println("Not found item paste");
             return 0;
         }
 
         int updateCount = 0;
         BaseItemDto itemPaste;
         for (BaseItemDto eachItemPaste : listItemPaste) {
-            System.out.println("Updating Tags for: ID: " + eachItemPaste.getId() + " Name: " + eachItemPaste.getName());
+            // System.out.println("Updating Tags for: ID: " + eachItemPaste.getId() + " Name: " + eachItemPaste.getName());
             itemPaste = itemService.getInforItem(eachItemPaste.getId());
             if (itemPaste == null) continue;
 
@@ -281,7 +281,7 @@ public class RequestEmby {
 
 
             if (itemService.updateInforItem(itemPaste.getId(), itemPaste)) {
-                System.out.println("Update success " + eachItemPaste.getName());
+                // System.out.println("Update success " + eachItemPaste.getName());
                 updateCount++;
             }
         }
@@ -301,26 +301,26 @@ public class RequestEmby {
         BaseItemDto itemCopy = itemService.getInforItem(itemCopyID);
 
         if (itemCopy == null) {
-            System.out.println("Not found item copy");
+            // System.out.println("Not found item copy");
             return 0;
         }
 
         List<NameLongIdPair> listStudoItemCopy = itemCopy.getStudios();
-        System.out.println("List Studio of Item copy (" + listStudoItemCopy.size() + "):");
+        // System.out.println("List Studio of Item copy (" + listStudoItemCopy.size() + "):");
         for (NameLongIdPair eachStudio : listStudoItemCopy) {
-            System.out.println("ID: " + eachStudio.getId() + " Name: " + eachStudio.getName());
+            // System.out.println("ID: " + eachStudio.getId() + " Name: " + eachStudio.getName());
         }
 
         List<BaseItemDto> listItemPaste = itemService.getListItemByParentID(parentID, null, null, true);
         if (listItemPaste == null || listItemPaste.isEmpty()) {
-            System.out.println("Not found item paste");
+            // System.out.println("Not found item paste");
             return 0;
         }
 
         int updateCount = 0;
         BaseItemDto itemPaste;
         for (BaseItemDto eachItemPaste : listItemPaste) {
-            System.out.println("Updating Studio for: ID: " + eachItemPaste.getId() + " Name: " + eachItemPaste.getName());
+            // System.out.println("Updating Studio for: ID: " + eachItemPaste.getId() + " Name: " + eachItemPaste.getName());
             itemPaste = itemService.getInforItem(eachItemPaste.getId());
             if (itemPaste == null) continue;
 
@@ -347,7 +347,7 @@ public class RequestEmby {
             // --- KẾT THÚC LOGIC MERGE ---
 
             if (itemService.updateInforItem(itemPaste.getId(), itemPaste)) {
-                System.out.println("Update success " + eachItemPaste.getName());
+                // System.out.println("Update success " + eachItemPaste.getName());
                 updateCount++;
             }
         }
@@ -367,19 +367,19 @@ public class RequestEmby {
         BaseItemDto itemCopy = itemService.getInforItem(itemCopyID);
 
         if (itemCopy == null) {
-            System.out.println("Not found item copy");
+            // System.out.println("Not found item copy");
             return 0;
         }
 
         List<BaseItemPerson> listPeopleItemCopy = itemCopy.getPeople();
-        System.out.println("List People of Item copy (" + listPeopleItemCopy.size() + "):");
+        // System.out.println("List People of Item copy (" + listPeopleItemCopy.size() + "):");
         for (BaseItemPerson eachPeople : listPeopleItemCopy) {
-            System.out.println("ID: " + eachPeople.getId() + " Name: " + eachPeople.getName());
+            // System.out.println("ID: " + eachPeople.getId() + " Name: " + eachPeople.getName());
         }
 
         List<BaseItemDto> listItemPaste = itemService.getListItemByParentID(parentID, null, null, true);
         if (listItemPaste == null || listItemPaste.isEmpty()) {
-            System.out.println("Not found item paste");
+            // System.out.println("Not found item paste");
             return 0;
         }
 
@@ -388,11 +388,11 @@ public class RequestEmby {
         for (BaseItemDto eachItemPaste : listItemPaste) {
 
             if (eachItemPaste.getId().equals(itemCopyID)) {
-                System.out.println("Skipping merge for source item itself: " + eachItemPaste.getName());
+                // System.out.println("Skipping merge for source item itself: " + eachItemPaste.getName());
                 continue; // Chuyển sang item tiếp theo trong vòng lặp
             }
 
-            System.out.println("Updating People for: ID: " + eachItemPaste.getId() + " Name: " + eachItemPaste.getName());
+            // System.out.println("Updating People for: ID: " + eachItemPaste.getId() + " Name: " + eachItemPaste.getName());
             itemPaste = itemService.getInforItem(eachItemPaste.getId());
             if (itemPaste == null) continue;
 
@@ -421,7 +421,7 @@ public class RequestEmby {
 
 
             if (itemService.updateInforItem(itemPaste.getId(), itemPaste)) {
-                System.out.println("Update success " + eachItemPaste.getName());
+                // System.out.println("Update success " + eachItemPaste.getName());
                 updateCount++;
             }
         }
@@ -441,28 +441,28 @@ public class RequestEmby {
         BaseItemDto itemCopy = itemService.getInforItem(itemCopyID);
 
         if (itemCopy == null) {
-            System.out.println("Not found item copy");
+            // System.out.println("Not found item copy");
             return 0;
         }
 
         List<NameLongIdPair> listGenresItemCopy = itemCopy.getGenreItems();
-        System.out.println("List Genres of Item copy (" + (listGenresItemCopy != null ? listGenresItemCopy.size() : 0) + "):");
+        // System.out.println("List Genres of Item copy (" + (listGenresItemCopy != null ? listGenresItemCopy.size() : 0) + "):");
         if (listGenresItemCopy != null) {
             for (NameLongIdPair eachGenres : listGenresItemCopy) {
-                System.out.println("ID: " + eachGenres.getId() + " Name: " + eachGenres.getName());
+                // System.out.println("ID: " + eachGenres.getId() + " Name: " + eachGenres.getName());
             }
         }
 
         List<BaseItemDto> listItemPaste = itemService.getListItemByParentID(parentID, null, null, true);
         if (listItemPaste == null || listItemPaste.isEmpty()) {
-            System.out.println("Not found item paste");
+            // System.out.println("Not found item paste");
             return 0;
         }
 
         int updateCount = 0;
         BaseItemDto itemPaste;
         for (BaseItemDto eachItemPaste : listItemPaste) {
-            System.out.println("Updating Genres for: ID: " + eachItemPaste.getId() + " Name: " + eachItemPaste.getName());
+            // System.out.println("Updating Genres for: ID: " + eachItemPaste.getId() + " Name: " + eachItemPaste.getName());
             itemPaste = itemService.getInforItem(eachItemPaste.getId());
             if (itemPaste == null) continue;
 
@@ -489,7 +489,7 @@ public class RequestEmby {
             // --- KẾT THÚC LOGIC MERGE ---
 
             if (itemService.updateInforItem(itemPaste.getId(), itemPaste)) {
-                System.out.println("Update success " + eachItemPaste.getName());
+                // System.out.println("Update success " + eachItemPaste.getName());
                 updateCount++;
             }
         }

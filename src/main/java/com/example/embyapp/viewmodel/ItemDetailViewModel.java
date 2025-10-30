@@ -233,10 +233,10 @@ public class ItemDetailViewModel {
             try {
                 BaseItemDto dtoToSendToApi;
                 if (isSavingAfterImport) {
-                    System.out.println(i18n.getString("itemDetailViewModel", "statusSavingImport"));
+                    // System.out.println(i18n.getString("itemDetailViewModel", "statusSavingImport"));
                     dtoToSendToApi = createDtoWithAcceptedChanges(dtoAtSaveTime, acceptedFields);
                 } else {
-                    System.out.println(i18n.getString("itemDetailViewModel", "statusSavingManual"));
+                    // System.out.println(i18n.getString("itemDetailViewModel", "statusSavingManual"));
                     ItemDetailSaver.SaveRequest manualSaveRequest = new ItemDetailSaver.SaveRequest(
                             dtoAtSaveTime, idAtSaveTime, finalTitle, finalOverview,
                             finalTagItems, finalReleaseDate, finalStudiosItems, finalPeopleItems,
@@ -267,7 +267,7 @@ public class ItemDetailViewModel {
                         this.originalItemDto = gson.fromJson(gson.toJson(dtoToSendToApi), BaseItemDto.class);
                         dirtyTracker.updateOriginalStringsFromCurrent();
                     } else {
-                        System.out.println("Save successful, but item changed during save. Not updating original DTO/dirty tracker baseline.");
+                        // System.out.println("Save successful, but item changed during save. Not updating original DTO/dirty tracker baseline.");
                     }
                     importHandler.clearState();
                 });
@@ -348,7 +348,7 @@ public class ItemDetailViewModel {
             throw new RuntimeException("originalDtoAtSaveTime không được null khi tạo DTO thay đổi.");
         }
         BaseItemDto dtoCopy = gson.fromJson(gson.toJson(originalDtoAtSaveTime), BaseItemDto.class);
-        System.out.println("Accepted fields to save: " + acceptedFields);
+        // System.out.println("Accepted fields to save: " + acceptedFields);
 
         if (acceptedFields.contains("title")) { dtoCopy.setName(title.get()); }
         if (acceptedFields.contains("originalTitle")) { dtoCopy.setOriginalTitle(originalTitle.get()); }

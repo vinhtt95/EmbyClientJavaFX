@@ -96,7 +96,7 @@ public class EmbyService {
         // (*** SỬA LẠI DÒNG NÀY ĐỂ DÙNG GETTER ***)
         defaultClient.interceptors().add(getAuthHeaderInterceptor());
         prefs = Preferences.userRoot().node(PREF_NODE_PATH);
-        System.out.println("Using Preferences node: " + prefs.absolutePath());
+        // System.out.println("Using Preferences node: " + prefs.absolutePath());
     }
 
 
@@ -177,13 +177,13 @@ public class EmbyService {
     private void saveSession(String serverUrl, String accessToken, String clientHeader, String userId) {
         if (serverUrl != null && !serverUrl.isEmpty() && accessToken != null && !accessToken.isEmpty() && clientHeader != null && !clientHeader.isEmpty() && userId != null && !userId.isEmpty()) {
             try {
-                System.out.println("Saving session: URL=" + serverUrl + ", Token=" + accessToken.substring(0, Math.min(accessToken.length(), 10)) + "..., Header=" + clientHeader + ", UserID=" + userId);
+                // System.out.println("Saving session: URL=" + serverUrl + ", Token=" + accessToken.substring(0, Math.min(accessToken.length(), 10)) + "..., Header=" + clientHeader + ", UserID=" + userId);
                 prefs.put(KEY_SERVER_URL, serverUrl);
                 prefs.put(KEY_ACCESS_TOKEN, accessToken);
                 prefs.put(KEY_CLIENT_AUTH_HEADER, clientHeader);
                 prefs.put(KEY_USER_ID, userId);
                 prefs.flush();
-                System.out.println("Session saved successfully.");
+                // System.out.println("Session saved successfully.");
             } catch (Exception e) {
                 System.err.println("Error saving session preferences: " + e.getMessage());
                 e.printStackTrace();
@@ -201,10 +201,10 @@ public class EmbyService {
         String userId = prefs.get(KEY_USER_ID, null);
 
         if (serverUrl != null && !serverUrl.isEmpty() && accessToken != null && !accessToken.isEmpty() && clientHeader != null && !clientHeader.isEmpty() && userId != null && !userId.isEmpty()) {
-            System.out.println("Loaded session: URL=" + serverUrl + ", Token=" + accessToken.substring(0, Math.min(accessToken.length(), 10)) + "..., Header=" + clientHeader + ", UserID=" + userId);
+            // System.out.println("Loaded session: URL=" + serverUrl + ", Token=" + accessToken.substring(0, Math.min(accessToken.length(), 10)) + "..., Header=" + clientHeader + ", UserID=" + userId);
             return new String[]{serverUrl, accessToken, clientHeader, userId};
         } else {
-            System.out.println("No saved session found or essential info missing (URL/Token/Header/UserID).");
+            // System.out.println("No saved session found or essential info missing (URL/Token/Header/UserID).");
             return null;
         }
     }
@@ -212,13 +212,13 @@ public class EmbyService {
     // Helper to clear session
     public void clearSession() {
         try {
-            System.out.println("Clearing session (keeping server URL)...");
+            // System.out.println("Clearing session (keeping server URL)...");
             // KHÔNG XÓA SERVER URL: prefs.remove(KEY_SERVER_URL);
             prefs.remove(KEY_ACCESS_TOKEN);
             prefs.remove(KEY_CLIENT_AUTH_HEADER);
             prefs.remove(KEY_USER_ID);
             prefs.flush();
-            System.out.println("Session tokens cleared.");
+            // System.out.println("Session tokens cleared.");
         } catch (Exception e) {
             System.err.println("Error clearing session preferences: " + e.getMessage());
             e.printStackTrace();
@@ -239,15 +239,15 @@ public class EmbyService {
             this.clientAuthHeader = loadedClientHeader;
 
             try {
-                System.out.println("Attempting to restore session (Step 1: System Info)...");
+                // System.out.println("Attempting to restore session (Step 1: System Info)...");
                 SystemInfo systemInfo = getSystemServiceApi().getSystemInfo(); // <- Dùng class đã import
 
                 if (systemInfo != null) {
-                    System.out.println("System Info check OK. (Step 2: Get User Info using ID: " + loadedUserId + ")...");
+                    // System.out.println("System Info check OK. (Step 2: Get User Info using ID: " + loadedUserId + ")...");
                     UserDto currentUser = getUserServiceApi().getUsersById(loadedUserId); // <- Dùng class đã import
 
                     if (currentUser != null) {
-                        System.out.println("User Info check OK. Session restored successfully for User: " + currentUser.getName());
+                        // System.out.println("User Info check OK. Session restored successfully for User: " + currentUser.getName());
                         AuthenticationAuthenticationResult restoredAuth = new AuthenticationAuthenticationResult(); // <- Dùng class đã import
                         restoredAuth.setAccessToken(accessToken);
                         restoredAuth.setUser(currentUser);
@@ -277,11 +277,11 @@ public class EmbyService {
                     this.currentAccessToken = null;
                     this.currentAuthResult = null;
                     this.clientAuthHeader = null;
-                    System.out.println("Cleared client state after failed restore attempt.");
+                    // System.out.println("Cleared client state after failed restore attempt.");
                 }
             }
         }
-        System.out.println("Session restore failed or no session found.");
+        // System.out.println("Session restore failed or no session found.");
         loggedIn.set(false);
         this.currentAccessToken = null;
         this.currentAuthResult = null;
@@ -291,7 +291,7 @@ public class EmbyService {
 
     // Logout method
     public void logout() {
-        System.out.println("Logging out...");
+        // System.out.println("Logging out...");
         setCurrentAuthResult(null, null);
         clearSession();
     }
@@ -310,7 +310,7 @@ public class EmbyService {
 
     public synchronized UserServiceApi getUserServiceApi() {
         if (userServiceApi == null) {
-            System.out.println("Creating UserServiceApi");
+            // System.out.println("Creating UserServiceApi");
             userServiceApi = new UserServiceApi(apiClient);
         }
         return userServiceApi;
@@ -322,7 +322,7 @@ public class EmbyService {
             return null;
         }
         if (itemsServiceApi == null) {
-            System.out.println("Creating ItemsServiceApi");
+            // System.out.println("Creating ItemsServiceApi");
             itemsServiceApi = new ItemsServiceApi(apiClient);
         }
         return itemsServiceApi;
@@ -331,7 +331,7 @@ public class EmbyService {
     public synchronized SystemServiceApi getSystemServiceApi() {
         // SystemServiceApi can be used before login (for restore check)
         if (systemServiceApi == null) {
-            System.out.println("Creating SystemServiceApi");
+            // System.out.println("Creating SystemServiceApi");
             systemServiceApi = new SystemServiceApi(apiClient);
         }
         return systemServiceApi;
@@ -343,7 +343,7 @@ public class EmbyService {
             return null;
         }
         if (itemUpdateServiceApi == null) {
-            System.out.println("Creating ItemUpdateServiceApi");
+            // System.out.println("Creating ItemUpdateServiceApi");
             itemUpdateServiceApi = new ItemUpdateServiceApi(apiClient);
         }
         return itemUpdateServiceApi;
@@ -355,7 +355,7 @@ public class EmbyService {
             return null;
         }
         if (imageServiceApi == null) {
-            System.out.println("Creating ImageServiceApi");
+            // System.out.println("Creating ImageServiceApi");
             imageServiceApi = new ImageServiceApi(apiClient);
         }
         return imageServiceApi;

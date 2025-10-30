@@ -160,20 +160,20 @@ public class ItemService {
                 );
 
                 if (result.getItems().isEmpty()) {
-                    System.out.println("Không có IDParent: " + parentID + ", startIndex: " + startIndex + ", limit: " + limit + ", recursive: " + recursive);
+                    // System.out.println("Không có IDParent: " + parentID + ", startIndex: " + startIndex + ", limit: " + limit + ", recursive: " + recursive);
                 } else {
                     // Sửa lại: Không in ra đây nữa, trả về list cho controller xử lý
                     // for (BaseItemDto each : result.getItems()) {
-                    //     System.out.println(each.getName());
+                    //     // System.out.println(each.getName());
                     // }
                     return result.getItems();
                 }
             } catch (ApiException e) {
-                System.out.println(e.getMessage());
+                // System.out.println(e.getMessage());
             }
 
         } else {
-            System.out.println("ItemsServiceApi is null");
+            // System.out.println("ItemsServiceApi is null");
         }
 
         return null;
@@ -183,13 +183,13 @@ public class ItemService {
         try {
             // Sửa dòng này để dùng this.userId
             BaseItemDto itemInfo = userLibraryServiceApi.getUsersByUseridItemsById(this.userId, itemId);
-            System.out.println("Item info: "+itemInfo.getName());
+            // System.out.println("Item info: "+itemInfo.getName());
 
             if (itemInfo != null) {
                 return  itemInfo;
             }
         } catch (ApiException e) {
-            System.out.println(e.getMessage());
+            // System.out.println(e.getMessage());
         }
 
         return null;
@@ -206,7 +206,7 @@ public class ItemService {
             this.itemUpdateServiceApi.postItemsByItemid(newInfoItem, itemID);
             return true;
         } catch (ApiException e) {
-            System.out.println(e.getMessage());
+            // System.out.println(e.getMessage());
         }
 
         return false;
@@ -226,7 +226,7 @@ public class ItemService {
         if (true || originalTitle == null || originalTitle.equals("")) {
             String fileName = itemInfo.getFileName();
             if(fileName == null || fileName.isEmpty()) {
-                System.out.println("Bỏ qua item (không có filename): " + itemInfo.getName());
+                // System.out.println("Bỏ qua item (không có filename): " + itemInfo.getName());
                 return false;
             }
 
@@ -234,36 +234,36 @@ public class ItemService {
             String newName = normalizeFileName(name);
 
             if (newName.equals("")) {
-                System.out.println("New name (từ filename) rỗng cho item: " + fileName);
+                // System.out.println("New name (từ filename) rỗng cho item: " + fileName);
                 newName = nameType2(itemInfo.getName()); // Thử fallback về item name
-                System.out.println("Fallback về item name: " + newName);
+                // System.out.println("Fallback về item name: " + newName);
             }
 
             itemInfo.setOriginalTitle(newName);
             originalTitle = newName; // Cập nhật biến local để dùng cho bước 2
             isUpdate = true;
-            System.out.println("Đã set OriginalTitle: " + newName + " cho item: " + itemInfo.getName());
+            // System.out.println("Đã set OriginalTitle: " + newName + " cho item: " + itemInfo.getName());
         }
 
         // 2. Xử lý Premiere Date
         if (itemInfo.getPremiereDate() == null) {
             if (originalTitle == null || originalTitle.equals("")) {
-                System.out.println("Original Title rỗng, không thể lấy ngày release cho item: " + itemInfo.getName() + " ID: " + itemInfo.getId());
+                // System.out.println("Original Title rỗng, không thể lấy ngày release cho item: " + itemInfo.getName() + " ID: " + itemInfo.getId());
                 // Không return, vẫn có thể xử lý ProductionYear
             } else {
                 OffsetDateTime releaseDate = setDateRelease(originalTitle); // Thử lấy theo OriginalTitle
 
                 if (releaseDate == null) { // Nếu thất bại, thử lấy theo Item Name
-                    System.out.println("Không tìm thấy ngày release cho code: " + originalTitle + ". Thử với Item Name: " + itemInfo.getName());
+                    // System.out.println("Không tìm thấy ngày release cho code: " + originalTitle + ". Thử với Item Name: " + itemInfo.getName());
                     releaseDate = setDateRelease(itemInfo.getName());
                 }
 
                 if (releaseDate != null) {
                     itemInfo.setPremiereDate(releaseDate);
                     isUpdate = true;
-                    System.out.println("Đã set PremiereDate: " + releaseDate + " cho item: " + itemInfo.getName());
+                    // System.out.println("Đã set PremiereDate: " + releaseDate + " cho item: " + itemInfo.getName());
                 } else {
-                    System.out.println("Không tìm thấy ngày release cho cả OriginalTitle và Name: " + itemInfo.getName());
+                    // System.out.println("Không tìm thấy ngày release cho cả OriginalTitle và Name: " + itemInfo.getName());
                 }
             }
         }
@@ -280,7 +280,7 @@ public class ItemService {
             if (currentYear == null || !currentYear.equals(yearFromPremiere)) {
                 itemInfo.setProductionYear(yearFromPremiere);
                 isUpdate = true;
-                System.out.println("Đã set/update ProductionYear: " + yearFromPremiere + " cho item: " + itemInfo.getName());
+                // System.out.println("Đã set/update ProductionYear: " + yearFromPremiere + " cho item: " + itemInfo.getName());
             }
         } else if (currentYear != null) {
             // Nếu không có ngày premiere mà lại có năm sản xuất, có thể xóa đi? (Tùy logic)

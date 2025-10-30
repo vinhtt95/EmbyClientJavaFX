@@ -156,7 +156,7 @@ public class ItemImageUpdater {
                 .build();
 
         // 8. Thực thi
-        System.out.println("Đang upload ảnh lên: " + url + " (dạng Base64, khai báo là " + originalMediaType + ")");
+        // System.out.println("Đang upload ảnh lên: " + url + " (dạng Base64, khai báo là " + originalMediaType + ")");
         Response response = client.newCall(request).execute();
 
         // 9. Kiểm tra kết quả
@@ -165,7 +165,7 @@ public class ItemImageUpdater {
             response.body().close(); // Đóng body
             throw new IOException("Upload thất bại (Code " + response.code() + "): " + responseBody);
         } else {
-            System.out.println("Upload thành công.");
+            // System.out.println("Upload thành công.");
             response.body().close(); // Luôn đóng body
         }
     }
@@ -191,11 +191,11 @@ public class ItemImageUpdater {
         ImageType type = imageInfo.getImageType();
         Integer index = imageInfo.getImageIndex() == null ? 0 : imageInfo.getImageIndex();
 
-        System.out.println("Đang xóa ảnh: " + type + ", index: " + index + " của item " + itemId);
+        // System.out.println("Đang xóa ảnh: " + type + ", index: " + index + " của item " + itemId);
 
         // Chữ ký hàm đúng: (String itemId, Integer index, ImageType type)
         api.deleteItemsByIdImagesByTypeByIndex(itemId, index, type);
 
-        System.out.println("Xóa thành công.");
+        // System.out.println("Xóa thành công.");
     }
 }

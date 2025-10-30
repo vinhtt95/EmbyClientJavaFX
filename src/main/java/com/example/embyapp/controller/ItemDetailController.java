@@ -784,7 +784,7 @@ public class ItemDetailController {
     /** Handles the Save button action. */
     @FXML
     private void handleSaveButtonAction() {
-        System.out.println("Nút Lưu đã được nhấn. Gọi ViewModel.saveChanges().");
+        // System.out.println("Nút Lưu đã được nhấn. Gọi ViewModel.saveChanges().");
         if (viewModel != null) {
             viewModel.saveChanges();
         }
@@ -823,7 +823,7 @@ public class ItemDetailController {
             handleSaveButtonAction();
         } else {
             // Có thể báo lỗi nhẹ nếu cần, nhưng thường chỉ cần bỏ qua
-            System.out.println("Hotkey Save bị chặn: Không có thay đổi.");
+            // System.out.println("Hotkey Save bị chặn: Không có thay đổi.");
         }
     }
 
@@ -873,9 +873,9 @@ public class ItemDetailController {
             }
             Stage stage = (Stage) rootPane.getScene().getWindow();
             String originalTitle = viewModel.getOriginalTitleForExport();
-            System.out.println(originalTitle);
+            // System.out.println(originalTitle);
             String initialFileName = (originalTitle != null ? originalTitle.replaceAll("[^a-zA-Z0-9.-]", "_") : "item") + ".json";
-            System.out.println(initialFileName);
+            // System.out.println(initialFileName);
             File targetFile = JsonFileHandler.showSaveJsonDialog(stage, initialFileName);
             if (targetFile != null) {
                 new Thread(() -> {

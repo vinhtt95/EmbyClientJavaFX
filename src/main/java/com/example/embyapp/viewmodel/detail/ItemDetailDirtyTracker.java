@@ -86,7 +86,7 @@ public class ItemDetailDirtyTracker {
      */
     public void startImport() {
         if (!importAcceptancePending) {
-            System.out.println("DirtyTracker: Entering importAcceptancePending state.");
+            // System.out.println("DirtyTracker: Entering importAcceptancePending state.");
             importAcceptancePending = true;
             isDirty.set(false); // Force disable save button
             pauseTracking(); // Tạm dừng listener
@@ -99,7 +99,7 @@ public class ItemDetailDirtyTracker {
     public void endImport() {
         if (importAcceptancePending) { // Chỉ resume nếu thực sự đã startImport
             resumeTracking(); // Bật lại listener (sẽ gọi checkForChanges)
-            System.out.println("DirtyTracker: Resumed tracking after import UI update.");
+            // System.out.println("DirtyTracker: Resumed tracking after import UI update.");
             // checkForChanges sẽ chạy và set isDirty = false do importAcceptancePending = true
         }
     }
@@ -215,13 +215,13 @@ public class ItemDetailDirtyTracker {
 
         // Nếu đang chờ accept, đây là lần accept đầu tiên
         if (importAcceptancePending) {
-            System.out.println("DirtyTracker: Exiting importAcceptancePending state due to first accept.");
+            // System.out.println("DirtyTracker: Exiting importAcceptancePending state due to first accept.");
             importAcceptancePending = false; // Thoát trạng thái chờ
             isDirty.set(true); // Bật nút Save
         }
         // Nếu không chờ accept và chưa dirty (sửa thủ công)
         else if (!isDirty.get()) {
-            System.out.println("DirtyTracker: Forcing isDirty = true (manual edit detected).");
+            // System.out.println("DirtyTracker: Forcing isDirty = true (manual edit detected).");
             isDirty.set(true); // Bật nút Save
         }
         // Nếu đã dirty rồi thì không cần làm gì
@@ -240,7 +240,7 @@ public class ItemDetailDirtyTracker {
      * Reset cả trạng thái import pending.
      */
     public void updateOriginalStringsFromCurrent() {
-        System.out.println("DirtyTracker: Updating originals from current UI after save.");
+        // System.out.println("DirtyTracker: Updating originals from current UI after save.");
         this.originalTitle = viewModel.titleProperty().get();
         this.originalOriginalTitle = viewModel.originalTitleProperty().get();
         this.originalOverview = viewModel.overviewProperty().get();
@@ -265,7 +265,7 @@ public class ItemDetailDirtyTracker {
     public void updateOriginalRating(Float newRating) {
         if (paused) return; // Không làm gì nếu đang pause
 
-        System.out.println("DirtyTracker: Updating original rating baseline to: " + newRating);
+        // System.out.println("DirtyTracker: Updating original rating baseline to: " + newRating);
         this.originalCriticRating = newRating;
 
         // Reset cờ import nếu nó đang bật (mặc dù kịch bản này ít xảy ra)

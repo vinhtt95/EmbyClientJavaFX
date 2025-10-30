@@ -38,7 +38,7 @@ public class I18nManager {
                 Map<String, Object> loadedMap = gson.fromJson(reader, type);
                 if (loadedMap != null) {
                     config.putAll(loadedMap);
-                    System.out.println("Configuration loaded successfully.");
+                    // System.out.println("Configuration loaded successfully.");
                 }
             }
         } catch (Exception e) {

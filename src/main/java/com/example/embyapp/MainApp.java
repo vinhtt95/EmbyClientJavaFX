@@ -42,7 +42,7 @@ public class MainApp extends Application {
             prefs.putDouble("windowY", primaryStage.getY());
             prefs.putDouble("windowWidth", primaryStage.getWidth());
             prefs.putDouble("windowHeight", primaryStage.getHeight());
-            System.out.println("Đã lưu vị trí và kích thước cửa sổ.");
+            // System.out.println("Đã lưu vị trí và kích thước cửa sổ.");
 
             // Gọi shutdown để hủy đăng ký global hotkey hook
             if (mainController != null) {
@@ -51,10 +51,10 @@ public class MainApp extends Application {
         });
 
         if (embyService.tryRestoreSession()) {
-            System.out.println("Session restored, showing main view.");
+            // System.out.println("Session restored, showing main view.");
             showMainView();
         } else {
-            System.out.println("No valid session found, showing login view.");
+            // System.out.println("No valid session found, showing login view.");
             showLoginView();
         }
     }

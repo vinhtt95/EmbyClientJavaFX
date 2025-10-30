@@ -706,9 +706,33 @@ public class ItemDetailController {
                             // Ghi nội dung SRT cơ bản (tùy chọn, có thể bỏ trống)
                             writer.write("1");
                             writer.newLine();
-                            writer.write("00:00:00,000 --> 00:00:01,000");
+                            writer.write("00:00:00,000 --> 00:00:10,000");
                             writer.newLine();
-                            writer.write("Phụ đề được tạo tự động"); // <-- Có thể thêm text mặc định
+                            writer.write(""); // <-- Có thể thêm text mặc định
+                            writer.newLine();
+                            writer.write("2");
+                            writer.newLine();
+                            writer.write("00:30:00,000 --> 00:30:10,000");
+                            writer.newLine();
+                            writer.write("");
+                            writer.newLine();
+                            writer.write("3");
+                            writer.newLine();
+                            writer.write("01:00:00,000 --> 01:00:10,000");
+                            writer.newLine();
+                            writer.write("");
+                            writer.newLine();
+                            writer.write("4");
+                            writer.newLine();
+                            writer.write("01:30:00,000 --> 01:30:10,000");
+                            writer.newLine();
+                            writer.write("");
+                            writer.newLine();
+                            writer.write("5");
+                            writer.newLine();
+                            writer.write("01:50:00,000 --> 01:50:10,000");
+                            writer.newLine();
+                            writer.write("");
                             writer.newLine();
                             writer.newLine();
 

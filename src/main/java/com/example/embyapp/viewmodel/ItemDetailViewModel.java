@@ -40,6 +40,7 @@ import java.time.ZoneId;
 /**
  * ViewModel for the Item Detail view.
  * (CẬP NHẬT) Thêm event property cho chip click.
+ * (CẬP NHẬT) Bỏ hàm selectNewPrimaryImage (đã chuyển logic click sang controller).
  */
 public class ItemDetailViewModel {
 
@@ -681,18 +682,23 @@ public class ItemDetailViewModel {
     }
 
 
+    // --- (*** BẮT ĐẦU SỬA ĐỔI ***) ---
     /**
      * (SỬA ĐỔI)
      * Mở FileChooser để chọn ảnh primary mới.
+     *
+     * (*** HÀM NÀY BỊ XÓA BỎ VÌ KHÔNG CÒN ĐƯỢC GỌI ***)
      */
-    public void selectNewPrimaryImage(Stage ownerStage) {
-        if (currentItemId == null) return;
-        List<File> files = imageUpdater.chooseImages(ownerStage, false);
-        if (files != null && !files.isEmpty()) {
-            File selectedFile = files.get(0);
-            setDroppedPrimaryImage(selectedFile);
-        }
-    }
+    // public void selectNewPrimaryImage(Stage ownerStage) {
+    //     if (currentItemId == null) return;
+    //     List<File> files = imageUpdater.chooseImages(ownerStage, false);
+    //     if (files != null && !files.isEmpty()) {
+    //         File selectedFile = files.get(0);
+    //         setDroppedPrimaryImage(selectedFile);
+    //     }
+    // }
+    // --- (*** KẾT THÚC SỬA ĐỔI ***) ---
+
 
     /**
      * Uploads the selected primary image.

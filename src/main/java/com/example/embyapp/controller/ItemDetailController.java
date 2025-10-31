@@ -50,6 +50,7 @@ import javafx.scene.layout.Region;
  * Controller for the Item Detail view (right pane).
  * Handles user interaction and binds UI elements to the ItemDetailViewModel.
  * (CẬP NHẬT) Thêm hàm xử lý click cho chip.
+ * (CẬP NHẬT) Thay đổi click ảnh primary để mở thư mục screenshot.
  */
 public class ItemDetailController {
 
@@ -172,12 +173,19 @@ public class ItemDetailController {
         setupBackdropDragAndDrop();
         setupPrimaryImageDragAndDrop();
 
+        // --- (*** BẮT ĐẦU SỬA ĐỔI ***) ---
         // Setup click actions
         primaryImageContainer.setOnMouseClicked(e -> {
-            if (viewModel != null) {
-                viewModel.selectNewPrimaryImage((Stage) rootPane.getScene().getWindow());
-            }
+            // Gỡ bỏ logic cũ:
+            // if (viewModel != null) {
+            //     viewModel.selectNewPrimaryImage((Stage) rootPane.getScene().getWindow());
+            // }
+
+            // Logic mới: Mở thư mục screenshot
+            handleOpenScreenshotFolder();
         });
+        // --- (*** KẾT THÚC SỬA ĐỔI ***) ---
+
         savePrimaryImageButton.setOnAction(e -> {
             if (viewModel != null) viewModel.saveNewPrimaryImage();
         });
@@ -819,6 +827,72 @@ public class ItemDetailController {
         }).start();
     }
     // <-- KẾT THÚC HÀM MỚI -->
+
+    // --- (*** BẮT ĐẦU HÀM MỚI ***) ---
+    /**
+     * (HÀM MỚI) Xử lý click vào ảnh primary để mở thư mục screenshot.
+     */
+    private void handleOpenScreenshotFolder() {
+        if (viewModel == null) return;
+        viewModel.clearActionError();
+        I18nManager i18n = I18nManager.getInstance();
+
+        // 1. Lấy đường dẫn file media
+        String mediaPath = pathTextField.getText();
+        if (mediaPath == null || mediaPath.isEmpty() || mediaPath.equals(i18n.getString("itemDetailLoader", "noPath"))) {
+            viewModel.reportActionError(i18n.getString("itemDetailView", "errorInvalidPath"));
+            return;
+        }
+
+        // 2. Lấy đường dẫn base từ config
+        String basePath = i18n.getString("appSettings", "screenshotBasePath");
+        if (basePath == null || basePath.isEmpty() || basePath.equals("appSettings.screenshotBasePath")) {
+            viewModel.reportActionError(i18n.getString("itemDetailView", "errorScreenshotPathBase"));
+            return;
+        }
+
+        // 3. Kiểm tra Desktop API
+        if (!Desktop.isDesktopSupported()) {
+            viewModel.reportActionError(i18n.getString("itemDetailView", "errorDesktopAPINotSupported"));
+            return;
+        }
+
+        new Thread(() -> {
+            try {
+                // 4. Lấy tên file (bao gồm đuôi)
+                File mediaFile = new File(mediaPath);
+                String mediaFileName = mediaFile.getName();
+                if (mediaFileName.isEmpty()) {
+                    throw new IOException("Không thể lấy tên file từ đường dẫn: " + mediaPath);
+                }
+
+                // 5. Xây dựng đường dẫn thư mục screenshot
+                File screenshotFolder = new File(basePath, mediaFileName);
+
+                // 6. Kiểm tra thư mục
+                if (!screenshotFolder.exists()) {
+                    // Tùy chọn: Tự động tạo thư mục nếu chưa có
+                    // if (!screenshotFolder.mkdirs()) {
+                    //     throw new IOException("Không thể tạo thư mục: " + screenshotFolder.getAbsolutePath());
+                    // }
+                    // Hoặc: Báo lỗi nếu chưa tồn tại
+                    throw new FileNotFoundException("Thư mục screenshot không tồn tại: " + screenshotFolder.getAbsolutePath());
+                }
+
+                if (!screenshotFolder.isDirectory()) {
+                    throw new IOException("Đường dẫn screenshot không phải là thư mục: " + screenshotFolder.getAbsolutePath());
+                }
+
+                // 7. Mở thư mục
+                Desktop.getDesktop().open(screenshotFolder);
+
+            } catch (Exception e) {
+                System.err.println("Lỗi khi mở thư mục screenshot: " + e.getMessage());
+                viewModel.reportActionError(i18n.getString("itemDetailView", "errorScreenshotPathOpen", e.getMessage()));
+            }
+        }).start();
+    }
+    // --- (*** KẾT THÚC HÀM MỚI ***) ---
 
 
     /** Handles the Fetch Release Date button action. */

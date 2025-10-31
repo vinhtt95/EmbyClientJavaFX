@@ -9,6 +9,8 @@ import java.util.Objects;
 /**
  * (MỚI) Lớp Model đại diện cho một TagItem đã được phân tích.
  * Nó có thể là một chuỗi đơn giản, hoặc một cặp Key-Value từ JSON.
+ * (CẬP NHẬT) Thêm trường 'id' để lưu ID gốc (nếu có).
+ * (SỬA LỖI) Xóa các constructor 1-arg và 2-arg bị trùng lặp.
  */
 public class TagModel {
 
@@ -18,25 +20,40 @@ public class TagModel {
     private final String simpleName;
     private final String key;
     private final String value;
+    private final String id; // <-- Trường ID
+
+    /*
+     * (XÓA BỎ) Constructor (String simpleName)
+     * Đã bị xóa để tránh nhầm lẫn. Sử dụng parse(simpleName)
+     * hoặc new TagModel(simpleName, null)
+     */
+
+    /*
+     * (XÓA BỎ) Constructor (String key, String value)
+     * Đã bị xóa do trùng lặp chữ ký với (String simpleName, String id)
+     * Sử dụng parse(jsonString) hoặc new TagModel(key, value, null)
+     */
 
     /**
-     * Constructor cho tag chuỗi đơn giản.
+     * Constructor đầy đủ cho tag chuỗi đơn giản với ID.
      */
-    public TagModel(String simpleName) {
+    public TagModel(String simpleName, String id) {
         this.isJson = false;
         this.simpleName = simpleName;
         this.key = null;
         this.value = null;
+        this.id = id;
     }
 
     /**
-     * Constructor cho tag dạng Key-Value (từ JSON).
+     * Constructor đầy đủ cho tag Key-Value (từ JSON) với ID.
      */
-    public TagModel(String key, String value) {
+    public TagModel(String key, String value, String id) {
         this.isJson = true;
         this.simpleName = null;
         this.key = key;
         this.value = value;
+        this.id = id;
     }
 
     /**
@@ -44,8 +61,15 @@ public class TagModel {
      * Tự động phát hiện JSON.
      */
     public static TagModel parse(String rawName) {
+        return parse(rawName, null); // Gọi hàm parse đầy đủ
+    }
+
+    /**
+     * (MỚI) Phân tích một chuỗi 'Name' và lưu trữ ID.
+     */
+    public static TagModel parse(String rawName, String id) {
         if (rawName == null || rawName.isEmpty()) {
-            return new TagModel("Trống");
+            return new TagModel("Trống", id); // <-- SỬA ĐỔI
         }
 
         // Kiểm tra xem có phải là chuỗi JSON thô hay không
@@ -59,7 +83,7 @@ public class TagModel {
 
                 if (firstEntry != null) {
                     // Trả về dạng Key-Value
-                    return new TagModel(firstEntry.getKey(), firstEntry.getValue().getAsString());
+                    return new TagModel(firstEntry.getKey(), firstEntry.getValue().getAsString(), id); // <-- SỬA ĐỔI
                 }
             } catch (JsonSyntaxException | IllegalStateException e) {
                 // Không phải JSON hợp lệ, hoặc cấu trúc không mong muốn
@@ -69,8 +93,9 @@ public class TagModel {
         }
 
         // Mặc định là chuỗi thường
-        return new TagModel(rawName);
+        return new TagModel(rawName, id); // <-- SỬA ĐỔI
     }
+
 
     /**
      * Chuyển đổi TagModel này TRỞ LẠI thành chuỗi String để LƯU vào DTO (trường Tags).
@@ -109,6 +134,11 @@ public class TagModel {
     public String getValue() {
         return value;
     }
+
+    // (*** THÊM GETTER CHO ID ***)
+    public String getId() {
+        return id;
+    }
     // (*** KẾT THÚC THÊM MỚI ***)
 
     // (QUAN TRỌNG) Thêm equals và hashCode để ListChangeListener có thể so sánh
@@ -120,16 +150,17 @@ public class TagModel {
         return isJson == tagModel.isJson &&
                 Objects.equals(simpleName, tagModel.simpleName) &&
                 Objects.equals(key, tagModel.key) &&
-                Objects.equals(value, tagModel.value);
+                Objects.equals(value, tagModel.value) &&
+                Objects.equals(id, tagModel.id); // <-- THÊM ID VÀO SO SÁNH
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(isJson, simpleName, key, value);
+        return Objects.hash(isJson, simpleName, key, value, id); // <-- THÊM ID VÀO HASH
     }
 
     @Override
     public String toString() {
-        return "TagModel{" + getDisplayName() + "}";
+        return "TagModel{" + getDisplayName() + (id != null ? ", id=" + id : "") + "}"; // <-- Sửa toString
     }
 }

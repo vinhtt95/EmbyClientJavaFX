@@ -5,6 +5,11 @@ import embyclient.model.BaseItemDto;
 import embyclient.model.QueryResultBaseItemDto;
 import com.example.embyapp.service.I18nManager;
 import com.example.embyapp.service.ItemRepository;
+// (*** THÊM CÁC IMPORT MỚI ***)
+import com.example.embyapp.service.EmbyService;
+import com.example.embyapp.viewmodel.detail.TagModel;
+import java.util.Collections;
+// (*** KẾT THÚC THÊM IMPORT ***)
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
@@ -23,6 +28,7 @@ import java.lang.Math; // Explicit import for Math.ceil
  * Thêm logic chọn item trước/sau.
  * Thêm logic cho hotkey hệ thống (playAfterSelect).
  * (CẬP NHẬT) Thêm sort "DateCreated" và logic "Home" (parentId = null).
+ * (CẬP NHẬT) Thêm logic tải item bằng cách click chip (không phân trang, không auto-select).
  */
 public class ItemGridViewModel {
 
@@ -260,6 +266,97 @@ public class ItemGridViewModel {
             }
         }).start();
     }
+
+    // (*** THÊM HÀM MỚI HOÀN TOÀN DƯỚI ĐÂY ***)
+
+    /**
+     * (MỚI) Tải items dựa trên API call từ chip (Tag, Studio, People, Genre).
+     * Phương thức này KHÔNG phân trang và KHÔNG tự động chọn item đầu tiên.
+     *
+     * @param model Model của chip đã click
+     * @param type Loại chip ("TAG", "STUDIO", "PEOPLE", "GENRE")
+     * @param embyService Instance EmbyService (vì ViewModel này không giữ)
+     */
+    public void loadItemsByTagChip(TagModel model, String type, EmbyService embyService) {
+        if (loading.get()) return;
+
+        loading.set(true);
+        isSearching = true; // Coi như đây là một dạng "search"
+        currentParentId = null; // Xóa parent ID
+        currentSearchKeywords = model.getDisplayName(); // Dùng tên hiển thị cho status
+        I18nManager i18n = I18nManager.getInstance();
+
+        Platform.runLater(() -> {
+            // Tạm thời dùng status search, hoặc có thể tùy chỉnh
+            statusMessage.set(i18n.getString("itemGridView", "statusSearchPageLoading", 1, "..."));
+            showStatusMessage.set(false); // Ẩn status, hiện loading
+            scrollAction.set(ScrollAction.SCROLL_TO_TOP); // Cuộn lên đầu
+        });
+
+        new Thread(() -> {
+            List<BaseItemDto> resultItems = null;
+            try {
+                String apiParam;
+                switch (type) {
+                    case "TAG":
+                        apiParam = model.serialize(); // Tag dùng tên đã serialize
+                        resultItems = embyService.getListItemByTagId(apiParam, 0, 500, true);
+                        break;
+                    case "STUDIO":
+                        apiParam = model.getId(); // Studio dùng ID
+                        if (apiParam == null) throw new ApiException("Studio ID is null for: " + model.getDisplayName());
+                        resultItems = embyService.getListItemByStudioId(apiParam, 0, 500, true);
+                        break;
+                    case "PEOPLE":
+                        apiParam = model.getId(); // People dùng ID
+                        if (apiParam == null) throw new ApiException("People ID is null for: " + model.getDisplayName());
+                        resultItems = embyService.getListPeopleByID(apiParam, 0, 500, true);
+                        break;
+                    case "GENRE":
+                        apiParam = model.getDisplayName(); // Genre dùng tên hiển thị
+                        resultItems = embyService.getListItemByGenreId(apiParam, 0, 500, true);
+                        break;
+                    default:
+                        resultItems = Collections.emptyList();
+                }
+            } catch (Exception e) {
+                System.err.println("API Error loading by tag chip (" + type + "): " + e.getMessage());
+                final String errorMsg = e.getMessage();
+                Platform.runLater(() -> {
+                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingSearch", errorMsg));
+                    showStatusMessage.set(true);
+                    loading.set(false);
+                });
+                resultItems = Collections.emptyList();
+            }
+
+            final List<BaseItemDto> finalItems = resultItems != null ? resultItems : Collections.emptyList();
+
+            Platform.runLater(() -> {
+                items.setAll(finalItems); // Cập nhật danh sách
+                totalCount = finalItems.size();
+                totalPages = totalCount > 0 ? 1 : 0; // Chỉ 1 trang
+                currentPageIndex = 0;
+                hasNextPage.set(false);
+                hasPreviousPage.set(false);
+
+                if (finalItems.isEmpty()) {
+                    statusMessage.set(i18n.getString("itemGridView", "statusSearchEmpty", currentSearchKeywords));
+                    showStatusMessage.set(true);
+                } else {
+                    // Hiển thị kết quả (1/1 trang)
+                    statusMessage.set(i18n.getString("itemGridView", "statusSearchResult", 1, 1, totalCount));
+                    showStatusMessage.set(false); // Ẩn status, hiện grid
+                }
+
+                // *** QUAN TRỌNG: KHÔNG GỌI selectedItem.set(...) ***
+                // Điều này sẽ giữ nguyên item đang được chọn ở cột detail.
+
+                loading.set(false);
+            });
+        }).start();
+    }
+
 
     /**
      * Tải items ban đầu (trang 1).

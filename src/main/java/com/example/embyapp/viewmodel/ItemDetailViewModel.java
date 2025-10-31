@@ -39,6 +39,7 @@ import java.time.ZoneId;
 
 /**
  * ViewModel for the Item Detail view.
+ * (CẬP NHẬT) Thêm event property cho chip click.
  */
 public class ItemDetailViewModel {
 
@@ -87,6 +88,23 @@ public class ItemDetailViewModel {
     private final ReadOnlyStringWrapper actionStatusMessage = new ReadOnlyStringWrapper("");
     private final ReadOnlyBooleanWrapper primaryImageDirty = new ReadOnlyBooleanWrapper(false);
     private final ObjectProperty<Boolean> popOutRequest = new SimpleObjectProperty<>(null);
+
+    // (*** THÊM LỚP INNER VÀ PROPERTY MỚI ***)
+    /**
+     * Lớp POJO đơn giản để đóng gói sự kiện click chip.
+     */
+    public static class TagChipClickEvent {
+        public final TagModel model;
+        public final String type; // "TAG", "STUDIO", "PEOPLE", "GENRE"
+
+        public TagChipClickEvent(TagModel model, String type) {
+            this.model = model;
+            this.type = type;
+        }
+    }
+
+    private final ObjectProperty<TagChipClickEvent> tagChipClickEvent = new SimpleObjectProperty<>(null);
+    // (*** KẾT THÚC THÊM MỚI ***)
 
 
     public ItemDetailViewModel(ItemRepository itemRepository, EmbyService embyService) {
@@ -616,6 +634,15 @@ public class ItemDetailViewModel {
         }).start();
     }
 
+    // (*** THÊM HÀM MỚI ĐỂ GỬI TÍN HIỆU ***)
+    /**
+     * (MỚI) Được gọi từ ItemDetailController khi một chip được click.
+     * Đặt property để MainController có thể bắt được.
+     */
+    public void loadItemsByTagChip(TagModel model, String type) {
+        this.tagChipClickEvent.set(new TagChipClickEvent(model, type));
+    }
+
     public void importAndPreview(BaseItemDto importedDto) { if (originalItemDto == null) return; importHandler.importAndPreview(importedDto); }
     public void acceptImportField(String fieldName) { importHandler.acceptImportField(fieldName); }
     public void rejectImportField(String fieldName) { importHandler.rejectImportField(fieldName); }
@@ -844,4 +871,9 @@ public class ItemDetailViewModel {
     public ReadOnlyBooleanProperty showGenresReviewProperty() { return importHandler.showGenresReviewProperty(); }
     public ReadOnlyBooleanProperty showTagsReviewProperty() { return importHandler.showTagsReviewProperty(); }
     public ReadOnlyBooleanProperty showCriticRatingReviewProperty() { return importHandler.showCriticRatingReviewProperty(); }
+
+    // (*** THÊM GETTER CHO PROPERTY MỚI ***)
+    public ObjectProperty<TagChipClickEvent> tagChipClickEventProperty() {
+        return tagChipClickEvent;
+    }
 }

@@ -908,13 +908,15 @@ public class AddTagDialogController {
         if (simpleTagRadio.isSelected()) {
             String simpleName = simpleNameField.getText();
             if (simpleName != null && !simpleName.trim().isEmpty()) {
-                resultTag = new TagModel(simpleName.trim());
+                // <-- (*** SỬA LỖI BIÊN DỊCH DÒNG NÀY ***) -->
+                resultTag = new TagModel(simpleName.trim(), null);
             }
         } else { // JSON tag is selected
             String key = keyField.getText();
             String value = valueField.getText();
             if (key != null && !key.trim().isEmpty() && value != null && !value.trim().isEmpty()) {
-                resultTag = new TagModel(key.trim(), value.trim());
+                // <-- (*** SỬA LỖI BIÊN DỊCH DÒNG NÀY ***) -->
+                resultTag = new TagModel(key.trim(), value.trim(), null);
             }
         }
 

@@ -49,6 +49,7 @@ import javafx.scene.layout.StackPane;
  * Controller Điều Phối (Coordinator) cho MainView.
  * Implement NativeKeyListener để bắt hotkey hệ thống.
  * (CẬP NHẬT) Thêm nút Home.
+ * (CẬP NHẬT) Thêm listener cho sự kiện click chip.
  */
 public class MainController implements NativeKeyListener {
 
@@ -289,6 +290,32 @@ public class MainController implements NativeKeyListener {
                 itemGridViewModel.clearPlayAfterSelect();
             }
         });
+
+        // (*** THÊM LISTENER MỚI DƯỚI ĐÂY ***)
+        /**
+         * Lắng nghe sự kiện click chip từ cột Detail.
+         * Khi nhận được, ra lệnh cho cột Grid tải danh sách item tương ứng.
+         */
+        itemDetailViewModel.tagChipClickEventProperty().addListener((obs, oldEvent, newEvent) -> {
+            if (newEvent != null) {
+                // Xóa chọn thư mục ở cột trái
+                if (libraryTreeController != null) {
+                    libraryTreeController.clearSelection();
+                }
+                // Xóa text tìm kiếm (nếu có)
+                if (searchField != null) {
+                    searchField.setText("");
+                }
+
+                // Ra lệnh cho GridViewModel tải dữ liệu
+                itemGridViewModel.loadItemsByTagChip(newEvent.model, newEvent.type, embyService);
+
+                // Tiêu thụ sự kiện
+                itemDetailViewModel.tagChipClickEventProperty().set(null);
+            }
+        });
+        // (*** KẾT THÚC THÊM MỚI ***)
+
 
         ReadOnlyBooleanProperty treeLoading = libraryTreeViewModel.loadingProperty();
         ReadOnlyBooleanProperty gridLoading = itemGridViewModel.loadingProperty();

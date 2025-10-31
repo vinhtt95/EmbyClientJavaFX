@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
  * (CẬP NHẬT 30) Thêm Genres.
  * - Thêm logic tải và chuyển đổi Genres sang List<TagModel>.
  * (CẬP NHẬT MỚI) Thêm CriticRating.
+ * (CẬP NHẬT MỚI 2) Truyền ID vào TagModel.
  */
 public class ItemDetailLoader {
 
@@ -63,12 +64,13 @@ public class ItemDetailLoader {
         result.setPathText(fullDetails.getPath() != null ? fullDetails.getPath() : i18n.getString("itemDetailLoader", "noPath"));
         result.setFolder(fullDetails.isIsFolder() != null && fullDetails.isIsFolder());
 
-        // (*** LOGIC TAGS (giữ nguyên) ***)
+        // (*** LOGIC TAGS (SỬA ĐỔI) ***)
         List<TagModel> parsedTags = new ArrayList<>();
         if (fullDetails.getTagItems() != null) {
             for (NameLongIdPair tagPair : fullDetails.getTagItems()) {
                 if (tagPair.getName() != null) {
-                    parsedTags.add(TagModel.parse(tagPair.getName()));
+                    // <-- SỬA ĐỔI DÒNG NÀY -->
+                    parsedTags.add(TagModel.parse(tagPair.getName(), String.valueOf(tagPair.getId())));
                 }
             }
         }
@@ -127,27 +129,28 @@ public class ItemDetailLoader {
 
     // MODIFIED: Chuyển Studios sang List<TagModel>
     private List<TagModel> studiosToTagModelList(List<NameLongIdPair> studios) {
+        // <-- SỬA ĐỔI DÒNG NÀY -->
         return (studios != null) ? studios.stream()
-                .map(NameLongIdPair::getName)
-                .filter(Objects::nonNull)
-                .map(TagModel::parse)
+                .map(pair -> TagModel.parse(pair.getName(), String.valueOf(pair.getId())))
+                .filter(Objects::nonNull) // Lọc các tag null (nếu có)
                 .collect(Collectors.toList()) : new ArrayList<>();
     }
 
     // MODIFIED: Chuyển People sang List<TagModel>
     private List<TagModel> peopleToTagModelList(List<BaseItemPerson> people) {
+        // <-- SỬA ĐỔI DÒNG NÀY -->
         return (people != null) ? people.stream()
-                .map(BaseItemPerson::getName)
-                .filter(Objects::nonNull)
-                .map(TagModel::parse)
+                .map(person -> TagModel.parse(person.getName(), person.getId()))
+                .filter(Objects::nonNull) // Lọc các tag null (nếu có)
                 .collect(Collectors.toList()) : new ArrayList<>();
     }
 
     // (*** HÀM HELPER MỚI ***)
     private List<TagModel> genresToTagModelList(List<String> genres) {
+        // <-- SỬA ĐỔI DÒNG NÀY (thêm id=null) -->
         return (genres != null) ? genres.stream()
                 .filter(Objects::nonNull)
-                .map(TagModel::parse) // Genres được lưu dưới dạng List<String> nên ta parse nó
+                .map(name -> TagModel.parse(name, null)) // Genres được lưu dưới dạng List<String> nên id là null
                 .collect(Collectors.toList()) : new ArrayList<>();
     }
 

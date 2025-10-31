@@ -17,12 +17,15 @@ import java.util.function.Consumer;
  * (CẬP NHẬT 8):
  * - Thay đổi logic hiển thị cho tag JSON.
  * - Thay vì dùng "Key | Value" text, dùng "KeyLabel" + "Separator (UI)" + "ValueLabel".
+ * (CẬP NHẬT MỚI):
+ * - Thêm sự kiện onClick cho toàn bộ chip.
  */
 public class TagView extends HBox {
 
     private final TagModel tagModel;
 
-    public TagView(TagModel tagModel, Consumer<TagModel> onDelete) {
+    // <-- SỬA ĐỔI CONSTRUCTOR (THÊM onClick) -->
+    public TagView(TagModel tagModel, Consumer<TagModel> onDelete, Consumer<TagModel> onClick) {
         this.tagModel = tagModel;
 
         // Cấu hình HBox (cái "chip")
@@ -57,12 +60,22 @@ public class TagView extends HBox {
         }
         // (*** KẾT THÚC SỬA ĐỔI ***)
 
-        // Nút Xóa (Giữ nguyên)
+        // Nút Xóa (SỬA ĐỔI: Thêm e.consume())
         Button deleteButton = new Button("✕");
         deleteButton.getStyleClass().add("tag-delete-button"); // CSS
-        deleteButton.setOnAction(e -> onDelete.accept(tagModel));
+        deleteButton.setOnAction(e -> {
+            onDelete.accept(tagModel);
+            e.consume(); // <-- THÊM DÒNG NÀY: Ngăn sự kiện click lan ra HBox
+        });
 
         getChildren().add(deleteButton); // Luôn thêm nút xóa ở cuối
+
+        // <-- THÊM DÒNG NÀY: Thêm sự kiện click cho toàn bộ HBox -->
+        this.setOnMouseClicked(e -> {
+            if (onClick != null) {
+                onClick.accept(tagModel);
+            }
+        });
     }
 
     public TagModel getTagModel() {

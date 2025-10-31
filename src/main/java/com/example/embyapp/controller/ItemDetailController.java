@@ -49,6 +49,7 @@ import javafx.scene.layout.Region;
 /**
  * Controller for the Item Detail view (right pane).
  * Handles user interaction and binds UI elements to the ItemDetailViewModel.
+ * (CẬP NHẬT) Thêm hàm xử lý click cho chip.
  */
 public class ItemDetailController {
 
@@ -412,7 +413,8 @@ public class ItemDetailController {
         if (viewModel == null || tagsFlowPane == null) return;
         tagsFlowPane.getChildren().clear();
         for (TagModel tag : viewModel.getTagItems()) {
-            TagView tagChip = new TagView(tag, viewModel::removeTag);
+            // <-- SỬA ĐỔI DÒNG NÀY: Thêm 'this::handleTagChipClicked' -->
+            TagView tagChip = new TagView(tag, viewModel::removeTag, this::handleTagChipClicked);
             tagsFlowPane.getChildren().add(tagChip);
         }
     }
@@ -422,7 +424,8 @@ public class ItemDetailController {
         if (viewModel == null || studiosFlowPane == null) return;
         studiosFlowPane.getChildren().clear();
         for (TagModel studio : viewModel.getStudioItems()) {
-            TagView studioChip = new TagView(studio, viewModel::removeStudio);
+            // <-- SỬA ĐỔI DÒNG NÀY: Thêm 'this::handleStudioChipClicked' -->
+            TagView studioChip = new TagView(studio, viewModel::removeStudio, this::handleStudioChipClicked);
             studiosFlowPane.getChildren().add(studioChip);
         }
     }
@@ -432,7 +435,8 @@ public class ItemDetailController {
         if (viewModel == null || peopleFlowPane == null) return;
         peopleFlowPane.getChildren().clear();
         for (TagModel person : viewModel.getPeopleItems()) {
-            TagView personChip = new TagView(person, viewModel::removePerson);
+            // <-- SỬA ĐỔI DÒNG NÀY: Thêm 'this::handlePeopleChipClicked' -->
+            TagView personChip = new TagView(person, viewModel::removePerson, this::handlePeopleChipClicked);
             peopleFlowPane.getChildren().add(personChip);
         }
     }
@@ -442,12 +446,43 @@ public class ItemDetailController {
         if (viewModel == null || genresFlowPane == null) return;
         genresFlowPane.getChildren().clear();
         for (TagModel genre : viewModel.getGenreItems()) {
-            TagView genreChip = new TagView(genre, viewModel::removeGenre);
+            // <-- SỬA ĐỔI DÒNG NÀY: Thêm 'this::handleGenreChipClicked' -->
+            TagView genreChip = new TagView(genre, viewModel::removeGenre, this::handleGenreChipClicked);
             genresFlowPane.getChildren().add(genreChip);
         }
         if (genresLabel != null) {
             genresLabel.visibleProperty().set(false);
             genresLabel.managedProperty().set(false);
+        }
+    }
+
+    // <-- THÊM 4 HÀM MỚI DƯỚI ĐÂY -->
+
+    /** (MỚI) Xử lý khi click vào chip Tag. */
+    private void handleTagChipClicked(TagModel model) {
+        if (viewModel != null) {
+            viewModel.loadItemsByTagChip(model, "TAG");
+        }
+    }
+
+    /** (MỚI) Xử lý khi click vào chip Studio. */
+    private void handleStudioChipClicked(TagModel model) {
+        if (viewModel != null) {
+            viewModel.loadItemsByTagChip(model, "STUDIO");
+        }
+    }
+
+    /** (MỚI) Xử lý khi click vào chip People. */
+    private void handlePeopleChipClicked(TagModel model) {
+        if (viewModel != null) {
+            viewModel.loadItemsByTagChip(model, "PEOPLE");
+        }
+    }
+
+    /** (MỚI) Xử lý khi click vào chip Genre. */
+    private void handleGenreChipClicked(TagModel model) {
+        if (viewModel != null) {
+            viewModel.loadItemsByTagChip(model, "GENRE");
         }
     }
 

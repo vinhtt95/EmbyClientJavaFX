@@ -754,7 +754,7 @@ public class ItemDetailController {
                             // Ghi nội dung SRT cơ bản
                             writer.write("1");
                             writer.newLine();
-                            writer.write("00:00:00,000 --> 00:00:10,000");
+                            writer.write("00:00:03,000 --> 00:00:10,000");
                             writer.newLine();
 
                             // (*** BẮT ĐẦU THAY ĐỔI: Ghi tiêu đề làm sub đầu tiên ***)

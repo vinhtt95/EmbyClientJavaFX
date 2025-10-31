@@ -3,21 +3,17 @@ package com.example.embyapp.service;
 import embyclient.ApiClient;
 import embyclient.ApiException;
 // *** THÊM CÁC IMPORT BỊ THIẾU ***
-import embyclient.model.AuthenticationAuthenticationResult;
-import embyclient.model.SystemInfo;
-import embyclient.model.UserDto;
+import embyclient.Configuration;
+import embyclient.api.*;
+import embyclient.model.*;
 // *** KẾT THÚC THÊM IMPORT ***
-import embyclient.api.ImageServiceApi;
-import embyclient.api.ItemUpdateServiceApi;
-import embyclient.api.ItemsServiceApi;
-import embyclient.api.SystemServiceApi;
-import embyclient.api.UserServiceApi;
 import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import java.util.prefs.Preferences;
 
@@ -365,4 +361,499 @@ public class EmbyService {
     public String getCurrentAccessToken() {
         return this.currentAccessToken;
     }
+
+    public List<BaseItemDto> getListItemByTagId(String tagsName, Integer startIndex, Integer limit, boolean recursive) {
+        // ... (Không thay đổi gì ở hàm này) ...
+        ItemsServiceApi itemsServiceApi = new ItemsServiceApi(Configuration.getDefaultApiClient());
+        TagServiceApi tagServiceApi = new TagServiceApi(Configuration.getDefaultApiClient());
+
+        try {
+            QueryResultBaseItemDto listItems = itemsServiceApi.getItems(
+                    null,    //artistType
+                    null,    //maxOfficialRating
+                    null,    //hasThemeSong
+                    null,    //hasThemeVideo
+                    null,    //hasSubtitles
+                    null,    //hasSpecialFeature
+                    null,    //hasTrailer
+                    null,    //isSpecialSeason
+                    null,    //adjacentTo
+                    null,    //startItemId
+                    null,    //minIndexNumber
+                    null,    //minStartDate
+                    null,    //maxStartDate
+                    null,    //minEndDate
+                    null,    //maxEndDate
+                    null,    //minPlayers
+                    null,    //maxPlayers
+                    null,    //parentIndexNumber
+                    null,    //hasParentalRating
+                    null,    //isHD
+                    null,    //isUnaired
+                    null,    //minCommunityRating
+                    null,    //minCriticRating
+                    null,    //airedDuringSeason
+                    null,    //minPremiereDate
+                    null,    //minDateLastSaved
+                    null,    //minDateLastSavedForUser
+                    null,    //maxPremiereDate
+                    null,    //hasOverview
+                    null,    //hasImdbId
+                    null,    //hasTmdbId
+                    null,    //hasTvdbId
+                    null,    //excludeItemIds
+                    startIndex,    //startIndex
+                    limit,    //limit
+                    recursive,    //recursive
+                    null,    //searchTerm
+                    "Ascending",    //sortOrder
+                    null,    //parentId
+                    null,    //fields
+                    null,    //excludeItemTypes
+                    "Movie,Series,Video,Game",    //includeItemTypes
+                    null,    //anyProviderIdEquals
+                    null,    //filters
+                    null,    //isFavorite
+                    null,    //isMovie
+                    null,    //isSeries
+                    null,    //isFolder
+                    null,    //isNews
+                    null,    //isKids
+                    null,    //isSports
+                    null,    //isNew
+                    null,    //isPremiere
+                    null,    //isNewOrPremiere
+                    null,    //isRepeat
+                    null,    //projectToMedia
+                    null,    //mediaTypes
+                    null,    //imageTypes
+                    null,    //sortBy
+                    null,    //isPlayed
+                    null,    //genres
+                    null,    //officialRatings
+                    tagsName,    //tags
+                    null,    //excludeTags
+                    null,    //years
+                    null,    //enableImages
+                    null,    //enableUserData
+                    null,    //imageTypeLimit
+                    null,    //enableImageTypes
+                    null,    //person
+                    null,    //personIds
+                    null,    //personTypes
+                    null,    //studios
+                    null,    //studioIds
+                    null,    //artists
+                    null,    //artistIds
+                    null,    //albums
+                    null,    //ids
+                    null,    //videoTypes
+                    null,    //containers
+                    null,    //audioCodecs
+                    null,    //audioLayouts
+                    null,    //videoCodecs
+                    null,    //extendedVideoTypes
+                    null,    //subtitleCodecs
+                    null,    //path
+                    null,    //userId
+                    null,    //minOfficialRating
+                    null,    //isLocked
+                    null,    //isPlaceHolder
+                    null,    //hasOfficialRating
+                    null,    //groupItemsIntoCollections
+                    null,    //is3D
+                    null,    //seriesStatus
+                    null,    //nameStartsWithOrGreater
+                    null,    //artistStartsWithOrGreater
+                    null,    //albumArtistStartsWithOrGreater
+                    null,    //nameStartsWith
+                    null    //nameLessThan
+            );
+            if (listItems.getItems().isEmpty()) {
+                System.out.println("Empty Item Tags");
+            }
+
+            if (!listItems.getItems().isEmpty()) {
+
+                return listItems.getItems();
+            }
+
+        } catch (ApiException e) {
+            System.out.println("Error fetching tags: " + e.getMessage());
+        }
+
+        return  null;
+    }
+
+    public List<BaseItemDto> getListItemByStudioId(String studioId, Integer startIndex, Integer limit, boolean recursive) {
+
+        StudiosServiceApi studiosServiceApi = new StudiosServiceApi(Configuration.getDefaultApiClient());
+        // ... (Không thay đổi gì ở hàm này) ...
+        ItemsServiceApi itemsServiceApi = new ItemsServiceApi(Configuration.getDefaultApiClient());
+
+        try {
+            QueryResultBaseItemDto listItems = itemsServiceApi.getItems(
+                    null,    //artistType
+                    null,    //maxOfficialRating
+                    null,    //hasThemeSong
+                    null,    //hasThemeVideo
+                    null,    //hasSubtitles
+                    null,    //hasSpecialFeature
+                    null,    //hasTrailer
+                    null,    //isSpecialSeason
+                    null,    //adjacentTo
+                    null,    //startItemId
+                    null,    //minIndexNumber
+                    null,    //minStartDate
+                    null,    //maxStartDate
+                    null,    //minEndDate
+                    null,    //maxEndDate
+                    null,    //minPlayers
+                    null,    //maxPlayers
+                    null,    //parentIndexNumber
+                    null,    //hasParentalRating
+                    null,    //isHD
+                    null,    //isUnaired
+                    null,    //minCommunityRating
+                    null,    //minCriticRating
+                    null,    //airedDuringSeason
+                    null,    //minPremiereDate
+                    null,    //minDateLastSaved
+                    null,    //minDateLastSavedForUser
+                    null,    //maxPremiereDate
+                    null,    //hasOverview
+                    null,    //hasImdbId
+                    null,    //hasTmdbId
+                    null,    //hasTvdbId
+                    null,    //excludeItemIds
+                    startIndex,    //startIndex
+                    limit,    //limit
+                    recursive,    //recursive
+                    null,    //searchTerm
+                    "Ascending",    //sortOrder
+                    null,    //parentId
+                    null,    //fields
+                    null,    //excludeItemTypes
+                    "Movie,Series,Video,Game",    //includeItemTypes
+                    null,    //anyProviderIdEquals
+                    null,    //filters
+                    null,    //isFavorite
+                    null,    //isMovie
+                    null,    //isSeries
+                    null,    //isFolder
+                    null,    //isNews
+                    null,    //isKids
+                    null,    //isSports
+                    null,    //isNew
+                    null,    //isPremiere
+                    null,    //isNewOrPremiere
+                    null,    //isRepeat
+                    null,    //projectToMedia
+                    null,    //mediaTypes
+                    null,    //imageTypes
+                    null,    //sortBy
+                    null,    //isPlayed
+                    null,    //genres
+                    null,    //officialRatings
+                    null,    //tags
+                    null,    //excludeTags
+                    null,    //years
+                    null,    //enableImages
+                    null,    //enableUserData
+                    null,    //imageTypeLimit
+                    null,    //enableImageTypes
+                    null,    //person
+                    null,    //personIds
+                    null,    //personTypes
+                    null,    //studios
+                    studioId,    //studioIds
+                    null,    //artists
+                    null,    //artistIds
+                    null,    //albums
+                    null,    //ids
+                    null,    //videoTypes
+                    null,    //containers
+                    null,    //audioCodecs
+                    null,    //audioLayouts
+                    null,    //videoCodecs
+                    null,    //extendedVideoTypes
+                    null,    //subtitleCodecs
+                    null,    //path
+                    null,    //userId
+                    null,    //minOfficialRating
+                    null,    //isLocked
+                    null,    //isPlaceHolder
+                    null,    //hasOfficialRating
+                    null,    //groupItemsIntoCollections
+                    null,    //is3D
+                    null,    //seriesStatus
+                    null,    //nameStartsWithOrGreater
+                    null,    //artistStartsWithOrGreater
+                    null,    //albumArtistStartsWithOrGreater
+                    null,    //nameStartsWith
+                    null    //nameLessThan
+            );
+
+            if (listItems.getItems().isEmpty()) {
+                System.out.println("Empty Studios");
+            }
+
+            if (!listItems.getItems().isEmpty()) {
+
+                return listItems.getItems();
+            }
+
+        } catch (ApiException e) {
+            System.out.println("Error fetching studios: " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    public  List<BaseItemDto> getListPeopleByID(String peopleID, Integer startIndex, Integer limit, boolean recursive) {
+
+        PersonsServiceApi personsServiceApi = new PersonsServiceApi(Configuration.getDefaultApiClient());
+        // ... (Không thay đổi gì ở hàm này) ...
+        ItemsServiceApi itemsServiceApi = new ItemsServiceApi(Configuration.getDefaultApiClient());
+
+        try{
+            QueryResultBaseItemDto listPeople = itemsServiceApi.getItems(
+                    null,    //artistType
+                    null,    //maxOfficialRating
+                    null,    //hasThemeSong
+                    null,    //hasThemeVideo
+                    null,    //hasSubtitles
+                    null,    //hasSpecialFeature
+                    null,    //hasTrailer
+                    null,    //isSpecialSeason
+                    null,    //adjacentTo
+                    null,    //startItemId
+                    null,    //minIndexNumber
+                    null,    //minStartDate
+                    null,    //maxStartDate
+                    null,    //minEndDate
+                    null,    //maxEndDate
+                    null,    //minPlayers
+                    null,    //maxPlayers
+                    null,    //parentIndexNumber
+                    null,    //hasParentalRating
+                    null,    //isHD
+                    null,    //isUnaired
+                    null,    //minCommunityRating
+                    null,    //minCriticRating
+                    null,    //airedDuringSeason
+                    null,    //minPremiereDate
+                    null,    //minDateLastSaved
+                    null,    //minDateLastSavedForUser
+                    null,    //maxPremiereDate
+                    null,    //hasOverview
+                    null,    //hasImdbId
+                    null,    //hasTmdbId
+                    null,    //hasTvdbId
+                    null,    //excludeItemIds
+                    startIndex,    //startIndex
+                    limit,    //limit
+                    recursive,    //recursive
+                    null,    //searchTerm
+                    "Ascending",    //sortOrder
+                    null,    //parentId
+                    null,    //fields
+                    null,    //excludeItemTypes
+                    "Movie,Series,Video,Game",    //includeItemTypes
+                    null,    //anyProviderIdEquals
+                    null,    //filters
+                    null,    //isFavorite
+                    null,    //isMovie
+                    null,    //isSeries
+                    null,    //isFolder
+                    null,    //isNews
+                    null,    //isKids
+                    null,    //isSports
+                    null,    //isNew
+                    null,    //isPremiere
+                    null,    //isNewOrPremiere
+                    null,    //isRepeat
+                    null,    //projectToMedia
+                    null,    //mediaTypes
+                    null,    //imageTypes
+                    null,    //sortBy
+                    null,    //isPlayed
+                    null,    //genres
+                    null,    //officialRatings
+                    null,    //tags
+                    null,    //excludeTags
+                    null,    //years
+                    null,    //enableImages
+                    null,    //enableUserData
+                    null,    //imageTypeLimit
+                    null,    //enableImageTypes
+                    null,    //person
+                    peopleID,    //personIds
+                    null,    //personTypes
+                    null,    //studios
+                    null,    //studioIds
+                    null,    //artists
+                    null,    //artistIds
+                    null,    //albums
+                    null,    //ids
+                    null,    //videoTypes
+                    null,    //containers
+                    null,    //audioCodecs
+                    null,    //audioLayouts
+                    null,    //videoCodecs
+                    null,    //extendedVideoTypes
+                    null,    //subtitleCodecs
+                    null,    //path
+                    null,    //userId
+                    null,    //minOfficialRating
+                    null,    //isLocked
+                    null,    //isPlaceHolder
+                    null,    //hasOfficialRating
+                    null,    //groupItemsIntoCollections
+                    null,    //is3D
+                    null,    //seriesStatus
+                    null,    //nameStartsWithOrGreater
+                    null,    //artistStartsWithOrGreater
+                    null,    //albumArtistStartsWithOrGreater
+                    null,    //nameStartsWith
+                    null    //nameLessThan
+            );
+
+            if (listPeople.getItems().isEmpty()) {
+                System.out.println("Empty People");
+            }
+
+            if (!listPeople.getItems().isEmpty()) {
+
+                return listPeople.getItems();
+            }
+        } catch (ApiException e) {
+            System.out.println("Error fetching people: " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    public List<BaseItemDto> getListItemByGenreId(String nameGenres, Integer startIndex, Integer limit, boolean recursive) {
+
+        GenresServiceApi genresServiceApi = new GenresServiceApi(Configuration.getDefaultApiClient());
+        // ... (Không thay đổi gì ở hàm này) ...
+        ItemsServiceApi itemsServiceApi = new ItemsServiceApi(Configuration.getDefaultApiClient());
+
+        try {
+            QueryResultBaseItemDto listItems = itemsServiceApi.getItems(
+                    null,    //artistType
+                    null,    //maxOfficialRating
+                    null,    //hasThemeSong
+                    null,    //hasThemeVideo
+                    null,    //hasSubtitles
+                    null,    //hasSpecialFeature
+                    null,    //hasTrailer
+                    null,    //isSpecialSeason
+                    null,    //adjacentTo
+                    null,    //startItemId
+                    null,    //minIndexNumber
+                    null,    //minStartDate
+                    null,    //maxStartDate
+                    null,    //minEndDate
+                    null,    //maxEndDate
+                    null,    //minPlayers
+                    null,    //maxPlayers
+                    null,    //parentIndexNumber
+                    null,    //hasParentalRating
+                    null,    //isHD
+                    null,    //isUnaired
+                    null,    //minCommunityRating
+                    null,    //minCriticRating
+                    null,    //airedDuringSeason
+                    null,    //minPremiereDate
+                    null,    //minDateLastSaved
+                    null,    //minDateLastSavedForUser
+                    null,    //maxPremiereDate
+                    null,    //hasOverview
+                    null,    //hasImdbId
+                    null,    //hasTmdbId
+                    null,    //hasTvdbId
+                    null,    //excludeItemIds
+                    startIndex,    //startIndex
+                    limit,    //limit
+                    recursive,    //recursive
+                    null,    //searchTerm
+                    null,    //sortOrder
+                    null,    //parentId
+                    null,    //fields
+                    null,    //excludeItemTypes
+                    "Movie, Series, Video, Game, MusicAlbum",    //includeItemTypes
+                    null,    //anyProviderIdEquals
+                    null,    //filters
+                    null,    //isFavorite
+                    null,    //isMovie
+                    null,    //isSeries
+                    null,    //isFolder
+                    null,    //isNews
+                    null,    //isKids
+                    null,    //isSports
+                    null,    //isNew
+                    null,    //isPremiere
+                    null,    //isNewOrPremiere
+                    null,    //isRepeat
+                    null,    //projectToMedia
+                    null,    //mediaTypes
+                    null,    //imageTypes
+                    null,    //sortBy
+                    null,    //isPlayed
+                    nameGenres,    //genres
+                    null,    //officialRatings
+                    null,    //tags
+                    null,    //excludeTags
+                    null,    //years
+                    null,    //enableImages
+                    null,    //enableUserData
+                    null,    //imageTypeLimit
+                    null,    //enableImageTypes
+                    null,    //person
+                    null,    //personIds
+                    null,    //personTypes
+                    null,    //studios
+                    null,    //studioIds
+                    null,    //artists
+                    null,    //artistIds
+                    null,    //albums
+                    null,    //ids
+                    null,    //videoTypes
+                    null,    //containers
+                    null,    //audioCodecs
+                    null,    //audioLayouts
+                    null,    //videoCodecs
+                    null,    //extendedVideoTypes
+                    null,    //subtitleCodecs
+                    null,    //path
+                    null,    //userId
+                    null,    //minOfficialRating
+                    null,    //isLocked
+                    null,    //isPlaceHolder
+                    null,    //hasOfficialRating
+                    null,    //groupItemsIntoCollections
+                    null,    //is3D
+                    null,    //seriesStatus
+                    null,    //nameStartsWithOrGreater
+                    null,    //artistStartsWithOrGreater
+                    null,    //albumArtistStartsWithOrGreater
+                    null,    //nameStartsWith
+                    null    //nameLessThan
+            );
+            if (listItems.getItems().isEmpty()) {
+                System.out.println("Empty Genres");
+            }
+
+            if (!listItems.getItems().isEmpty()) {
+
+                return listItems.getItems();
+            }
+        } catch (ApiException e) {
+            System.out.println("Error fetching Genres: " + e.getMessage());
+        }
+        return null;
+    }
+
 }

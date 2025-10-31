@@ -37,6 +37,10 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+// (*** THÊM IMPORT MỚI ***)
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+// (*** KẾT THÚC IMPORT MỚI ***)
 
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
@@ -50,6 +54,7 @@ import javafx.scene.layout.StackPane;
  * Implement NativeKeyListener để bắt hotkey hệ thống.
  * (CẬP NHẬT) Thêm nút Home.
  * (CẬP NHẬT) Thêm listener cho sự kiện click chip.
+ * (CẬP NHẬT) Thêm listener cho chuột "Back" VÀ "Forward".
  */
 public class MainController implements NativeKeyListener {
 
@@ -425,6 +430,8 @@ public class MainController implements NativeKeyListener {
                     scene.getStylesheets().addAll(rootPane.getScene().getStylesheets());
                 }
 
+                // (*** SỬA ĐỔI: Chuyển gọi hàm xuống đây ***)
+                registerMouseNavigation(scene);
                 registerHotkeysForScene(scene);
 
 
@@ -493,7 +500,37 @@ public class MainController implements NativeKeyListener {
      */
     public void registerGlobalHotkeys(Scene scene) {
         if (scene == null) return;
+
+        // (*** SỬA ĐỔI: Chuyển gọi hàm xuống đây ***)
+        registerMouseNavigation(scene);
         registerHotkeysForScene(scene);
+    }
+
+    // (*** SỬA ĐỔI HÀM NÀY ***)
+    /**
+     * (MỚI) Đăng ký trình lắng nghe nút Back/Forward của chuột trên Scene.
+     */
+    private void registerMouseNavigation(Scene scene) {
+        if (scene == null) return;
+
+        scene.setOnMouseClicked((MouseEvent event) -> {
+            if (event.getButton() == MouseButton.BACK) {
+                event.consume();
+                if (itemGridViewModel != null && itemGridViewModel.canGoBackProperty().get()) {
+                    // System.out.println("Mouse Back Clicked: Navigating back...");
+                    itemGridViewModel.navigateBack(embyService);
+                }
+            }
+
+            // (*** THÊM MỚI LOGIC FORWARD ***)
+            if (event.getButton() == MouseButton.FORWARD) {
+                event.consume();
+                if (itemGridViewModel != null && itemGridViewModel.canGoForwardProperty().get()) {
+                    // System.out.println("Mouse Forward Clicked: Navigating forward...");
+                    itemGridViewModel.navigateForward(embyService);
+                }
+            }
+        });
     }
 
     /**
@@ -565,6 +602,42 @@ public class MainController implements NativeKeyListener {
                 }
             }
         });
+
+        // (*** THÊM CÁC PHÍM TẮT MỚI CHO BACK/FORWARD ***)
+
+        // --- BACKWARD ---
+        // Dành cho macOS: Cmd + [
+        final KeyCombination backShortcutMac = new KeyCodeCombination(KeyCode.OPEN_BRACKET, KeyCombination.SHORTCUT_DOWN);
+        scene.getAccelerators().put(backShortcutMac, () -> {
+            if (itemGridViewModel != null && itemGridViewModel.canGoBackProperty().get()) {
+                itemGridViewModel.navigateBack(embyService);
+            }
+        });
+        // Dành cho Windows/Linux: Alt + Left
+        final KeyCombination backShortcutWin = new KeyCodeCombination(KeyCode.LEFT, KeyCombination.ALT_DOWN);
+        scene.getAccelerators().put(backShortcutWin, () -> {
+            if (itemGridViewModel != null && itemGridViewModel.canGoBackProperty().get()) {
+                itemGridViewModel.navigateBack(embyService);
+            }
+        });
+
+        // --- FORWARD ---
+        // Dành cho macOS: Cmd + ]
+        final KeyCombination forwardShortcutMac = new KeyCodeCombination(KeyCode.CLOSE_BRACKET, KeyCombination.SHORTCUT_DOWN);
+        scene.getAccelerators().put(forwardShortcutMac, () -> {
+            if (itemGridViewModel != null && itemGridViewModel.canGoForwardProperty().get()) {
+                itemGridViewModel.navigateForward(embyService);
+            }
+        });
+        // Dành cho Windows/Linux: Alt + Right
+        final KeyCombination forwardShortcutWin = new KeyCodeCombination(KeyCode.RIGHT, KeyCombination.ALT_DOWN);
+        scene.getAccelerators().put(forwardShortcutWin, () -> {
+            if (itemGridViewModel != null && itemGridViewModel.canGoForwardProperty().get()) {
+                itemGridViewModel.navigateForward(embyService);
+            }
+        });
+        // (*** KẾT THÚC THÊM MỚI ***)
+
 
         // System.out.println("Hotkeys registered for scene: " + scene.hashCode());
     }

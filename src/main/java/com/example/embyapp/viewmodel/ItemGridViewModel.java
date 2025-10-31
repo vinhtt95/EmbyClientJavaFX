@@ -9,6 +9,8 @@ import com.example.embyapp.service.ItemRepository;
 import com.example.embyapp.service.EmbyService;
 import com.example.embyapp.viewmodel.detail.TagModel;
 import java.util.Collections;
+import java.util.Optional;
+import java.util.Stack;
 // (*** KẾT THÚC THÊM IMPORT ***)
 import javafx.application.Platform;
 import javafx.beans.property.*;
@@ -22,13 +24,8 @@ import java.lang.Math; // Explicit import for Math.ceil
 
 /**
  * ViewModel cho ItemGridView (Cột giữa).
- * Chuyển sang logic PHÂN TRANG THAY THẾ (Page Replacement) khi cuộn.
- * Thêm logic cho tìm kiếm và phân trang kết quả tìm kiếm.
- * Thêm logic cho tùy chọn sắp xếp.
- * Thêm logic chọn item trước/sau.
- * Thêm logic cho hotkey hệ thống (playAfterSelect).
- * (CẬP NHẬT) Thêm sort "DateCreated" và logic "Home" (parentId = null).
- * (CẬP NHẬT) Thêm logic tải item bằng cách click chip (không phân trang, không auto-select).
+ * ...
+ * (CẬP NHẬT) Thêm logic điều hướng "Back" (backward) và "Forward".
  */
 public class ItemGridViewModel {
 
@@ -67,6 +64,20 @@ public class ItemGridViewModel {
 
     private final BooleanProperty playAfterSelect = new SimpleBooleanProperty(false);
 
+    // (*** THÊM CÁC TRƯỜNG MỚI CHO NAVIGATION ***)
+    private final Stack<GridNavigationState> navigationHistory = new Stack<>();
+    private final Stack<GridNavigationState> forwardHistory = new Stack<>(); // <-- MỚI
+    private final ReadOnlyBooleanWrapper canGoBack = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyBooleanWrapper canGoForward = new ReadOnlyBooleanWrapper(false); // <-- MỚI
+    private boolean isRestoringState = false; // Cờ để ngăn push lịch sử khi đang back/forward
+
+    // (*** THÊM CÁC TRƯỜNG LƯU TRẠNG THÁI HIỆN TẠI ***)
+    private GridNavigationState.StateType currentStateType = GridNavigationState.StateType.FOLDER;
+    private TagModel currentChipModel = null;
+    private String currentChipType = null;
+    // (*** KẾT THÚC THÊM MỚI ***)
+
+
     public ItemGridViewModel(ItemRepository itemRepository) {
         this.itemRepository = itemRepository;
         this.statusMessage.set(I18nManager.getInstance().getString("itemGridView", "statusDefault"));
@@ -77,8 +88,12 @@ public class ItemGridViewModel {
         NONE, SCROLL_TO_TOP, SCROLL_TO_BOTTOM
     }
 
-    private void loadPage(int pageIndex, String parentId) {
+    private void loadPageInternal(int pageIndex, String parentId, String itemIdToSelect) {
         if (loading.get() || pageIndex < 0 || (totalPages > 0 && pageIndex >= totalPages)) {
+            // Nếu đang restore mà trang không hợp lệ, thử về trang 0
+            if (isRestoringState && pageIndex != 0) {
+                loadPageInternal(0, parentId, itemIdToSelect);
+            }
             return;
         }
 
@@ -111,7 +126,17 @@ public class ItemGridViewModel {
                 List<BaseItemDto> pageItems = result.getItems();
 
                 BaseItemDto itemToSelect = null;
-                if (!pageItems.isEmpty()) {
+                if (itemIdToSelect != null) {
+                    // 1. Thử tìm item từ state
+                    Optional<BaseItemDto> itemToReselect = pageItems.stream()
+                            .filter(i -> i.getId() != null && i.getId().equals(itemIdToSelect))
+                            .findFirst();
+                    if (itemToReselect.isPresent()) {
+                        itemToSelect = itemToReselect.get();
+                    }
+                }
+
+                if (itemToSelect == null && !pageItems.isEmpty()) {
                     if (pageIndex == 0) {
                         itemToSelect = pageItems.get(0);
                     } else if (pageIndex < currentPageIndex) {
@@ -120,6 +145,7 @@ public class ItemGridViewModel {
                         itemToSelect = pageItems.get(0);
                     }
                 }
+
                 final BaseItemDto finalItemToSelect = itemToSelect;
 
                 Platform.runLater(() -> {
@@ -128,6 +154,14 @@ public class ItemGridViewModel {
                     totalPages = calculatedTotalPages;
                     currentPageIndex = pageIndex;
                     isSearching = false;
+
+                    // (*** SỬA ĐỔI: Cập nhật trạng thái ***)
+                    if (!isRestoringState) {
+                        currentStateType = GridNavigationState.StateType.FOLDER;
+                        currentChipModel = null;
+                        currentChipType = null;
+                    }
+
 
                     hasNextPage.set(currentPageIndex < totalPages - 1);
                     hasPreviousPage.set(currentPageIndex > 0);
@@ -177,11 +211,17 @@ public class ItemGridViewModel {
         }).start();
     }
 
-    /**
-     * Phương thức tải trang cho kết quả tìm kiếm.
-     */
-    private void loadSearchPage(int pageIndex, String keywords) {
+    private void loadPage(int pageIndex, String parentId) {
+        pushCurrentStateToHistory();
+        loadPageInternal(pageIndex, parentId, null);
+    }
+
+
+    private void loadSearchPageInternal(int pageIndex, String keywords, String itemIdToSelect) {
         if (loading.get() || pageIndex < 0 || (totalPages > 0 && pageIndex >= totalPages)) {
+            if (isRestoringState && pageIndex != 0) {
+                loadSearchPageInternal(0, keywords, itemIdToSelect);
+            }
             return;
         }
 
@@ -207,7 +247,16 @@ public class ItemGridViewModel {
                 List<BaseItemDto> pageItems = result.getItems();
 
                 BaseItemDto itemToSelect = null;
-                if (!pageItems.isEmpty()) {
+                if (itemIdToSelect != null) {
+                    Optional<BaseItemDto> itemToReselect = pageItems.stream()
+                            .filter(i -> i.getId() != null && i.getId().equals(itemIdToSelect))
+                            .findFirst();
+                    if (itemToReselect.isPresent()) {
+                        itemToSelect = itemToReselect.get();
+                    }
+                }
+
+                if (itemToSelect == null && !pageItems.isEmpty()) {
                     if (pageIndex == 0) {
                         itemToSelect = pageItems.get(0);
                     } else if (pageIndex < currentPageIndex) {
@@ -225,6 +274,13 @@ public class ItemGridViewModel {
                     totalPages = calculatedTotalPages;
                     currentPageIndex = pageIndex;
                     isSearching = true;
+
+                    // (*** SỬA ĐỔI: Cập nhật trạng thái ***)
+                    if (!isRestoringState) {
+                        currentStateType = GridNavigationState.StateType.SEARCH;
+                        currentChipModel = null;
+                        currentChipType = null;
+                    }
 
                     hasNextPage.set(currentPageIndex < totalPages - 1);
                     hasPreviousPage.set(currentPageIndex > 0);
@@ -252,14 +308,14 @@ public class ItemGridViewModel {
             } catch (ApiException e) {
                 System.err.println("API Error loading search page: " + e.getMessage());
                 Platform.runLater(() -> {
-                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingSearch", e.getMessage()));
+                    statusMessage.set(I18nManager.getInstance().getString("itemGridView", "errorLoadingSearch", e.getMessage()));
                     showStatusMessage.set(true);
                     loading.set(false);
                 });
             } catch (Exception e) {
                 System.err.println("Generic Error loading search page: " + e.getMessage());
                 Platform.runLater(() -> {
-                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingSearchGeneric"));
+                    statusMessage.set(I18nManager.getInstance().getString("itemGridView", "errorLoadingSearchGeneric"));
                     showStatusMessage.set(true);
                     loading.set(false);
                 });
@@ -267,17 +323,12 @@ public class ItemGridViewModel {
         }).start();
     }
 
-    // (*** THÊM HÀM MỚI HOÀN TOÀN DƯỚI ĐÂY ***)
+    private void loadSearchPage(int pageIndex, String keywords) {
+        pushCurrentStateToHistory();
+        loadSearchPageInternal(pageIndex, keywords, null);
+    }
 
-    /**
-     * (MỚI) Tải items dựa trên API call từ chip (Tag, Studio, People, Genre).
-     * Phương thức này KHÔNG phân trang và KHÔNG tự động chọn item đầu tiên.
-     *
-     * @param model Model của chip đã click
-     * @param type Loại chip ("TAG", "STUDIO", "PEOPLE", "GENRE")
-     * @param embyService Instance EmbyService (vì ViewModel này không giữ)
-     */
-    public void loadItemsByTagChip(TagModel model, String type, EmbyService embyService) {
+    private void loadItemsByTagChipInternal(TagModel model, String type, EmbyService embyService, String itemIdToSelect) {
         if (loading.get()) return;
 
         loading.set(true);
@@ -287,7 +338,6 @@ public class ItemGridViewModel {
         I18nManager i18n = I18nManager.getInstance();
 
         Platform.runLater(() -> {
-            // Tạm thời dùng status search, hoặc có thể tùy chỉnh
             statusMessage.set(i18n.getString("itemGridView", "statusSearchPageLoading", 1, "..."));
             showStatusMessage.set(false); // Ẩn status, hiện loading
             scrollAction.set(ScrollAction.SCROLL_TO_TOP); // Cuộn lên đầu
@@ -323,7 +373,7 @@ public class ItemGridViewModel {
                 System.err.println("API Error loading by tag chip (" + type + "): " + e.getMessage());
                 final String errorMsg = e.getMessage();
                 Platform.runLater(() -> {
-                    statusMessage.set(i18n.getString("itemGridView", "errorLoadingSearch", errorMsg));
+                    statusMessage.set(I18nManager.getInstance().getString("itemGridView", "errorLoadingSearch", errorMsg));
                     showStatusMessage.set(true);
                     loading.set(false);
                 });
@@ -340,31 +390,42 @@ public class ItemGridViewModel {
                 hasNextPage.set(false);
                 hasPreviousPage.set(false);
 
+                // (*** SỬA ĐỔI: Cập nhật trạng thái ***)
+                if (!isRestoringState) {
+                    currentStateType = GridNavigationState.StateType.CHIP;
+                    currentChipModel = model;
+                    currentChipType = type;
+                }
+
                 if (finalItems.isEmpty()) {
                     statusMessage.set(i18n.getString("itemGridView", "statusSearchEmpty", currentSearchKeywords));
                     showStatusMessage.set(true);
                 } else {
-                    // Hiển thị kết quả (1/1 trang)
                     statusMessage.set(i18n.getString("itemGridView", "statusSearchResult", 1, 1, totalCount));
                     showStatusMessage.set(false); // Ẩn status, hiện grid
                 }
 
-                // *** QUAN TRỌNG: KHÔNG GỌI selectedItem.set(...) ***
-                // Điều này sẽ giữ nguyên item đang được chọn ở cột detail.
+                if (itemIdToSelect != null) {
+                    Optional<BaseItemDto> itemToReselect = finalItems.stream()
+                            .filter(i -> i.getId() != null && i.getId().equals(itemIdToSelect))
+                            .findFirst();
+                    // Vẫn giữ logic KHÔNG auto-select khi restore state chip
+                }
 
                 loading.set(false);
             });
         }).start();
     }
 
+    public void loadItemsByTagChip(TagModel model, String type, EmbyService embyService) {
+        pushCurrentStateToHistory();
+        loadItemsByTagChipInternal(model, type, embyService, null);
+    }
 
-    /**
-     * Tải items ban đầu (trang 1).
-     * @param parentId ID của thư mục cha (hoặc null để tải "Home").
-     */
+
     public void loadItemsByParentId(String parentId) {
         if (parentId == null && currentParentId == null && !items.isEmpty() && !isSearching) {
-            // Đang ở "Home" và nhấn "Home" lần nữa -> không làm gì
+            return;
         }
 
         if (isSearching) {
@@ -375,9 +436,6 @@ public class ItemGridViewModel {
         loadPage(0, parentId);
     }
 
-    /**
-     * Bắt đầu tìm kiếm items theo từ khóa.
-     */
     public void searchItemsByKeywords(String keywords) {
         if (keywords == null || keywords.trim().isEmpty()) {
             loadItemsByParentId(null);
@@ -386,66 +444,55 @@ public class ItemGridViewModel {
         loadSearchPage(0, keywords);
     }
 
-    /**
-     * Tải trang tiếp theo và yêu cầu cuộn lên đầu.
-     */
     public void loadNextPage() {
         if (!hasNextPage.get() || loading.get()) return;
 
         int nextPage = currentPageIndex + 1;
 
-        // *** SỬA LỖI BIÊN DỊCH: Định nghĩa đầy đủ lambda ***
         ChangeListener<Boolean> cleanupListener = new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> obs, Boolean oldVal, Boolean newVal) {
                 if (!newVal) { // Nếu load xong
                     Platform.runLater(() -> scrollAction.set(ScrollAction.SCROLL_TO_TOP));
-                    loading.removeListener(this); // Cleanup
+                    loading.removeListener(this); // Sửa lỗi biên dịch
                 }
             }
         };
 
         if (isSearching) {
-            loadSearchPage(nextPage, currentSearchKeywords);
+            loadSearchPageInternal(nextPage, currentSearchKeywords, null);
         } else {
-            loadPage(nextPage, currentParentId);
+            loadPageInternal(nextPage, currentParentId, null);
         }
 
         loading.addListener(cleanupListener);
     }
 
-    /**
-     * Tải trang trước đó và yêu cầu cuộn xuống cuối.
-     */
     public void loadPreviousPage() {
         if (!hasPreviousPage.get() || loading.get()) return;
 
         int previousPage = currentPageIndex - 1;
 
-        // *** SỬA LỖI BIÊN DỊCH: Định nghĩa đầy đủ lambda ***
         ChangeListener<Boolean> cleanupListener = new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> obs, Boolean oldVal, Boolean newVal) {
                 if (!newVal) { // Nếu load xong
                     Platform.runLater(() -> scrollAction.set(ScrollAction.SCROLL_TO_BOTTOM));
-                    loading.removeListener(this); // Cleanup
+                    loading.removeListener(this); // Sửa lỗi biên dịch
                 }
             }
         };
 
         if (isSearching) {
-            loadSearchPage(previousPage, currentSearchKeywords);
+            loadSearchPageInternal(previousPage, currentSearchKeywords, null);
         } else {
-            loadPage(previousPage, currentParentId);
+            loadPageInternal(previousPage, currentParentId, null);
         }
 
         loading.addListener(cleanupListener);
     }
 
 
-    /**
-     * Chuyển đổi tiêu chí sắp xếp và tải lại trang 0.
-     */
     public void toggleSortBy() {
         if (isSearching || loading.get()) return;
 
@@ -461,9 +508,6 @@ public class ItemGridViewModel {
         loadPage(0, currentParentId);
     }
 
-    /**
-     * Chuyển đổi thứ tự sắp xếp (Tăng dần <-> Giảm dần) và tải lại trang 0.
-     */
     public void toggleSortOrder() {
         if (isSearching || loading.get()) return;
 
@@ -476,10 +520,6 @@ public class ItemGridViewModel {
         loadPage(0, currentParentId);
     }
 
-    /**
-     * Chọn item tiếp theo trong danh sách hiện tại.
-     * Nếu là item cuối cùng của trang, tự động chuyển trang tiếp theo.
-     */
     public void selectNextItem() {
         if (items.isEmpty() || loading.get()) return;
         BaseItemDto current = selectedItem.get();
@@ -492,10 +532,6 @@ public class ItemGridViewModel {
         }
     }
 
-    /**
-     * Chọn item liền trước trong danh sách hiện tại.
-     * Nếu là item đầu tiên của trang, tự động chuyển về trang trước đó.
-     */
     public void selectPreviousItem() {
         if (items.isEmpty() || loading.get()) return;
         BaseItemDto current = selectedItem.get();
@@ -508,34 +544,161 @@ public class ItemGridViewModel {
         }
     }
 
-    /**
-     * Chọn item tiếp theo và đặt cờ để phát tự động.
-     */
     public void selectAndPlayNextItem() {
         playAfterSelect.set(true);
         selectNextItem();
     }
 
-    /**
-     * Chọn item trước đó và đặt cờ để phát tự động.
-     */
     public void selectAndPlayPreviousItem() {
         playAfterSelect.set(true);
         selectPreviousItem();
     }
 
-    /**
-     * Kiểm tra cờ phát tự động.
-     */
     public boolean isPlayAfterSelect() {
         return playAfterSelect.get();
     }
 
-    /**
-     * Xóa cờ phát tự động.
-     */
     public void clearPlayAfterSelect() {
         playAfterSelect.set(false);
+    }
+
+    // (*** THÊM VÀ SỬA ĐỔI CÁC HÀM NAVIGATION DƯỚI ĐÂY ***)
+
+    /**
+     * (MỚI) Helper để chụp lại trạng thái hiện tại.
+     */
+    private GridNavigationState createCurrentState() {
+        String selectedId = getSelectedItemId();
+        switch (currentStateType) {
+            case SEARCH:
+                return new GridNavigationState(
+                        GridNavigationState.StateType.SEARCH,
+                        currentSearchKeywords,
+                        currentSortBy.get(),
+                        currentSortOrder.get(),
+                        currentPageIndex,
+                        selectedId
+                );
+            case CHIP:
+                return new GridNavigationState(
+                        GridNavigationState.StateType.CHIP,
+                        currentChipModel,
+                        currentChipType,
+                        currentSortBy.get(),
+                        currentSortOrder.get(),
+                        currentPageIndex,
+                        selectedId
+                );
+            case FOLDER:
+            default:
+                return new GridNavigationState(
+                        GridNavigationState.StateType.FOLDER,
+                        currentParentId,
+                        currentSortBy.get(),
+                        currentSortOrder.get(),
+                        currentPageIndex,
+                        selectedId
+                );
+        }
+    }
+
+    private String getSelectedItemId() {
+        return (selectedItem.get() != null) ? selectedItem.get().getId() : null;
+    }
+
+    /**
+     * (SỬA ĐỔI) Đẩy trạng thái hiện tại vào stack, và XÓA stack forward.
+     */
+    private void pushCurrentStateToHistory() {
+        if (isRestoringState) return; // Không push nếu đang khôi phục
+
+        GridNavigationState currentState = createCurrentState();
+
+        // Chỉ push nếu đây là lần đầu hoặc state mới khác state trên đỉnh
+        if (navigationHistory.isEmpty() || !navigationHistory.peek().equals(currentState)) {
+            navigationHistory.push(currentState);
+            canGoBack.set(true);
+
+            // Một hành động mới sẽ xóa lịch sử "forward"
+            forwardHistory.clear();
+            canGoForward.set(false);
+        }
+    }
+
+    /**
+     * (MỚI) Listener dùng chung để tắt cờ isRestoringState khi load xong.
+     */
+    private ChangeListener<Boolean> createRestoreStateListener() {
+        return new ChangeListener<>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> obs, Boolean oldV, Boolean newV) {
+                if (!newV) { // Khi loading chuyển từ true -> false
+                    isRestoringState = false;
+                    loading.removeListener(this); // Tự hủy listener
+                }
+            }
+        };
+    }
+
+    /**
+     * (MỚI) Helper để khôi phục trạng thái
+     */
+    private void restoreState(GridNavigationState state, EmbyService embyService) {
+        isRestoringState = true; // Đặt cờ
+        loading.addListener(createRestoreStateListener());
+
+        // Khôi phục các giá trị
+        currentSortBy.set(state.getSortBy());
+        currentSortOrder.set(state.getSortOrder());
+
+        // Gọi hàm load internal tương ứng
+        switch (state.getType()) {
+            case FOLDER:
+                loadPageInternal(state.getPageIndex(), state.getPrimaryParam(), state.getSelectedItemId());
+                break;
+            case SEARCH:
+                loadSearchPageInternal(state.getPageIndex(), state.getPrimaryParam(), state.getSelectedItemId());
+                break;
+            case CHIP:
+                loadItemsByTagChipInternal(state.getChipModel(), state.getChipType(), embyService, state.getSelectedItemId());
+                break;
+        }
+    }
+
+    /**
+     * (SỬA ĐỔI) Hàm public được gọi từ MainController để quay lại.
+     */
+    public void navigateBack(EmbyService embyService) {
+        if (navigationHistory.isEmpty()) return;
+
+        // 1. Đẩy trạng thái hiện tại vào forward stack
+        forwardHistory.push(createCurrentState());
+        canGoForward.set(true);
+
+        // 2. Lấy trạng thái cũ từ back stack
+        GridNavigationState stateToLoad = navigationHistory.pop();
+        canGoBack.set(!navigationHistory.isEmpty());
+
+        // 3. Khôi phục trạng thái
+        restoreState(stateToLoad, embyService);
+    }
+
+    /**
+     * (MỚI) Hàm public được gọi từ MainController để tiến tới.
+     */
+    public void navigateForward(EmbyService embyService) {
+        if (forwardHistory.isEmpty()) return;
+
+        // 1. Đẩy trạng thái hiện tại vào back stack
+        navigationHistory.push(createCurrentState());
+        canGoBack.set(true);
+
+        // 2. Lấy trạng thái từ forward stack
+        GridNavigationState stateToLoad = forwardHistory.pop();
+        canGoForward.set(!forwardHistory.isEmpty());
+
+        // 3. Khôi phục trạng thái
+        restoreState(stateToLoad, embyService);
     }
 
     public ReadOnlyBooleanProperty loadingProperty() {
@@ -590,5 +753,14 @@ public class ItemGridViewModel {
 
     public boolean isSearching() {
         return isSearching;
+    }
+
+    // (*** THÊM GETTER MỚI ***)
+    public ReadOnlyBooleanProperty canGoBackProperty() {
+        return canGoBack.getReadOnlyProperty();
+    }
+
+    public ReadOnlyBooleanProperty canGoForwardProperty() {
+        return canGoForward.getReadOnlyProperty();
     }
 }

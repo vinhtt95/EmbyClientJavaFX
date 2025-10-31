@@ -364,8 +364,8 @@ public class EmbyService {
 
     public List<BaseItemDto> getListItemByTagId(String tagsName, Integer startIndex, Integer limit, boolean recursive) {
         // ... (Không thay đổi gì ở hàm này) ...
-        ItemsServiceApi itemsServiceApi = new ItemsServiceApi(Configuration.getDefaultApiClient());
-        TagServiceApi tagServiceApi = new TagServiceApi(Configuration.getDefaultApiClient());
+        ItemsServiceApi itemsServiceApi = getItemsServiceApi();
+        TagServiceApi tagServiceApi = new TagServiceApi(apiClient);
 
         try {
             QueryResultBaseItemDto listItems = itemsServiceApi.getItems(
@@ -487,9 +487,9 @@ public class EmbyService {
 
     public List<BaseItemDto> getListItemByStudioId(String studioId, Integer startIndex, Integer limit, boolean recursive) {
 
-        StudiosServiceApi studiosServiceApi = new StudiosServiceApi(Configuration.getDefaultApiClient());
+        StudiosServiceApi studiosServiceApi = new StudiosServiceApi(apiClient);
         // ... (Không thay đổi gì ở hàm này) ...
-        ItemsServiceApi itemsServiceApi = new ItemsServiceApi(Configuration.getDefaultApiClient());
+        ItemsServiceApi itemsServiceApi = new ItemsServiceApi(apiClient);
 
         try {
             QueryResultBaseItemDto listItems = itemsServiceApi.getItems(
@@ -612,9 +612,9 @@ public class EmbyService {
 
     public  List<BaseItemDto> getListPeopleByID(String peopleID, Integer startIndex, Integer limit, boolean recursive) {
 
-        PersonsServiceApi personsServiceApi = new PersonsServiceApi(Configuration.getDefaultApiClient());
+        PersonsServiceApi personsServiceApi = new PersonsServiceApi(apiClient);
         // ... (Không thay đổi gì ở hàm này) ...
-        ItemsServiceApi itemsServiceApi = new ItemsServiceApi(Configuration.getDefaultApiClient());
+        ItemsServiceApi itemsServiceApi = new ItemsServiceApi(apiClient);
 
         try{
             QueryResultBaseItemDto listPeople = itemsServiceApi.getItems(
@@ -736,9 +736,9 @@ public class EmbyService {
 
     public List<BaseItemDto> getListItemByGenreId(String nameGenres, Integer startIndex, Integer limit, boolean recursive) {
 
-        GenresServiceApi genresServiceApi = new GenresServiceApi(Configuration.getDefaultApiClient());
+        GenresServiceApi genresServiceApi = new GenresServiceApi(apiClient);
         // ... (Không thay đổi gì ở hàm này) ...
-        ItemsServiceApi itemsServiceApi = new ItemsServiceApi(Configuration.getDefaultApiClient());
+        ItemsServiceApi itemsServiceApi = new ItemsServiceApi(apiClient);
 
         try {
             QueryResultBaseItemDto listItems = itemsServiceApi.getItems(

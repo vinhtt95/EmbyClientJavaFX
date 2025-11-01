@@ -291,8 +291,10 @@ public class ItemRepository {
      * @param code OriginalTitle (ví dụ: "ABP-123")
      * @return OffsetDateTime hoặc null.
      */
-    public OffsetDateTime fetchReleaseDateByCode(String code) {
+    // (*** SỬA ĐỔI HÀM NÀY ***)
+    public RequestEmby.FetchDateResult fetchReleaseDateByCode(String code) {
         // requestEmby đã được khởi tạo trong constructor
         return requestEmby.getDateRelease(code);
     }
+    // (*** KẾT THÚC SỬA ĐỔI ***)
 }

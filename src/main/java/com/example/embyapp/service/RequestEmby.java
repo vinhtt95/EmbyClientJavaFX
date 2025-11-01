@@ -24,6 +24,25 @@ import org.json.JSONObject;
 
 public class RequestEmby {
 
+    // (*** THÊM LỚP STATIC INNER NÀY ***)
+    /**
+     * POJO để chứa kết quả trả về từ API lấy ngày phát hành.
+     */
+    public static class FetchDateResult {
+        private final OffsetDateTime releaseDate;
+        private final String actressName;
+        // (Có thể thêm actressId nếu API trả về trong tương lai)
+
+        public FetchDateResult(OffsetDateTime releaseDate, String actressName) {
+            this.releaseDate = releaseDate;
+            this.actressName = actressName;
+        }
+
+        public OffsetDateTime getReleaseDate() { return releaseDate; }
+        public String getActressName() { return actressName; }
+    }
+    // (*** KẾT THÚC THÊM ***)
+
 
     /**
      * Lấy danh sách các Item con theo parentID
@@ -173,7 +192,8 @@ public class RequestEmby {
         return Collections.emptyList();
     }
 
-    public OffsetDateTime getDateRelease(String code) {
+    // (*** SỬA ĐỔI HÀM NÀY ***)
+    public FetchDateResult getDateRelease(String code) {
         String apiUrl = "http://localhost:8081/movies/movie/date/?movieCode=" + code;
         HttpURLConnection connection = null;
         try {
@@ -193,24 +213,51 @@ public class RequestEmby {
                         response.append(line);
                     }
                     JSONObject jsonResponse = new JSONObject(response.toString());
-                    String dataValue = jsonResponse.optString("data", null);
-                    if (dataValue != null && !dataValue.equals("null")) {
-                        return OffsetDateTime.parse(dataValue);
+
+                    // (*** LOGIC PARSE MỚI ***)
+                    JSONObject dataObject = jsonResponse.optJSONObject("data");
+                    if (dataObject != null) {
+                        // Lấy từ object "data"
+                        String dateValue = dataObject.optString("releaseDate", null);
+                        String actressName = dataObject.optString("actressName", null);
+
+                        OffsetDateTime odt = null;
+                        if (dateValue != null && !dateValue.equals("null")) {
+                            try {
+                                odt = OffsetDateTime.parse(dateValue);
+                            } catch (Exception e) {
+                                System.err.println("Lỗi parse ngày: " + dateValue);
+                            }
+                        }
+                        return new FetchDateResult(odt, actressName); // Trả về object
+
                     } else {
-                        return null;
+                        // Fallback: Xử lý nếu "data" là chuỗi (như code cũ)
+                        String dataValue = jsonResponse.optString("data", null);
+                        OffsetDateTime odt = null;
+                        if (dataValue != null && !dataValue.equals("null")) {
+                            try {
+                                odt = OffsetDateTime.parse(dataValue);
+                            } catch (Exception e) {
+                                System.err.println("Lỗi parse ngày (fallback): " + dataValue);
+                            }
+                        }
+                        return new FetchDateResult(odt, null); // Trả về object chỉ có ngày
                     }
+                    // (*** KẾT THÚC LOGIC PARSE MỚI ***)
                 }
             } else {
-                return null;
+                return null; // Lỗi API (ví dụ 404)
             }
         } catch (Exception e) {
-            return null;
+            return null; // Lỗi kết nối hoặc lỗi parse JSON
         } finally {
             if (connection != null) {
                 connection.disconnect();
             }
         }
     }
+    // (*** KẾT THÚC SỬA ĐỔI HÀM NÀY ***)
 
 
     /**

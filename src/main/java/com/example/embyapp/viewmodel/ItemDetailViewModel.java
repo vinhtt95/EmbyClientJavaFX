@@ -440,23 +440,104 @@ public class ItemDetailViewModel {
     /**
      * Được gọi từ Controller, dùng OriginalTitle để lấy ngày phát hành.
      */
+    // (*** SỬA ĐỔI HÀM NÀY ***)
     public void fetchReleaseDate() {
         final String code = originalTitle.get();
+        final String userId = embyService.getCurrentUserId(); // (*** MỚI: Lấy userId ***)
+
         if (code == null || code.trim().isEmpty()) {
             reportActionError("Tiêu đề gốc rỗng, không thể tìm ngày.");
             return;
         }
+        if (userId == null) { // (*** MỚI: Kiểm tra userId ***)
+            reportActionError(i18n.getString("itemDetailViewModel", "errorNoUser"));
+            return;
+        }
+
         reportActionError(i18n.getString("itemDetailView", "statusFetchingDate", code));
+
         new Thread(() -> {
             try {
-                OffsetDateTime resultDate = itemRepository.fetchReleaseDateByCode(code);
-                if (resultDate != null) {
-                    String dateString = dateToString(resultDate);
+                // 1. Gọi API lấy FetchDateResult
+                RequestEmby.FetchDateResult result = itemRepository.fetchReleaseDateByCode(code);
+
+                if (result != null) {
+                    final OffsetDateTime resultDate = result.getReleaseDate();
+                    final String actressName = result.getActressName();
+                    final List<TagModel> tagsFromPerson = new ArrayList<>(); // List chứa tags của person
+
+                    // 2. (Yêu cầu 2) Lấy tags từ person (nếu có)
+                    if (actressName != null && !actressName.trim().isEmpty()) {
+                        try {
+                            // 2.1. Tìm ID của person
+                            String personId = null;
+                            List<SuggestionItemModel> suggestions = itemRepository.getPeopleSuggestions(embyService.getApiClient());
+                            for (SuggestionItemModel suggestion : suggestions) {
+                                if (suggestion.getName() != null && suggestion.getName().equalsIgnoreCase(actressName)) {
+                                    personId = suggestion.getId(); // Lấy ID
+                                    break;
+                                }
+                            }
+
+                            // 2.2. Nếu có ID, lấy chi tiết
+                            if (personId != null) {
+                                BaseItemDto personDto = itemRepository.getFullItemDetails(userId, personId);
+                                if (personDto != null && personDto.getTagItems() != null) {
+                                    // 2.3. Chuyển đổi tags của person
+                                    for (NameLongIdPair tagPair : personDto.getTagItems()) {
+                                        if (tagPair.getName() != null) {
+                                            tagsFromPerson.add(TagModel.parse(tagPair.getName())); // Thêm vào list tạm
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Exception e_person) {
+                            System.err.println("Lỗi khi lấy tags của person '" + actressName + "': " + e_person.getMessage());
+                            // Không dừng lại, vẫn tiếp tục cập nhật ngày và tên
+                        }
+                    }
+                    // (Kết thúc Yêu cầu 2)
+
+
+                    // 3. Cập nhật UI (trên luồng JavaFX)
                     Platform.runLater(() -> {
-                        this.releaseDate.set(dateString);
-                        reportActionError(i18n.getString("itemDetailView", "statusFetchDateSuccess"));
+                        boolean dateUpdated = false;
+                        if (resultDate != null) {
+                            String dateString = dateToString(resultDate);
+                            this.releaseDate.set(dateString); // Cập nhật ngày
+                            dateUpdated = true;
+                        }
+
+                        boolean actressAdded = false;
+                        if (actressName != null && !actressName.trim().isEmpty()) {
+                            TagModel actressTag = TagModel.parse(actressName, null); // Tạo TagModel
+                            // Kiểm tra trùng lặp trước khi thêm
+                            if (!peopleItems.contains(actressTag)) {
+                                addPerson(actressTag); // Thêm vào UI (đã có hàm addPerson)
+                                actressAdded = true;
+                            }
+                        }
+
+                        boolean tagsAdded = false;
+                        if (!tagsFromPerson.isEmpty()) {
+                            for (TagModel tag : tagsFromPerson) {
+                                // Kiểm tra trùng lặp trước khi thêm
+                                if (!tagItems.contains(tag)) {
+                                    addTag(tag); // Thêm tag (đã có hàm addTag)
+                                    tagsAdded = true;
+                                }
+                            }
+                        }
+
+                        // Cập nhật status
+                        if (dateUpdated || actressAdded || tagsAdded) {
+                            reportActionError(i18n.getString("itemDetailView", "statusFetchDateSuccess"));
+                        } else {
+                            reportActionError(i18n.getString("itemDetailView", "statusFetchDateNotFound"));
+                        }
                     });
-                } else {
+
+                } else { // result == null
                     Platform.runLater(() -> {
                         reportActionError(i18n.getString("itemDetailView", "statusFetchDateNotFound"));
                     });
@@ -469,6 +550,7 @@ public class ItemDetailViewModel {
             }
         }).start();
     }
+    // (*** KẾT THÚC SỬA ĐỔI HÀM NÀY ***)
 
 
     /**

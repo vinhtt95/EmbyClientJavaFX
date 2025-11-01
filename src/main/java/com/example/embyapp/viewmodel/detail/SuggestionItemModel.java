@@ -55,4 +55,8 @@ public class SuggestionItemModel {
     public int hashCode() {
         return Objects.hash(id, name, type);
     }
+
+    public String getId() {
+        return this.id;
+    }
 }
